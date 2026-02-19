@@ -835,6 +835,11 @@
             padding: 12px;
             margin-bottom: 8px;
             border-left: 4px solid var(--primary);
+            cursor: pointer;
+        }
+        
+        .date-booking-item:hover {
+            background: #252930;
         }
         
         .date-booking-item.pending {
@@ -906,6 +911,27 @@
         .quick-action-label {
             font-size: 12px;
             color: var(--text-secondary);
+        }
+
+        /* ===== Loading States ===== */
+        .loading-overlay {
+            position: absolute;
+            inset: 0;
+            background: rgba(0,0,0,0.7);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 10;
+            border-radius: inherit;
+        }
+        
+        .loading-spinner-small {
+            width: 30px;
+            height: 30px;
+            border: 3px solid var(--border);
+            border-top-color: var(--primary);
+            border-radius: 50%;
+            animation: spin 0.6s linear infinite;
         }
     </style>
 </head>
@@ -984,7 +1010,7 @@
                     <button class="calendar-nav-btn" onclick="changeMonth(-1)">
                         <i class="fas fa-chevron-left"></i>
                     </button>
-                    <span class="calendar-month" id="current-month">มกราคม 2024</span>
+                    <span class="calendar-month" id="current-month">มกราคม 2567</span>
                     <button class="calendar-nav-btn" onclick="changeMonth(1)">
                         <i class="fas fa-chevron-right"></i>
                     </button>
@@ -1122,7 +1148,7 @@
                     <div id="users-list" class="space-y-2"></div>
                 </div>
 
-                <!-- Admin: Settings -->
+                <!-- Admin: Settings (FIXED) -->
                 <div id="admin-settings-tab" class="admin-tab hidden">
                     <div class="admin-section">
                         <h3 class="font-semibold mb-3">ตั้งค่าระบบ</h3>
@@ -1145,8 +1171,17 @@
                                 <option value="120">2 ชั่วโมง</option>
                             </select>
                             
-                            <button type="submit" class="btn-primary" id="settings-save-btn">บันทึก</button>
+                            <button type="submit" class="btn-primary w-full" id="settings-save-btn">บันทึกการตั้งค่า</button>
                         </form>
+                    </div>
+                    
+                    <!-- Database Reset (Admin Only) -->
+                    <div class="admin-section border-red-500/30">
+                        <h3 class="font-semibold mb-3 text-red-500">เครื่องมือสำหรับผู้ดูแล</h3>
+                        <button onclick="resetDatabase()" class="btn-danger w-full">
+                            <i class="fas fa-database mr-2"></i>รีเซ็ตฐานข้อมูล (ล้างข้อมูลทั้งหมด)
+                        </button>
+                        <p class="text-xs text-gray-400 mt-2">คำเตือน: การกดปุ่มนี้จะล้างข้อมูลทั้งหมดและตั้งค่าเริ่มต้นใหม่</p>
                     </div>
                 </div>
             </div>
@@ -1167,7 +1202,7 @@
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button class="btn-primary" onclick="showBookingModal(state.currentRoom)" id="modal-book-btn">
+                    <button class="btn-primary" onclick="showBookingModal(state.currentRoom?.roomId)" id="modal-book-btn">
                         <i class="fas fa-calendar-check"></i> จองห้อง
                     </button>
                     <button class="btn-outline" onclick="closeModal()">ปิด</button>
@@ -1436,7 +1471,6 @@
             settingsSaveBtn: document.getElementById('settings-save-btn'),
             settingRequireApproval: document.getElementById('setting-require-approval'),
             settingReminderMinutes: document.getElementById('setting-reminder-minutes'),
-            currentDateDisplay: document.getElementById('current-date-display'),
             calendarDays: document.getElementById('calendar-days'),
             currentMonth: document.getElementById('current-month'),
             selectedDateBookings: document.getElementById('selected-date-bookings'),
@@ -1467,18 +1501,32 @@
             setTimeout(() => toast.remove(), 3000);
         }
 
-        function formatDate(dateStr) {
+        function formatDateThai(dateStr) {
             if (!dateStr) return '';
             const date = new Date(dateStr);
             return date.toLocaleDateString('th-TH', { 
-                day: 'numeric', month: 'short', year: 'numeric'
+                day: 'numeric', 
+                month: 'long', 
+                year: 'numeric',
+                weekday: 'long'
+            });
+        }
+
+        function formatDateShort(dateStr) {
+            if (!dateStr) return '';
+            const date = new Date(dateStr);
+            return date.toLocaleDateString('th-TH', { 
+                day: 'numeric', 
+                month: 'short', 
+                year: 'numeric'
             });
         }
 
         function formatTime(dateStr) {
             if (!dateStr) return '';
             return new Date(dateStr).toLocaleTimeString('th-TH', { 
-                hour: '2-digit', minute: '2-digit'
+                hour: '2-digit', 
+                minute: '2-digit'
             });
         }
 
@@ -1499,6 +1547,13 @@
             const month = String(d.getMonth() + 1).padStart(2, '0');
             const day = String(d.getDate()).padStart(2, '0');
             return `${year}-${month}-${day}`;
+        }
+
+        function formatMonthThai(date) {
+            return date.toLocaleDateString('th-TH', { 
+                month: 'long', 
+                year: 'numeric' 
+            });
         }
 
         function updateAppName(name) {
@@ -1582,7 +1637,6 @@
             const startStr = formatDateForInput(startDate);
             const endStr = formatDateForInput(endDate);
             
-            // โหลดการจองทั้งหมดของเดือนนี้
             const result = await callGAS('bookings', {
                 startDate: startStr,
                 endDate: endStr,
@@ -1590,7 +1644,6 @@
             });
             
             if (result.success) {
-                // จัดกลุ่มการจองตามวันที่
                 state.dateBookings = {};
                 result.data.bookings.forEach(booking => {
                     const date = new Date(booking.startTime).toISOString().split('T')[0];
@@ -1608,24 +1661,19 @@
             const year = state.currentMonth.getFullYear();
             const month = state.currentMonth.getMonth();
             
-            // อัปเดตชื่อเดือน
-            $.currentMonth.textContent = state.currentMonth.toLocaleDateString('th-TH', { 
-                month: 'long', 
-                year: 'numeric' 
-            });
+            $.currentMonth.textContent = formatMonthThai(state.currentMonth);
             
             const firstDay = new Date(year, month, 1);
             const lastDay = new Date(year, month + 1, 0);
             
-            const startDay = firstDay.getDay(); // 0 = อาทิตย์
+            const startDay = firstDay.getDay();
             const totalDays = lastDay.getDate();
             
-            // หาวันที่ของเดือนก่อนหน้า
             const prevMonthLastDay = new Date(year, month, 0).getDate();
             
             let html = '';
             
-            // วันของเดือนก่อนหน้า
+            // Previous month days
             for (let i = startDay - 1; i >= 0; i--) {
                 const day = prevMonthLastDay - i;
                 const date = new Date(year, month - 1, day);
@@ -1636,7 +1684,7 @@
                 html += renderCalendarDay(day, true, hasBooking, isToday, dateStr);
             }
             
-            // วันของเดือนปัจจุบัน
+            // Current month days
             for (let day = 1; day <= totalDays; day++) {
                 const date = new Date(year, month, day);
                 const dateStr = formatDateForInput(date);
@@ -1648,7 +1696,7 @@
                 html += renderCalendarDay(day, false, hasBooking, isToday, dateStr, bookings.length, isSelected);
             }
             
-            // วันของเดือนถัดไป (เพื่อให้ครบ 42 วัน)
+            // Next month days
             const totalCells = 42;
             const remainingCells = totalCells - (startDay + totalDays);
             for (let day = 1; day <= remainingCells; day++) {
@@ -1693,11 +1741,8 @@
 
         window.selectDate = async function(dateStr) {
             state.selectedDate = new Date(dateStr);
-            
-            // อัปเดตการแสดงผลปฏิทิน
             renderCalendar();
             
-            // โหลดการจองของวันที่เลือก
             const result = await callGAS('bookings', {
                 date: dateStr,
                 showPast: 'true'
@@ -1737,7 +1782,6 @@
             const newMonth = new Date(state.currentMonth);
             newMonth.setMonth(newMonth.getMonth() + delta);
             state.currentMonth = newMonth;
-            
             loadMonthBookings(newMonth.getFullYear(), newMonth.getMonth());
         };
 
@@ -1751,6 +1795,33 @@
         window.showAllRooms = function() {
             $.searchInput.value = '';
             renderRooms();
+        };
+
+        window.resetDatabase = async function() {
+            if (!state.isAdmin) {
+                showToast('เฉพาะผู้ดูแลระบบเท่านั้น', 'error');
+                return;
+            }
+            
+            const result = await Swal.fire({
+                title: 'รีเซ็ตฐานข้อมูล',
+                text: 'คุณแน่ใจหรือไม่? ข้อมูลทั้งหมดจะถูกลบและกลับสู่ค่าเริ่มต้น',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#ef4444',
+                confirmButtonText: 'ใช่, รีเซ็ต',
+                cancelButtonText: 'ยกเลิก'
+            });
+
+            if (result.isConfirmed) {
+                const apiResult = await callGAS('setupDatabase');
+                if (apiResult.success) {
+                    showToast('รีเซ็ตฐานข้อมูลสำเร็จ');
+                    setTimeout(() => location.reload(), 1500);
+                } else {
+                    showToast(apiResult.message || 'เกิดข้อผิดพลาด', 'error');
+                }
+            }
         };
 
         // ========== LIFF INIT ==========
@@ -1777,7 +1848,6 @@
                     state.isAdmin = state.user.role === 'admin';
                     state.isManager = state.isAdmin || state.user.role === 'manager';
 
-                    // Update UI
                     $.profileName.textContent = state.user.displayName || 'ผู้ใช้';
                     $.profileEmail.textContent = state.user.email || '';
                     $.profileAvatar.src = state.user.pictureUrl || 'https://via.placeholder.com/60';
@@ -1787,7 +1857,6 @@
                         user: '👤 ผู้ใช้ทั่วไป'
                     }[state.user.role] || '';
 
-                    // Show/hide admin elements
                     $.adminOnly.forEach(el => {
                         if (state.isAdmin) el.classList.remove('hidden');
                         else el.classList.add('hidden');
@@ -1798,17 +1867,14 @@
                         if ($.quickBookBtn) $.quickBookBtn.classList.remove('hidden');
                     }
 
-                    // Load settings first
                     await loadSettings();
                     
-                    // Load data
                     await Promise.all([
                         loadRooms(),
                         loadMyBookings(),
                         loadTodayStats()
                     ]);
 
-                    // โหลดข้อมูลปฏิทิน
                     await loadMonthBookings(
                         state.currentMonth.getFullYear(), 
                         state.currentMonth.getMonth()
@@ -1824,7 +1890,6 @@
                     $.initLoading.classList.add('hide');
                     state.initialized = true;
                     
-                    // Initialize date pickers
                     initDatePickers();
                 }
             } catch (error) {
@@ -1837,7 +1902,7 @@
         function initDatePickers() {
             flatpickr.localize(flatpickr.l10ns.th);
             
-            const datePicker = flatpickr("#booking-date", {
+            flatpickr("#booking-date", {
                 dateFormat: "Y-m-d",
                 minDate: "today",
                 locale: "th",
@@ -1936,7 +2001,6 @@
 
                 const facilities = room.facilities ? room.facilities.split(',').map(f => f.trim()) : [];
 
-                // โหลดการจองของวันนี้สำหรับห้องนี้
                 const today = new Date();
                 const dateStr = formatDateForInput(today);
                 const bookingsResult = await callGAS('bookings', { 
@@ -2028,7 +2092,6 @@
             document.getElementById('availability-status').classList.add('hidden');
             document.getElementById('save-booking-btn').disabled = false;
             
-            // Load rooms into dropdown
             const roomSelect = document.getElementById('booking-room');
             roomSelect.innerHTML = '<option value="">เลือกห้องประชุม</option>';
             state.rooms.forEach(r => {
@@ -2039,7 +2102,6 @@
                 roomSelect.appendChild(option);
             });
             
-            // Set default date/time
             const now = new Date();
             const nextHour = new Date(now);
             nextHour.setHours(now.getHours() + 1, 0, 0, 0);
@@ -2076,7 +2138,6 @@
                 return;
             }
             
-            // ตรวจสอบว่าเวลาอยู่ในช่วงที่กำหนด (08:00 - 20:00)
             const startHour = startDateTime.getHours();
             const endHour = endDateTime.getHours();
             if (startHour < 8 || endHour > 20 || (endHour === 20 && endDateTime.getMinutes() > 0)) {
@@ -2086,7 +2147,6 @@
                 return;
             }
             
-            // ตรวจสอบความยาวการจอง (ไม่เกิน 4 ชั่วโมง)
             const durationHours = (endDateTime - startDateTime) / (1000 * 60 * 60);
             if (durationHours > 4) {
                 document.getElementById('availability-status').innerHTML = '<span class="text-red-500">⚠️ จองได้ครั้งละไม่เกิน 4 ชั่วโมง</span>';
@@ -2140,8 +2200,6 @@
                 const startDateTime = new Date(`${date}T${start}:00`);
                 const endDateTime = new Date(`${date}T${end}:00`);
                 
-                const room = state.rooms.find(r => r.roomId === roomId);
-                
                 const data = {
                     roomId,
                     title: document.getElementById('booking-title').value,
@@ -2170,7 +2228,7 @@
                 } else {
                     showToast(result.message || 'เกิดข้อผิดพลาด', 'error');
                 }
-            } catch {
+            } catch (error) {
                 showToast('เกิดข้อผิดพลาด', 'error');
             } finally {
                 btn.disabled = false;
@@ -2197,7 +2255,6 @@
                 filtered = filtered.filter(b => b.status === filter);
             }
 
-            // กรองการจองที่ผ่านมาแล้วออก (ยกเว้น pending)
             const now = new Date();
             filtered = filtered.filter(b => {
                 if (b.status === 'pending') return true;
@@ -2241,12 +2298,12 @@
                     </div>
                     <p class="text-sm text-[#06c755] mb-2">${b.roomName}</p>
                     <p class="text-xs text-gray-400 mb-2">
-                        <i class="far fa-calendar mr-1"></i> ${formatDate(b.startTime)}<br>
+                        <i class="far fa-calendar mr-1"></i> ${formatDateShort(b.startTime)}<br>
                         <i class="far fa-clock mr-1"></i> ${formatTime(b.startTime)} - ${formatTime(b.endTime)}
                     </p>
                     <div class="flex justify-between items-center text-xs">
                         <span class="text-gray-500"><i class="fas fa-users mr-1"></i> ${b.attendees || 0} คน</span>
-                        ${b.meetingLink ? '<span class="text-blue-500"><i class="fas fa-video mr-1"></i> มีลิงค์ประชุม</span>' : ''}
+                        ${b.meetingLink ? '<span class="text-blue-500"><i class="fas fa-video mr-1"></i> มีลิงค์</span>' : ''}
                         ${b.status === 'confirmed' ? `
                             <button class="text-red-500" onclick="cancelBooking('${b.bookingId}'); event.stopPropagation();">
                                 <i class="fas fa-times mr-1"></i>ยกเลิก
@@ -2299,7 +2356,7 @@
                     <div class="grid grid-cols-2 gap-3 mb-4">
                         <div>
                             <p class="text-sm text-gray-400 mb-1">วันที่</p>
-                            <p>${formatDate(b.startTime)}</p>
+                            <p>${formatDateShort(b.startTime)}</p>
                         </div>
                         <div>
                             <p class="text-sm text-gray-400 mb-1">เวลา</p>
@@ -2436,7 +2493,7 @@
                     <h3 class="font-semibold mb-1">${b.title}</h3>
                     <p class="text-sm text-[#06c755] mb-2">${b.roomName}</p>
                     <p class="text-xs text-gray-400 mb-3">
-                        <i class="far fa-calendar mr-1"></i> ${formatDate(b.startTime)}<br>
+                        <i class="far fa-calendar mr-1"></i> ${formatDateShort(b.startTime)}<br>
                         <i class="far fa-clock mr-1"></i> ${formatTime(b.startTime)} - ${formatTime(b.endTime)}
                     </p>
                     <div class="flex justify-between items-center">
@@ -2552,7 +2609,7 @@
                     </div>
                     <div class="flex justify-between text-xs text-gray-400">
                         <span><i class="far fa-user mr-1"></i> ${b.userName}</span>
-                        <span><i class="far fa-clock mr-1"></i> ${formatDate(b.startTime)} ${formatTime(b.startTime)}</span>
+                        <span><i class="far fa-clock mr-1"></i> ${formatDateShort(b.startTime)} ${formatTime(b.startTime)}</span>
                     </div>
                 </div>
             `}).join('');
