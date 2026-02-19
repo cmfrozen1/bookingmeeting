@@ -2422,6 +2422,219 @@
             }
         }
 
+        // ========== สร้าง Flex Message สำหรับแชร์ ==========
+        function createBookingFlexMessage(booking) {
+            const startTime = new Date(booking.startTime);
+            const endTime = new Date(booking.endTime);
+            const dateStr = startTime.toLocaleDateString('th-TH', { 
+                weekday: 'long', 
+                year: 'numeric', 
+                month: 'long', 
+                day: 'numeric' 
+            });
+            const timeStr = startTime.toLocaleTimeString('th-TH', { 
+                hour: '2-digit', 
+                minute: '2-digit' 
+            }) + ' - ' + 
+            endTime.toLocaleTimeString('th-TH', { 
+                hour: '2-digit', 
+                minute: '2-digit' 
+            }) + ' น.';
+            
+            const statusColor = booking.status === 'confirmed' ? '#06c755' : '#f59e0b';
+            const statusText = booking.status === 'confirmed' ? '✅ อนุมัติแล้ว' : '⏳ รออนุมัติ';
+
+            const flexMessage = {
+                type: 'flex',
+                altText: `📅 การจอง: ${booking.title}`,
+                contents: {
+                    type: 'bubble',
+                    header: {
+                        type: 'box',
+                        layout: 'vertical',
+                        contents: [
+                            {
+                                type: 'text',
+                                text: '📅 รายละเอียดการจอง',
+                                weight: 'bold',
+                                size: 'xl',
+                                color: '#06c755'
+                            }
+                        ]
+                    },
+                    body: {
+                        type: 'box',
+                        layout: 'vertical',
+                        contents: [
+                            {
+                                type: 'text',
+                                text: booking.roomName,
+                                weight: 'bold',
+                                size: 'lg',
+                                wrap: true
+                            },
+                            {
+                                type: 'text',
+                                text: booking.title,
+                                size: 'md',
+                                color: '#666666',
+                                wrap: true,
+                                margin: 'md'
+                            },
+                            {
+                                type: 'separator',
+                                margin: 'lg'
+                            },
+                            {
+                                type: 'box',
+                                layout: 'vertical',
+                                margin: 'lg',
+                                contents: [
+                                    {
+                                        type: 'box',
+                                        layout: 'horizontal',
+                                        contents: [
+                                            {
+                                                type: 'text',
+                                                text: '📅 วันที่',
+                                                size: 'sm',
+                                                color: '#aaaaaa',
+                                                flex: 2
+                                            },
+                                            {
+                                                type: 'text',
+                                                text: dateStr,
+                                                size: 'sm',
+                                                flex: 5,
+                                                wrap: true
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        type: 'box',
+                                        layout: 'horizontal',
+                                        margin: 'md',
+                                        contents: [
+                                            {
+                                                type: 'text',
+                                                text: '⏰ เวลา',
+                                                size: 'sm',
+                                                color: '#aaaaaa',
+                                                flex: 2
+                                            },
+                                            {
+                                                type: 'text',
+                                                text: timeStr,
+                                                size: 'sm',
+                                                flex: 5
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        type: 'box',
+                                        layout: 'horizontal',
+                                        margin: 'md',
+                                        contents: [
+                                            {
+                                                type: 'text',
+                                                text: '👥 ผู้เข้าร่วม',
+                                                size: 'sm',
+                                                color: '#aaaaaa',
+                                                flex: 2
+                                            },
+                                            {
+                                                type: 'text',
+                                                text: booking.attendees + ' คน',
+                                                size: 'sm',
+                                                flex: 5
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        type: 'box',
+                                        layout: 'horizontal',
+                                        margin: 'md',
+                                        contents: [
+                                            {
+                                                type: 'text',
+                                                text: '📌 สถานะ',
+                                                size: 'sm',
+                                                color: '#aaaaaa',
+                                                flex: 2
+                                            },
+                                            {
+                                                type: 'text',
+                                                text: statusText,
+                                                size: 'sm',
+                                                color: statusColor,
+                                                flex: 5
+                                            }
+                                        ]
+                                    }
+                                ]
+                            },
+                            {
+                                type: 'separator',
+                                margin: 'lg'
+                            },
+                            {
+                                type: 'text',
+                                text: '👤 ผู้จอง: ' + booking.userName,
+                                size: 'sm',
+                                color: '#888888',
+                                margin: 'lg'
+                            }
+                        ]
+                    }
+                }
+            };
+
+            if (booking.meetingLink) {
+                flexMessage.contents.footer = {
+                    type: 'box',
+                    layout: 'vertical',
+                    contents: [
+                        {
+                            type: 'button',
+                            action: {
+                                type: 'uri',
+                                label: '🔗 เข้าร่วมประชุม',
+                                uri: booking.meetingLink
+                            },
+                            style: 'primary',
+                            color: '#06c755'
+                        }
+                    ]
+                };
+            }
+
+            return flexMessage;
+        }
+
+        // ========== ส่ง Flex Message ไปยังแชท ==========
+        async function shareBookingToChat(bookingData) {
+            try {
+                // ถ้าไม่อยู่ใน LINE Client ให้ข้ามไป
+                if (!liff.isInClient()) {
+                    console.log('Not in LINE client, skip sharing');
+                    return;
+                }
+
+                const flexMessage = createBookingFlexMessage(bookingData);
+                
+                // ส่งข้อความไปยังแชทปัจจุบัน
+                await liff.sendMessages([flexMessage]);
+                console.log('Message sent successfully');
+                
+                // แสดง toast แจ้งเตือน
+                showToast('ส่งข้อมูลการจองไปยังแชทแล้ว');
+                
+            } catch (error) {
+                console.error('Error sending message to chat:', error);
+                // ไม่ต้องแสดง error เพราะไม่กระทบการทำงานหลัก
+            }
+        }
+
         window.saveBooking = async function(e) {
             e.preventDefault();
             
@@ -2459,7 +2672,11 @@
 
                 if (result.success) {
                     showToast(id ? 'แก้ไขการจองสำเร็จ' : 'จองห้องสำเร็จ');
+                    
+                    // ปิด modal ก่อน
                     closeBookingCreateModal();
+                    
+                    // โหลดข้อมูลใหม่
                     await Promise.all([
                         loadRooms(), 
                         loadMyBookings(), 
@@ -2467,9 +2684,29 @@
                         loadMonthBookings(state.currentMonth.getFullYear(), state.currentMonth.getMonth())
                     ]);
                     
-                    // ถ้าอยู่ใน LINE Client ให้ส่ง Flex Message ไปยังแชท
-                    if (liff.isInClient() && result.data.bookingData) {
-                        await shareBookingViaPicker(result.data.bookingData.bookingId);
+                    // ถ้าเป็นการจองใหม่และมีข้อมูลการจอง ให้ส่ง Flex Message ไปยังแชท
+                    if (!id && result.data?.bookingData) {
+                        // รอสักครู่เพื่อให้ UI อัพเดทแล้วค่อยส่งข้อความ
+                        setTimeout(async () => {
+                            await shareBookingToChat(result.data.bookingData);
+                            
+                            // ถ้าอยู่ใน LINE Client ให้ถามว่าแชร์ต่อหรือไม่
+                            if (liff.isInClient()) {
+                                const shareResult = await Swal.fire({
+                                    title: 'ส่งข้อมูลการจอง',
+                                    text: 'ต้องการแชร์ข้อมูลการจองนี้ไปยังแชทอื่นหรือไม่?',
+                                    icon: 'question',
+                                    showCancelButton: true,
+                                    confirmButtonText: 'แชร์ต่อ',
+                                    cancelButtonText: 'ไม่ต้องการ'
+                                });
+
+                                if (shareResult.isConfirmed) {
+                                    // ใช้ shareTargetPicker สำหรับแชร์ไปยังแชทอื่น
+                                    await shareBookingViaPicker(result.data.bookingData.bookingId);
+                                }
+                            }
+                        }, 500);
                     }
                 } else {
                     showToast(result.message || 'เกิดข้อผิดพลาด', 'error');
@@ -2497,189 +2734,7 @@
                 }
 
                 const booking = result.data;
-                const startTime = new Date(booking.startTime);
-                const endTime = new Date(booking.endTime);
-                const dateStr = startTime.toLocaleDateString('th-TH', { 
-                    weekday: 'long', 
-                    year: 'numeric', 
-                    month: 'long', 
-                    day: 'numeric' 
-                });
-                const timeStr = startTime.toLocaleTimeString('th-TH', { 
-                    hour: '2-digit', 
-                    minute: '2-digit' 
-                }) + ' - ' + 
-                endTime.toLocaleTimeString('th-TH', { 
-                    hour: '2-digit', 
-                    minute: '2-digit' 
-                }) + ' น.';
-                
-                const statusColor = booking.status === 'confirmed' ? '#06c755' : '#f59e0b';
-                const statusText = booking.status === 'confirmed' ? '✅ อนุมัติแล้ว' : '⏳ รออนุมัติ';
-
-                const flexMessage = {
-                    type: 'flex',
-                    altText: `📅 การจอง: ${booking.title}`,
-                    contents: {
-                        type: 'bubble',
-                        header: {
-                            type: 'box',
-                            layout: 'vertical',
-                            contents: [
-                                {
-                                    type: 'text',
-                                    text: '📅 รายละเอียดการจอง',
-                                    weight: 'bold',
-                                    size: 'xl',
-                                    color: '#06c755'
-                                }
-                            ]
-                        },
-                        body: {
-                            type: 'box',
-                            layout: 'vertical',
-                            contents: [
-                                {
-                                    type: 'text',
-                                    text: booking.roomName,
-                                    weight: 'bold',
-                                    size: 'lg',
-                                    wrap: true
-                                },
-                                {
-                                    type: 'text',
-                                    text: booking.title,
-                                    size: 'md',
-                                    color: '#666666',
-                                    wrap: true,
-                                    margin: 'md'
-                                },
-                                {
-                                    type: 'separator',
-                                    margin: 'lg'
-                                },
-                                {
-                                    type: 'box',
-                                    layout: 'vertical',
-                                    margin: 'lg',
-                                    contents: [
-                                        {
-                                            type: 'box',
-                                            layout: 'horizontal',
-                                            contents: [
-                                                {
-                                                    type: 'text',
-                                                    text: '📅 วันที่',
-                                                    size: 'sm',
-                                                    color: '#aaaaaa',
-                                                    flex: 2
-                                                },
-                                                {
-                                                    type: 'text',
-                                                    text: dateStr,
-                                                    size: 'sm',
-                                                    flex: 5,
-                                                    wrap: true
-                                                }
-                                            ]
-                                        },
-                                        {
-                                            type: 'box',
-                                            layout: 'horizontal',
-                                            margin: 'md',
-                                            contents: [
-                                                {
-                                                    type: 'text',
-                                                    text: '⏰ เวลา',
-                                                    size: 'sm',
-                                                    color: '#aaaaaa',
-                                                    flex: 2
-                                                },
-                                                {
-                                                    type: 'text',
-                                                    text: timeStr,
-                                                    size: 'sm',
-                                                    flex: 5
-                                                }
-                                            ]
-                                        },
-                                        {
-                                            type: 'box',
-                                            layout: 'horizontal',
-                                            margin: 'md',
-                                            contents: [
-                                                {
-                                                    type: 'text',
-                                                    text: '👥 ผู้เข้าร่วม',
-                                                    size: 'sm',
-                                                    color: '#aaaaaa',
-                                                    flex: 2
-                                                },
-                                                {
-                                                    type: 'text',
-                                                    text: booking.attendees + ' คน',
-                                                    size: 'sm',
-                                                    flex: 5
-                                                }
-                                            ]
-                                        },
-                                        {
-                                            type: 'box',
-                                            layout: 'horizontal',
-                                            margin: 'md',
-                                            contents: [
-                                                {
-                                                    type: 'text',
-                                                    text: '📌 สถานะ',
-                                                    size: 'sm',
-                                                    color: '#aaaaaa',
-                                                    flex: 2
-                                                },
-                                                {
-                                                    type: 'text',
-                                                    text: statusText,
-                                                    size: 'sm',
-                                                    color: statusColor,
-                                                    flex: 5
-                                                }
-                                            ]
-                                        }
-                                    ]
-                                },
-                                {
-                                    type: 'separator',
-                                    margin: 'lg'
-                                },
-                                {
-                                    type: 'text',
-                                    text: '👤 ผู้จอง: ' + booking.userName,
-                                    size: 'sm',
-                                    color: '#888888',
-                                    margin: 'lg'
-                                }
-                            ]
-                        }
-                    }
-                };
-
-                if (booking.meetingLink) {
-                    flexMessage.contents.footer = {
-                        type: 'box',
-                        layout: 'vertical',
-                        contents: [
-                            {
-                                type: 'button',
-                                action: {
-                                    type: 'uri',
-                                    label: '🔗 เข้าร่วมประชุม',
-                                    uri: booking.meetingLink
-                                },
-                                style: 'primary',
-                                color: '#06c755'
-                            }
-                        ]
-                    };
-                }
+                const flexMessage = createBookingFlexMessage(booking);
 
                 await liff.shareTargetPicker([flexMessage]);
                 showToast('แชร์การจองสำเร็จ');
