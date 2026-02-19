@@ -2,204 +2,309 @@
 <html lang="th">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
-    <title>Meeting Room · LINE</title>
-    <link rel="shortcut icon" href="https://cdn-icons-png.flaticon.com/512/1040/1040244.png">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Meeting Room</title>
     
-    <!-- LINE LIFF - โหลดก่อน -->
+    <!-- LINE LIFF - โหลดก่อนสุด -->
     <script src="https://static.line-scdn.net/liff/edge/2.1/sdk.js"></script>
     
-    <!-- CSS หลัก - inline ทั้งหมดเพื่อความเร็ว -->
+    <!-- โหลด Font Awesome แบบ async -->
+    <link rel="stylesheet" href="https://use.fontawesome.com/releases/v6.4.0/css/all.css" media="print" onload="this.media='all'">
+    
     <style>
-        /* Reset และตัวแปร */
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'IBM Plex Sans Thai', sans-serif;
-        }
-
-        :root {
-            --primary: #06c755;
-            --primary-dark: #05b34a;
-            --bg: #0a0a0f;
-            --bg-card: #1a1d24;
-            --border: #2a2e36;
-            --text: #ffffff;
-            --text-secondary: #9ca3af;
+            -webkit-tap-highlight-color: transparent;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
         }
 
         body {
-            background-color: var(--bg);
-            color: var(--text);
+            background: #0a0a0f;
+            color: white;
             padding-bottom: 70px;
         }
 
         /* Navbar */
-        .navbar {
+        .nav {
             position: sticky;
             top: 0;
-            z-index: 40;
-            background: rgba(10, 10, 15, 0.95);
+            background: rgba(10,10,15,0.95);
             backdrop-filter: blur(10px);
-            border-bottom: 1px solid var(--border);
+            border-bottom: 1px solid #2a2e36;
             padding: 12px 16px;
+            z-index: 10;
         }
 
-        .navbar-content {
-            max-width: 1200px;
-            margin: 0 auto;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-        }
-
-        .navbar-logo {
+        .nav-content {
             display: flex;
             align-items: center;
             gap: 8px;
-            cursor: pointer;
         }
 
-        .navbar-logo i {
-            color: var(--primary);
+        .nav-icon {
+            color: #06c755;
             font-size: 24px;
         }
 
-        /* Bottom Navigation */
-        .bottom-nav {
-            position: fixed;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            background: var(--bg-card);
-            border-top: 1px solid var(--border);
-            display: flex;
-            justify-content: space-around;
-            padding: 8px 0;
-            z-index: 50;
+        .nav-title {
+            font-size: 18px;
+            font-weight: 600;
+            background: linear-gradient(135deg, #fff, #06c755);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
         }
 
-        .nav-item {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 4px;
-            color: var(--text-secondary);
-            font-size: 12px;
-            cursor: pointer;
-        }
-
-        .nav-item.active {
-            color: var(--primary);
-        }
-
-        /* Profile Header */
-        .profile-header {
-            background: var(--bg-card);
+        /* Profile */
+        .profile {
+            background: #1a1d24;
+            margin: 12px 16px;
+            padding: 12px;
             border-radius: 20px;
-            padding: 16px;
-            margin: 16px;
+            border: 1px solid #2a2e36;
             display: flex;
             align-items: center;
-            gap: 16px;
-            border: 1px solid var(--border);
-            cursor: pointer;
+            gap: 12px;
         }
 
         .profile-avatar {
-            width: 60px;
-            height: 60px;
-            border-radius: 30px;
-            border: 3px solid var(--primary);
-            object-fit: cover;
+            width: 48px;
+            height: 48px;
+            border-radius: 24px;
+            border: 2px solid #06c755;
+            background: #2a2e36;
         }
 
-        /* Quick Actions */
-        .quick-actions {
+        .profile-info {
+            flex: 1;
+        }
+
+        .profile-name {
+            font-weight: 600;
+            font-size: 16px;
+        }
+
+        .profile-email {
+            font-size: 12px;
+            color: #9ca3af;
+        }
+
+        /* Quick actions */
+        .actions {
             display: flex;
             gap: 8px;
-            padding: 0 16px;
-            margin-bottom: 16px;
+            margin: 0 16px 16px;
         }
 
-        .quick-action-btn {
+        .action-btn {
             flex: 1;
-            background: var(--bg-card);
-            border: 1px solid var(--border);
+            background: #1a1d24;
+            border: 1px solid #2a2e36;
             border-radius: 12px;
-            padding: 12px;
+            padding: 12px 8px;
             text-align: center;
-            cursor: pointer;
+            font-size: 12px;
+            color: #9ca3af;
+        }
+
+        .action-btn i {
+            color: #06c755;
+            font-size: 18px;
+            margin-bottom: 4px;
+            display: block;
         }
 
         /* Stats */
-        .stats-grid {
+        .stats {
             display: grid;
-            grid-template-columns: repeat(3, 1fr);
+            grid-template-columns: 1fr 1fr 1fr;
             gap: 8px;
-            max-width: 1200px;
-            margin: 0 auto 16px;
-            padding: 0 16px;
+            margin: 0 16px 16px;
         }
 
-        .stat-card {
-            background: var(--bg-card);
-            border: 1px solid var(--border);
+        .stat {
+            background: #1a1d24;
+            border: 1px solid #2a2e36;
             border-radius: 16px;
-            padding: 16px;
+            padding: 12px 8px;
             text-align: center;
         }
 
-        /* Rooms Grid */
-        .rooms-grid {
+        .stat-label {
+            font-size: 11px;
+            color: #9ca3af;
+        }
+
+        .stat-value {
+            font-size: 20px;
+            font-weight: 700;
+            color: #06c755;
+        }
+
+        /* Search */
+        .search {
+            position: relative;
+            margin: 0 16px 16px;
+        }
+
+        .search i {
+            position: absolute;
+            left: 16px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #9ca3af;
+            font-size: 14px;
+        }
+
+        .search input {
+            width: 100%;
+            padding: 12px 12px 12px 44px;
+            background: #1a1d24;
+            border: 1px solid #2a2e36;
+            border-radius: 30px;
+            color: white;
+            font-size: 14px;
+        }
+
+        .search input:focus {
+            outline: none;
+            border-color: #06c755;
+        }
+
+        /* Rooms grid */
+        .rooms {
             display: grid;
             grid-template-columns: 1fr;
-            gap: 16px;
+            gap: 12px;
             padding: 0 16px;
-            max-width: 1200px;
-            margin: 0 auto;
         }
 
         @media (min-width: 768px) {
-            .rooms-grid {
+            .rooms {
                 grid-template-columns: repeat(2, 1fr);
             }
         }
 
-        @media (min-width: 1024px) {
-            .rooms-grid {
-                grid-template-columns: repeat(3, 1fr);
-            }
-        }
-
         .room-card {
-            background: var(--bg-card);
-            border: 1px solid var(--border);
+            background: #1a1d24;
+            border: 1px solid #2a2e36;
             border-radius: 20px;
             overflow: hidden;
-            cursor: pointer;
         }
 
         .room-image {
-            width: 100%;
-            height: 160px;
-            background: linear-gradient(135deg, #2a2e36, #1a1d24);
+            height: 140px;
+            background: #2a2e36;
             display: flex;
             align-items: center;
             justify-content: center;
         }
 
+        .room-image i {
+            font-size: 40px;
+            color: #06c755;
+        }
+
+        .room-image img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
         .room-content {
-            padding: 16px;
+            padding: 12px;
+        }
+
+        .room-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+
+        .room-name {
+            font-weight: 600;
+            font-size: 16px;
+        }
+
+        .room-capacity {
+            background: rgba(6,199,85,0.1);
+            color: #06c755;
+            padding: 4px 8px;
+            border-radius: 20px;
+            font-size: 11px;
+        }
+
+        .room-location {
+            font-size: 12px;
+            color: #9ca3af;
+            margin-bottom: 12px;
+        }
+
+        .room-location i {
+            margin-right: 4px;
+            font-size: 10px;
+        }
+
+        .room-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .room-status {
+            background: rgba(6,199,85,0.15);
+            color: #06c755;
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 11px;
+        }
+
+        .room-book {
+            background: none;
+            border: none;
+            color: #06c755;
+            font-size: 13px;
+            padding: 8px;
+        }
+
+        /* Bottom nav */
+        .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: #1a1d24;
+            border-top: 1px solid #2a2e36;
+            display: flex;
+            padding: 8px 0 12px;
+            z-index: 20;
+        }
+
+        .bottom-nav-item {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+            color: #9ca3af;
+            font-size: 11px;
+        }
+
+        .bottom-nav-item.active {
+            color: #06c755;
+        }
+
+        .bottom-nav-item i {
+            font-size: 20px;
         }
 
         /* Loading */
         .skeleton {
-            background: linear-gradient(90deg, var(--bg-card) 25%, #252930 50%, var(--bg-card) 75%);
+            background: linear-gradient(90deg, #1a1d24 25%, #252930 50%, #1a1d24 75%);
             background-size: 200% 100%;
-            animation: loading 1.5s infinite;
+            animation: loading 1.2s infinite;
         }
 
         @keyframes loading {
@@ -214,177 +319,105 @@
 </head>
 <body>
     <!-- Navbar -->
-    <nav class="navbar">
-        <div class="navbar-content">
-            <div class="navbar-logo" id="nav-home">
-                <i class="fas fa-door-open"></i>
-                <span id="app-name">Meeting Room</span>
-            </div>
+    <div class="nav">
+        <div class="nav-content">
+            <i class="fas fa-door-open nav-icon"></i>
+            <span class="nav-title" id="appName">Meeting Room</span>
         </div>
-    </nav>
+    </div>
 
-    <!-- Main Content -->
-    <div class="min-h-screen">
-        <!-- Tab: Home -->
-        <div id="tab-home">
-            <!-- Profile Header Skeleton -->
-            <div class="profile-header" id="profile-skeleton">
-                <div class="skeleton" style="width:60px;height:60px;border-radius:30px;"></div>
-                <div style="flex:1;">
-                    <div class="skeleton" style="height:20px;width:150px;border-radius:10px;margin-bottom:8px;"></div>
-                    <div class="skeleton" style="height:14px;width:200px;border-radius:7px;"></div>
-                </div>
-            </div>
-
-            <!-- Profile Header Real (hidden initially) -->
-            <div class="profile-header hidden" id="profile-real">
-                <img id="profile-avatar" src="" alt="avatar" class="profile-avatar">
-                <div style="flex:1;min-width:0;">
-                    <h2 id="profile-name" style="font-size:18px;font-weight:bold;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"></h2>
-                    <p id="profile-email" style="font-size:14px;color:var(--text-secondary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"></p>
-                    <p id="profile-role" style="font-size:12px;color:var(--primary);margin-top:4px;"></p>
-                </div>
-                <i class="fas fa-chevron-down" style="color:var(--text-secondary);"></i>
-            </div>
-
-            <!-- Quick Actions Skeleton -->
-            <div class="quick-actions" id="quick-actions-skeleton">
-                <div class="skeleton" style="flex:1;height:70px;border-radius:12px;"></div>
-                <div class="skeleton" style="flex:1;height:70px;border-radius:12px;"></div>
-                <div class="skeleton" style="flex:1;height:70px;border-radius:12px;"></div>
-            </div>
-
-            <!-- Quick Actions Real (hidden initially) -->
-            <div class="quick-actions hidden" id="quick-actions-real">
-                <div class="quick-action-btn" id="btn-quick-book">
-                    <div style="font-size:20px;color:var(--primary);margin-bottom:4px;"><i class="fas fa-calendar-plus"></i></div>
-                    <div style="font-size:12px;color:var(--text-secondary);">จองด่วน</div>
-                </div>
-                <div class="quick-action-btn" id="btn-today">
-                    <div style="font-size:20px;color:var(--primary);margin-bottom:4px;"><i class="fas fa-calendar-day"></i></div>
-                    <div style="font-size:12px;color:var(--text-secondary);">วันนี้</div>
-                </div>
-                <div class="quick-action-btn" id="btn-all-rooms">
-                    <div style="font-size:20px;color:var(--primary);margin-bottom:4px;"><i class="fas fa-door-open"></i></div>
-                    <div style="font-size:12px;color:var(--text-secondary);">ห้องว่าง</div>
-                </div>
-            </div>
-
-            <!-- Stats Skeleton -->
-            <div class="stats-grid" id="stats-skeleton">
-                <div class="skeleton" style="height:70px;border-radius:16px;"></div>
-                <div class="skeleton" style="height:70px;border-radius:16px;"></div>
-                <div class="skeleton" style="height:70px;border-radius:16px;"></div>
-            </div>
-
-            <!-- Stats Real (hidden initially) -->
-            <div class="stats-grid hidden" id="stats-real">
-                <div class="stat-card">
-                    <p style="font-size:12px;color:var(--text-secondary);">ห้องทั้งหมด</p>
-                    <p id="stat-rooms" style="font-size:20px;font-weight:bold;color:var(--primary);">0</p>
-                </div>
-                <div class="stat-card">
-                    <p style="font-size:12px;color:var(--text-secondary);">จองวันนี้</p>
-                    <p id="stat-today" style="font-size:20px;font-weight:bold;color:var(--primary);">0</p>
-                </div>
-                <div class="stat-card">
-                    <p style="font-size:12px;color:var(--text-secondary);">รออนุมัติ</p>
-                    <p id="stat-pending" style="font-size:20px;font-weight:bold;color:#f59e0b;">0</p>
-                </div>
-            </div>
-
-            <!-- Search -->
-            <div style="position:relative;max-width:1200px;margin:0 auto 16px;padding:0 16px;">
-                <i class="fas fa-search" style="position:absolute;left:28px;top:50%;transform:translateY(-50%);color:var(--text-secondary);"></i>
-                <input type="text" id="search-input" placeholder="ค้นหาห้องประชุม..." 
-                       style="width:100%;padding:12px 12px 12px 44px;background:var(--bg-card);border:1px solid var(--border);border-radius:30px;color:var(--text);">
-            </div>
-
-            <!-- Rooms List -->
-            <div id="rooms-list" class="rooms-grid">
-                <div class="skeleton" style="height:280px;border-radius:20px;"></div>
-                <div class="skeleton" style="height:280px;border-radius:20px;"></div>
-                <div class="skeleton" style="height:280px;border-radius:20px;"></div>
-            </div>
+    <!-- Profile -->
+    <div class="profile" id="profile">
+        <div class="profile-avatar skeleton"></div>
+        <div class="profile-info">
+            <div class="profile-name skeleton" style="height:16px;width:120px;margin-bottom:6px;"></div>
+            <div class="profile-email skeleton" style="height:12px;width:160px;"></div>
         </div>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="actions">
+        <div class="action-btn skeleton" style="height:60px;"></div>
+        <div class="action-btn skeleton" style="height:60px;"></div>
+        <div class="action-btn skeleton" style="height:60px;"></div>
+    </div>
+
+    <!-- Stats -->
+    <div class="stats">
+        <div class="stat skeleton" style="height:60px;"></div>
+        <div class="stat skeleton" style="height:60px;"></div>
+        <div class="stat skeleton" style="height:60px;"></div>
+    </div>
+
+    <!-- Search -->
+    <div class="search">
+        <i class="fas fa-search"></i>
+        <input type="text" placeholder="ค้นหาห้องประชุม..." id="searchInput" autocomplete="off">
+    </div>
+
+    <!-- Rooms List -->
+    <div class="rooms" id="roomsList">
+        <div class="room-card skeleton" style="height:240px;"></div>
+        <div class="room-card skeleton" style="height:240px;"></div>
+        <div class="room-card skeleton" style="height:240px;"></div>
     </div>
 
     <!-- Bottom Navigation -->
     <div class="bottom-nav">
-        <div class="nav-item active" data-tab="home">
+        <div class="bottom-nav-item active" data-tab="home">
             <i class="fas fa-door-open"></i>
             <span>หน้าหลัก</span>
         </div>
-        <div class="nav-item" data-tab="my">
+        <div class="bottom-nav-item" data-tab="my">
             <i class="fas fa-calendar-check"></i>
             <span>การจอง</span>
         </div>
-        <div class="nav-item hidden admin-only" data-tab="admin">
+        <div class="bottom-nav-item hidden" id="adminTab" data-tab="admin">
             <i class="fas fa-cog"></i>
             <span>จัดการ</span>
         </div>
     </div>
 
-    <!-- Font Awesome (โหลดทีหลัง) -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" media="print" onload="this.media='all'">
-
-    <!-- SweetAlert2 (โหลดทีหลัง) -->
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11" defer></script>
-
     <script>
-        // ========== CONFIG ==========
-        const CONFIG = {
-            GAS_URL: 'https://script.google.com/macros/s/AKfycbwEkTSINEvnyBdapUWbJ8djVpdLt6rN7NlaXn5cKMow7RJtY3gI19-RSMyFHsWBxII-vA/exec',
-            LIFF_ID: '2008904120-nqYHD5BT'
-        };
+        (async function() {
+            // ========== CONFIG ==========
+            const CONFIG = {
+                GAS_URL: 'https://script.google.com/macros/s/AKfycbwEkTSINEvnyBdapUWbJ8djVpdLt6rN7NlaXn5cKMow7RJtY3gI19-RSMyFHsWBxII-vA/exec',
+                LIFF_ID: '2008904120-nqYHD5BT'
+            };
 
-        // ========== STATE ==========
-        const state = {
-            user: null,
-            rooms: [],
-            myBookings: [],
-            isAdmin: false,
-            isManager: false,
-            initialized: false
-        };
+            // ========== STATE ==========
+            let user = null;
+            let rooms = [];
+            let isAdmin = false;
 
-        // ========== DOM Elements ==========
-        const $ = {
-            profileSkeleton: document.getElementById('profile-skeleton'),
-            profileReal: document.getElementById('profile-real'),
-            quickActionsSkeleton: document.getElementById('quick-actions-skeleton'),
-            quickActionsReal: document.getElementById('quick-actions-real'),
-            statsSkeleton: document.getElementById('stats-skeleton'),
-            statsReal: document.getElementById('stats-real'),
-            roomsList: document.getElementById('rooms-list'),
-            profileName: document.getElementById('profile-name'),
-            profileEmail: document.getElementById('profile-email'),
-            profileAvatar: document.getElementById('profile-avatar'),
-            profileRole: document.getElementById('profile-role'),
-            statRooms: document.getElementById('stat-rooms'),
-            statToday: document.getElementById('stat-today'),
-            statPending: document.getElementById('stat-pending'),
-            searchInput: document.getElementById('search-input'),
-            navItems: document.querySelectorAll('.nav-item'),
-            adminOnly: document.querySelectorAll('.admin-only'),
-            navHome: document.getElementById('nav-home'),
-            btnQuickBook: document.getElementById('btn-quick-book'),
-            btnToday: document.getElementById('btn-today'),
-            btnAllRooms: document.getElementById('btn-all-rooms')
-        };
+            // ========== DOM ==========
+            const profile = document.getElementById('profile');
+            const roomsList = document.getElementById('roomsList');
+            const searchInput = document.getElementById('searchInput');
+            const adminTab = document.getElementById('adminTab');
 
-        // ========== UTILS ==========
-        function showToast(msg, type = 'success') {
-            // ใช้ alert ชั่วคราว (จริงๆควรทำ Toast สวยๆ)
-            alert(msg);
-        }
+            // ========== API CALL ที่เร็วที่สุด ==========
+            async function callGAS(path, data = {}) {
+                const formData = new FormData();
+                formData.append('path', path);
+                Object.keys(data).forEach(k => data[k] != null && formData.append(k, data[k]));
 
-        // ========== FAST INIT ==========
-        async function init() {
+                try {
+                    const res = await fetch(CONFIG.GAS_URL, { 
+                        method: 'POST', 
+                        body: formData,
+                        signal: AbortSignal.timeout(8000) // 8 วินาทีพอ
+                    });
+                    return await res.json();
+                } catch {
+                    return { success: false };
+                }
+            }
+
+            // ========== โหลดข้อมูลแบบเร็วสุด ==========
             try {
-                // 1. แสดง Skeleton ทันที
-                
-                // 2. เริ่มต้น LIFF
+                // 1. เริ่ม LIFF
                 await liff.init({ liffId: CONFIG.LIFF_ID });
                 
                 if (!liff.isLoggedIn()) {
@@ -392,404 +425,192 @@
                     return;
                 }
 
-                // 3. โหลด profile พร้อมกันกับการโหลด rooms
-                const profile = await liff.getProfile();
+                // 2. โหลด profile และ rooms พร้อมกัน (สำคัญที่สุด)
+                const profile_p = liff.getProfile();
+                const rooms_p = callGAS('rooms');
                 
-                // 4. เรียก API ทั้งหมดพร้อมกัน
-                const [userResult, roomsResult] = await Promise.all([
-                    callGAS('user/profile', {
-                        lineUserId: profile.userId,
-                        displayName: profile.displayName,
-                        pictureUrl: profile.pictureUrl || '',
-                        email: ''
-                    }),
-                    callGAS('rooms', {})
-                ]);
+                const [liffProfile, roomsRes] = await Promise.all([profile_p, rooms_p]);
 
-                // 5. อัปเดต UI ทันทีเมื่อได้ข้อมูล
-                if (userResult.success) {
-                    state.user = userResult.data;
-                    state.isAdmin = state.user.role === 'admin';
-                    state.isManager = state.isAdmin || state.user.role === 'manager';
-                    
-                    updateProfileUI();
-                }
+                // 3. โหลด user data (แต่ไม่ต้องรอ)
+                const userDataPromise = callGAS('user/profile', {
+                    lineUserId: liffProfile.userId,
+                    displayName: liffProfile.displayName,
+                    pictureUrl: liffProfile.pictureUrl || ''
+                });
 
-                if (roomsResult.success) {
-                    state.rooms = roomsResult.data || [];
-                    renderRooms();
+                // 4. แสดง rooms ทันที
+                if (roomsRes.success) {
+                    rooms = roomsRes.data || [];
+                    renderRooms(rooms);
                     
                     // อัปเดตสถิติ
-                    $.statRooms.textContent = state.rooms.length;
+                    document.querySelectorAll('.stat')[0].innerHTML = `
+                        <div class="stat-label">ห้องทั้งหมด</div>
+                        <div class="stat-value">${rooms.length}</div>
+                    `;
                 }
 
-                // 6. ซ่อน Skeleton แสดงข้อมูลจริง
-                showRealUI();
-
-                // 7. โหลดข้อมูลเพิ่มเติม (ไม่ต้องรอ)
-                loadAdditionalData();
-
-            } catch (error) {
-                console.error('Init error:', error);
-                showToast('เกิดข้อผิดพลาดในการเชื่อมต่อ', 'error');
-                
-                // ซ่อน Skeleton หลังจาก 3 วินาที
-                setTimeout(showRealUI, 3000);
-            }
-        }
-
-        // ========== API CALL ==========
-        async function callGAS(path, data = {}) {
-            try {
-                const formData = new FormData();
-                formData.append('path', path);
-                
-                if (state.user?.lineUserId) {
-                    formData.append('lineUserId', state.user.lineUserId);
+                // 5. รอ user data
+                const userRes = await userDataPromise;
+                if (userRes.success) {
+                    user = userRes.data;
+                    isAdmin = user.role === 'admin';
+                    
+                    // อัปเดต profile
+                    updateProfile(liffProfile, user);
+                    
+                    // แสดง admin tab
+                    if (isAdmin) adminTab.classList.remove('hidden');
+                    
+                    // โหลดสถิติเพิ่มเติม
+                    loadStats(user.lineUserId);
                 }
-                
-                Object.keys(data).forEach(key => {
-                    if (data[key] !== undefined && data[key] !== null) {
-                        formData.append(key, data[key]);
-                    }
-                });
 
-                const controller = new AbortController();
-                const timeoutId = setTimeout(() => controller.abort(), 15000);
-
-                const res = await fetch(CONFIG.GAS_URL, { 
-                    method: 'POST', 
-                    body: formData,
-                    signal: controller.signal
-                });
-                
-                clearTimeout(timeoutId);
-                
-                const text = await res.text();
-                return JSON.parse(text);
-            } catch (error) {
-                console.error('API Error:', error);
-                return { success: false, message: 'Connection error' };
-            }
-        }
-
-        // ========== อัปโหลดรูปภาพแบบง่าย ==========
-        async function uploadImage(file) {
-            if (!file) return null;
-            
-            // ตรวจสอบขนาดไฟล์
-            if (file.size > 1024 * 1024) { // 1MB
-                showToast('รูปภาพต้องมีขนาดไม่เกิน 1MB', 'error');
-                return null;
+            } catch (err) {
+                console.error(err);
+                // ถ้า error ก็โชว์ skeleton ต่อไป
             }
 
-            try {
-                // แปลงไฟล์เป็น Base64 (วิธีที่可靠ที่สุดสำหรับ GAS)
-                const base64 = await new Promise((resolve, reject) => {
-                    const reader = new FileReader();
-                    reader.onload = () => resolve(reader.result.split(',')[1]);
-                    reader.onerror = reject;
-                    reader.readAsDataURL(file);
-                });
-
-                const result = await callGAS('uploadImage', {
-                    fileName: file.name,
-                    fileData: base64,
-                    mimeType: file.type
-                });
-
-                return result.success ? result.data?.url || result.data?.fileUrl : null;
-            } catch (error) {
-                console.error('Upload error:', error);
-                showToast('อัปโหลดรูปไม่สำเร็จ', 'error');
-                return null;
-            }
-        }
-
-        // ========== UPDATE UI ==========
-        function updateProfileUI() {
-            if (!state.user) return;
-            
-            $.profileName.textContent = state.user.displayName || 'ผู้ใช้';
-            $.profileEmail.textContent = state.user.email || '';
-            $.profileAvatar.src = state.user.pictureUrl || 'https://via.placeholder.com/60/2a2e36/06c755?text=User';
-            $.profileRole.textContent = {
-                admin: '👑 ผู้ดูแลระบบ',
-                manager: '👥 ผู้จัดการ',
-                user: '👤 ผู้ใช้ทั่วไป'
-            }[state.user.role] || '';
-
-            // แสดงปุ่ม admin ถ้ามีสิทธิ์
-            $.adminOnly.forEach(el => {
-                if (state.isAdmin) el.classList.remove('hidden');
-                else el.classList.add('hidden');
-            });
-        }
-
-        function showRealUI() {
-            $.profileSkeleton.classList.add('hidden');
-            $.profileReal.classList.remove('hidden');
-            $.quickActionsSkeleton.classList.add('hidden');
-            $.quickActionsReal.classList.remove('hidden');
-            $.statsSkeleton.classList.add('hidden');
-            $.statsReal.classList.remove('hidden');
-        }
-
-        function renderRooms() {
-            const search = $.searchInput?.value.toLowerCase() || '';
-            const filtered = state.rooms.filter(r => 
-                r.name?.toLowerCase().includes(search) || 
-                r.location?.toLowerCase().includes(search)
-            );
-
-            if (!filtered.length) {
-                $.roomsList.innerHTML = `
-                    <div style="grid-column:1/-1;text-align:center;padding:40px 0;color:var(--text-secondary);">
-                        <i class="fas fa-door-open" style="font-size:32px;margin-bottom:12px;"></i>
-                        <p>ไม่พบห้องประชุม</p>
+            // ========== อัปเดต profile ==========
+            function updateProfile(liffProfile, userData) {
+                profile.innerHTML = `
+                    <img src="${liffProfile.pictureUrl || 'https://via.placeholder.com/48/2a2e36/06c755?text=U'}" class="profile-avatar">
+                    <div class="profile-info">
+                        <div class="profile-name">${liffProfile.displayName}</div>
+                        <div class="profile-email">${userData.role === 'admin' ? '👑 ผู้ดูแลระบบ' : userData.role === 'manager' ? '👥 ผู้จัดการ' : '👤 ผู้ใช้'}</div>
                     </div>
                 `;
-                return;
             }
 
-            $.roomsList.innerHTML = filtered.map(r => `
-                <div class="room-card" onclick="showRoomDetail('${r.roomId}')">
-                    <div class="room-image">
-                        ${r.imageUrl ? 
-                            `<img src="${r.imageUrl}" style="width:100%;height:100%;object-fit:cover;" loading="lazy">` : 
-                            `<i class="fas fa-door-open" style="font-size:48px;color:var(--primary);"></i>`
-                        }
-                    </div>
-                    <div class="room-content">
-                        <div style="display:flex;justify-content:space-between;margin-bottom:8px;">
-                            <h3 style="font-weight:600;">${r.name}</h3>
-                            <span style="background:rgba(6,199,85,0.1);color:var(--primary);padding:4px 8px;border-radius:20px;font-size:12px;">
-                                <i class="fas fa-users"></i> ${r.capacity}
-                            </span>
-                        </div>
-                        <p style="color:var(--text-secondary);font-size:13px;margin-bottom:8px;">
-                            <i class="fas fa-map-marker-alt"></i> ${r.location || 'ไม่มีข้อมูล'}
-                        </p>
-                    </div>
-                </div>
-            `).join('');
-        }
-
-        // ========== LOAD ADDITIONAL DATA ==========
-        async function loadAdditionalData() {
-            try {
-                // โหลดการจองของฉัน
-                const bookingsResult = await callGAS('user/bookings', {
-                    lineUserId: state.user?.lineUserId
-                });
-                
-                if (bookingsResult.success) {
-                    state.myBookings = bookingsResult.data || [];
-                    
-                    // อัปเดตสถิติ
+            // ========== โหลดสถิติ ==========
+            async function loadStats(lineUserId) {
+                const res = await callGAS('user/bookings', { lineUserId });
+                if (res.success) {
                     const today = new Date().toISOString().split('T')[0];
-                    const todayBookings = state.myBookings.filter(b => 
+                    const todayBookings = res.data.filter(b => 
                         b.startTime?.startsWith(today) && b.status === 'confirmed'
                     ).length;
+                    const pending = res.data.filter(b => b.status === 'pending').length;
                     
-                    const pendingCount = state.myBookings.filter(b => 
-                        b.status === 'pending'
-                    ).length;
-                    
-                    $.statToday.textContent = todayBookings;
-                    $.statPending.textContent = pendingCount;
+                    document.querySelectorAll('.stat')[1].innerHTML = `
+                        <div class="stat-label">จองวันนี้</div>
+                        <div class="stat-value">${todayBookings}</div>
+                    `;
+                    document.querySelectorAll('.stat')[2].innerHTML = `
+                        <div class="stat-label">รออนุมัติ</div>
+                        <div class="stat-value" style="color:#f59e0b">${pending}</div>
+                    `;
                 }
-
-                // โหลดข้อมูลอื่นๆ (ไม่ต้องรอ)
-                if (state.isManager) {
-                    callGAS('admin/stats').then(result => {
-                        if (result.success) {
-                            // อัปเดตสถิติ admin
-                        }
-                    });
-                }
-            } catch (error) {
-                console.error('Additional data error:', error);
-            }
-        }
-
-        // ========== ROOM DETAIL ==========
-        window.showRoomDetail = async function(roomId) {
-            // เรียกใช้ SweetAlert2 ถ้ามี
-            if (window.Swal) {
-                Swal.fire({
-                    title: 'กำลังโหลด...',
-                    text: 'กรุณารอสักครู่',
-                    allowOutsideClick: false,
-                    didOpen: () => Swal.showLoading()
-                });
             }
 
-            const result = await callGAS('room', { roomId });
-            
-            if (window.Swal) Swal.close();
+            // ========== แสดงห้อง ==========
+            function renderRooms(roomsToRender) {
+                const search = searchInput.value.toLowerCase();
+                const filtered = roomsToRender.filter(r => 
+                    r.name?.toLowerCase().includes(search) || 
+                    r.location?.toLowerCase().includes(search)
+                );
 
-            if (result.success) {
-                const room = result.data;
-                Swal.fire({
-                    title: room.name,
-                    html: `
-                        <div style="text-align:left;">
-                            ${room.imageUrl ? `<img src="${room.imageUrl}" style="width:100%;max-height:200px;object-fit:cover;border-radius:12px;margin-bottom:16px;">` : ''}
-                            <p><i class="fas fa-users" style="color:var(--primary);"></i> รองรับ ${room.capacity} คน</p>
-                            <p><i class="fas fa-map-marker-alt" style="color:var(--primary);"></i> ${room.location || 'ไม่มีข้อมูล'}</p>
-                            ${room.description ? `<p style="margin-top:8px;">${room.description}</p>` : ''}
-                            ${room.facilities ? `<p style="margin-top:8px;font-size:13px;">สิ่งอำนวยความสะดวก: ${room.facilities}</p>` : ''}
+                if (!filtered.length) {
+                    roomsList.innerHTML = `
+                        <div style="grid-column:1/-1;text-align:center;padding:40px;color:#9ca3af">
+                            <i class="fas fa-door-open" style="font-size:32px;margin-bottom:12px;"></i>
+                            <div>ไม่พบห้องประชุม</div>
                         </div>
-                    `,
-                    showCancelButton: true,
-                    confirmButtonText: 'จองห้อง',
-                    cancelButtonText: 'ปิด'
-                }).then(r => {
-                    if (r.isConfirmed) showBookingModal(roomId);
-                });
-            }
-        };
+                    `;
+                    return;
+                }
 
-        window.showBookingModal = function(roomId = null) {
-            Swal.fire({
-                title: 'จองห้องประชุม',
-                html: `
-                    <select id="swal-room" class="swal2-input" style="margin-bottom:8px;">
-                        <option value="">เลือกห้อง</option>
-                        ${state.rooms.map(r => `<option value="${r.roomId}" ${r.roomId === roomId ? 'selected' : ''}>${r.name} (${r.capacity} ที่นั่ง)</option>`).join('')}
-                    </select>
-                    <input type="text" id="swal-title" class="swal2-input" placeholder="หัวข้อการประชุม">
-                    <input type="date" id="swal-date" class="swal2-input" value="${new Date().toISOString().split('T')[0]}">
-                    <div style="display:flex;gap:8px;">
-                        <input type="time" id="swal-start" class="swal2-input" style="flex:1;" value="09:00">
-                        <input type="time" id="swal-end" class="swal2-input" style="flex:1;" value="10:00">
+                roomsList.innerHTML = filtered.map(r => `
+                    <div class="room-card" onclick="showRoom('${r.roomId}')">
+                        <div class="room-image">
+                            ${r.imageUrl ? 
+                                `<img src="${r.imageUrl}" loading="lazy">` : 
+                                `<i class="fas fa-door-open"></i>`
+                            }
+                        </div>
+                        <div class="room-content">
+                            <div class="room-header">
+                                <span class="room-name">${r.name}</span>
+                                <span class="room-capacity"><i class="fas fa-users"></i> ${r.capacity}</span>
+                            </div>
+                            <div class="room-location">
+                                <i class="fas fa-map-marker-alt"></i> ${r.location || 'ไม่มีข้อมูล'}
+                            </div>
+                            <div class="room-footer">
+                                <span class="room-status">ว่าง</span>
+                                <button class="room-book" onclick="bookRoom('${r.roomId}'); event.stopPropagation();">
+                                    <i class="fas fa-calendar-plus"></i> จอง
+                                </button>
+                            </div>
+                        </div>
                     </div>
-                    <input type="number" id="swal-attendees" class="swal2-input" placeholder="จำนวนผู้เข้าร่วม" value="4" min="1">
-                `,
-                showCancelButton: true,
-                confirmButtonText: 'ยืนยันการจอง',
-                cancelButtonText: 'ยกเลิก',
-                preConfirm: async () => {
-                    const roomId = document.getElementById('swal-room').value;
-                    const title = document.getElementById('swal-title').value;
-                    const date = document.getElementById('swal-date').value;
-                    const start = document.getElementById('swal-start').value;
-                    const end = document.getElementById('swal-end').value;
-                    const attendees = document.getElementById('swal-attendees').value;
-
-                    if (!roomId || !title || !date || !start || !end) {
-                        Swal.showValidationMessage('กรุณากรอกข้อมูลให้ครบ');
-                        return false;
-                    }
-
-                    const startDateTime = new Date(`${date}T${start}:00`);
-                    const endDateTime = new Date(`${date}T${end}:00`);
-
-                    if (startDateTime >= endDateTime) {
-                        Swal.showValidationMessage('เวลาสิ้นสุดต้องมากกว่าเวลาเริ่ม');
-                        return false;
-                    }
-
-                    const result = await callGAS('booking/create', {
-                        roomId,
-                        title,
-                        startTime: startDateTime.toISOString(),
-                        endTime: endDateTime.toISOString(),
-                        attendees,
-                        userName: state.user.displayName,
-                        lineUserId: state.user.lineUserId
-                    });
-
-                    if (!result.success) {
-                        Swal.showValidationMessage(result.message || 'จองไม่สำเร็จ');
-                        return false;
-                    }
-
-                    return result;
-                }
-            }).then(result => {
-                if (result.isConfirmed) {
-                    Swal.fire('สำเร็จ', 'จองห้องประชุมเรียบร้อย', 'success');
-                    loadAdditionalData(); // โหลดข้อมูลใหม่
-                }
-            });
-        };
-
-        // ========== SAVE ROOM (สำหรับ Admin) ==========
-        window.saveRoom = async function(formData) {
-            try {
-                const name = formData.get('name');
-                const capacity = formData.get('capacity');
-                const location = formData.get('location');
-                const description = formData.get('description');
-                const facilities = formData.get('facilities');
-                const imageFile = formData.get('image');
-
-                let imageUrl = '';
-
-                // อัปโหลดรูปภาพ (ถ้ามี)
-                if (imageFile && imageFile.size > 0) {
-                    imageUrl = await uploadImage(imageFile) || '';
-                }
-
-                const result = await callGAS('room/create', {
-                    name,
-                    capacity,
-                    location,
-                    description,
-                    facilities,
-                    imageUrl,
-                    lineUserId: state.user.lineUserId
-                });
-
-                if (result.success) {
-                    showToast('เพิ่มห้องสำเร็จ');
-                    // โหลดห้องใหม่
-                    const roomsResult = await callGAS('rooms', {});
-                    if (roomsResult.success) {
-                        state.rooms = roomsResult.data || [];
-                        renderRooms();
-                    }
-                } else {
-                    showToast(result.message || 'เพิ่มห้องไม่สำเร็จ', 'error');
-                }
-            } catch (error) {
-                console.error('Save room error:', error);
-                showToast('เกิดข้อผิดพลาด', 'error');
+                `).join('');
             }
-        };
 
-        // ========== TAB SWITCHING ==========
-        function switchTab(tab) {
-            $.navItems.forEach(i => i.classList.remove('active'));
-            document.querySelectorAll(`[data-tab="${tab}"]`).forEach(i => i.classList.add('active'));
-        }
+            // ========== จองห้อง ==========
+            window.bookRoom = function(roomId) {
+                if (!user) {
+                    alert('กรุณารอสักครู่ กำลังโหลดข้อมูล');
+                    return;
+                }
+                
+                const room = rooms.find(r => r.roomId === roomId);
+                const date = new Date().toISOString().split('T')[0];
+                
+                const title = prompt('หัวข้อการประชุม:', 'ประชุม');
+                if (!title) return;
+                
+                const start = prompt('เวลาเริ่ม (HH:MM):', '09:00');
+                if (!start) return;
+                
+                const end = prompt('เวลาสิ้นสุด (HH:MM):', '10:00');
+                if (!end) return;
+                
+                const attendees = prompt('จำนวนผู้เข้าร่วม:', '4');
+                
+                callGAS('booking/create', {
+                    roomId,
+                    title,
+                    startTime: new Date(`${date}T${start}:00`).toISOString(),
+                    endTime: new Date(`${date}T${end}:00`).toISOString(),
+                    attendees: parseInt(attendees) || 4,
+                    userName: user.displayName,
+                    lineUserId: user.lineUserId
+                }).then(res => {
+                    alert(res.success ? 'จองสำเร็จ' : (res.message || 'จองไม่สำเร็จ'));
+                    if (res.success) loadStats(user.lineUserId);
+                });
+            };
 
-        // ========== EVENT LISTENERS ==========
-        $.navItems.forEach(item => {
-            item.addEventListener('click', () => switchTab(item.dataset.tab));
-        });
+            window.showRoom = async function(roomId) {
+                const room = rooms.find(r => r.roomId === roomId);
+                if (!room) return;
+                
+                alert(`${room.name}\n📍 ${room.location || 'ไม่มีข้อมูล'}\n👥 รองรับ ${room.capacity} คน\n📝 ${room.description || ''}\n🛠️ ${room.facilities || ''}`);
+            };
 
-        $.navHome.addEventListener('click', () => switchTab('home'));
+            // ========== ค้นหา ==========
+            let searchTimer;
+            searchInput.addEventListener('input', () => {
+                clearTimeout(searchTimer);
+                searchTimer = setTimeout(() => renderRooms(rooms), 200);
+            });
 
-        $.btnQuickBook.addEventListener('click', () => showBookingModal());
-        $.btnToday.addEventListener('click', () => {
-            // เลื่อนไปวันนี้
-        });
-        $.btnAllRooms.addEventListener('click', () => {
-            $.searchInput.value = '';
-            renderRooms();
-        });
+            // ========== Tab切换 ==========
+            document.querySelectorAll('.bottom-nav-item').forEach(item => {
+                item.addEventListener('click', () => {
+                    document.querySelectorAll('.bottom-nav-item').forEach(i => i.classList.remove('active'));
+                    item.classList.add('active');
+                    // TODO: switch tab content
+                });
+            });
 
-        let searchTimer;
-        $.searchInput.addEventListener('input', () => {
-            clearTimeout(searchTimer);
-            searchTimer = setTimeout(renderRooms, 300);
-        });
-
-        // ========== START ==========
-        init();
+            // ========== Global functions ==========
+            window.goHome = function() {
+                document.querySelector('[data-tab="home"]').click();
+            };
+        })();
     </script>
 </body>
 </html>
