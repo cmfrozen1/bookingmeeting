@@ -256,6 +256,7 @@
             justify-content: center;
             gap: 8px;
             transition: all 0.2s;
+            position: relative;
         }
         
         .btn-primary:hover {
@@ -275,7 +276,7 @@
         }
         
         .btn-primary.loading {
-            color: transparent;
+            color: transparent !important;
             pointer-events: none;
             position: relative;
         }
@@ -307,6 +308,7 @@
             justify-content: center;
             gap: 8px;
             transition: all 0.2s;
+            position: relative;
         }
         
         .btn-outline:hover {
@@ -315,7 +317,7 @@
         }
         
         .btn-outline.loading {
-            color: transparent;
+            color: transparent !important;
             pointer-events: none;
             position: relative;
         }
@@ -348,10 +350,32 @@
             justify-content: center;
             gap: 8px;
             transition: all 0.2s;
+            position: relative;
         }
         
         .btn-danger:hover {
             background: #dc2626;
+        }
+        
+        .btn-danger.loading {
+            color: transparent !important;
+            pointer-events: none;
+            position: relative;
+        }
+        
+        .btn-danger.loading::after {
+            content: '';
+            position: absolute;
+            width: 20px;
+            height: 20px;
+            top: 50%;
+            left: 50%;
+            margin-left: -10px;
+            margin-top: -10px;
+            border: 2px solid white;
+            border-top-color: transparent;
+            border-radius: 50%;
+            animation: spin 0.6s linear infinite;
         }
         
         .btn-success {
@@ -362,6 +386,28 @@
             font-weight: 600;
             border: none;
             cursor: pointer;
+            position: relative;
+        }
+        
+        .btn-success.loading {
+            color: transparent !important;
+            pointer-events: none;
+            position: relative;
+        }
+        
+        .btn-success.loading::after {
+            content: '';
+            position: absolute;
+            width: 20px;
+            height: 20px;
+            top: 50%;
+            left: 50%;
+            margin-left: -10px;
+            margin-top: -10px;
+            border: 2px solid white;
+            border-top-color: transparent;
+            border-radius: 50%;
+            animation: spin 0.6s linear infinite;
         }
         
         .btn-warning {
@@ -372,6 +418,28 @@
             font-weight: 600;
             border: none;
             cursor: pointer;
+            position: relative;
+        }
+        
+        .btn-warning.loading {
+            color: transparent !important;
+            pointer-events: none;
+            position: relative;
+        }
+        
+        .btn-warning.loading::after {
+            content: '';
+            position: absolute;
+            width: 20px;
+            height: 20px;
+            top: 50%;
+            left: 50%;
+            margin-left: -10px;
+            margin-top: -10px;
+            border: 2px solid white;
+            border-top-color: transparent;
+            border-radius: 50%;
+            animation: spin 0.6s linear infinite;
         }
         
         .profile-header {
@@ -1611,6 +1679,17 @@
             }, 3000);
         }
 
+        function setButtonLoading(button, isLoading) {
+            if (!button) return;
+            if (isLoading) {
+                button.disabled = true;
+                button.classList.add('loading');
+            } else {
+                button.disabled = false;
+                button.classList.remove('loading');
+            }
+        }
+
         function formatDateThai(dateStr) {
             if (!dateStr) return '';
             const date = new Date(dateStr);
@@ -1914,6 +1993,9 @@
                 return;
             }
             
+            const btn = event.target;
+            setButtonLoading(btn, true);
+            
             const result = await Swal.fire({
                 title: 'รีเซ็ตฐานข้อมูล',
                 text: 'คุณแน่ใจหรือไม่? ข้อมูลทั้งหมดจะถูกลบและกลับสู่ค่าเริ่มต้น',
@@ -1933,6 +2015,8 @@
                     showToast(apiResult.message || 'เกิดข้อผิดพลาด', 'error');
                 }
             }
+            
+            setButtonLoading(btn, false);
         };
 
         // ========== LIFF INIT ==========
@@ -2376,8 +2460,7 @@
             const btn = document.getElementById('save-booking-btn');
             if (btn.disabled) return;
             
-            btn.disabled = true;
-            btn.classList.add('loading');
+            setButtonLoading(btn, true);
 
             try {
                 const id = document.getElementById('edit-booking-id').value;
@@ -2422,8 +2505,7 @@
                 console.error('Save booking error:', error);
                 showToast('เกิดข้อผิดพลาด', 'error');
             } finally {
-                btn.disabled = false;
-                btn.classList.remove('loading');
+                setButtonLoading(btn, false);
             }
         };
 
@@ -2930,8 +3012,7 @@
         }
 
         window.approveBooking = async function(bookingId, btn) {
-            btn.disabled = true;
-            btn.classList.add('loading');
+            setButtonLoading(btn, true);
             
             const result = await callGAS('booking/approve', { bookingId });
             
@@ -2948,13 +3029,11 @@
                 showToast(result.message || 'อนุมัติไม่สำเร็จ', 'error');
             }
             
-            btn.disabled = false;
-            btn.classList.remove('loading');
+            setButtonLoading(btn, false);
         };
 
         window.rejectBooking = async function(bookingId, btn) {
-            btn.disabled = true;
-            btn.classList.add('loading');
+            setButtonLoading(btn, true);
             
             const result = await Swal.fire({
                 title: 'ปฏิเสธการจอง',
@@ -2987,8 +3066,7 @@
                 }
             }
             
-            btn.disabled = false;
-            btn.classList.remove('loading');
+            setButtonLoading(btn, false);
         };
 
         async function loadAllBookings() {
@@ -3092,8 +3170,7 @@
             const role = document.getElementById('user-role').value;
 
             const saveBtn = e.submitter;
-            saveBtn.disabled = true;
-            saveBtn.classList.add('loading');
+            setButtonLoading(saveBtn, true);
 
             const result = await callGAS('admin/user/role', {
                 targetUserId: userId,
@@ -3131,8 +3208,7 @@
                 showToast(result.message || 'อัปเดตไม่สำเร็จ', 'error');
             }
 
-            saveBtn.disabled = false;
-            saveBtn.classList.remove('loading');
+            setButtonLoading(saveBtn, false);
         };
 
         // ========== ROOM MANAGEMENT ==========
@@ -3159,8 +3235,7 @@
             const btn = document.getElementById('save-room-btn');
             if (btn.disabled) return;
             
-            btn.disabled = true;
-            btn.classList.add('loading');
+            setButtonLoading(btn, true);
 
             try {
                 const id = document.getElementById('edit-room-id').value;
@@ -3199,8 +3274,7 @@
                 console.error('Save room error:', error);
                 showToast('เกิดข้อผิดพลาด', 'error');
             } finally {
-                btn.disabled = false;
-                btn.classList.remove('loading');
+                setButtonLoading(btn, false);
             }
         };
 
@@ -3240,8 +3314,7 @@
 
             if (result.isConfirmed) {
                 const deleteBtn = $.modalDeleteBtn;
-                deleteBtn.disabled = true;
-                deleteBtn.classList.add('loading');
+                setButtonLoading(deleteBtn, true);
 
                 const apiResult = await callGAS('room/delete', { 
                     roomId: state.currentRoom.roomId,
@@ -3258,8 +3331,7 @@
                     showToast(apiResult.message || 'ลบไม่สำเร็จ', 'error');
                 }
 
-                deleteBtn.disabled = false;
-                deleteBtn.classList.remove('loading');
+                setButtonLoading(deleteBtn, false);
             }
         };
 
@@ -3348,8 +3420,7 @@
             const reminderMinutes = $.settingReminderMinutes?.value || '30';
 
             const saveBtn = $.settingsSaveBtn;
-            saveBtn.disabled = true;
-            saveBtn.classList.add('loading');
+            setButtonLoading(saveBtn, true);
 
             const data = {
                 appName,
@@ -3368,8 +3439,7 @@
                 showToast(result.message || 'บันทึกไม่สำเร็จ', 'error');
             }
 
-            saveBtn.disabled = false;
-            saveBtn.classList.remove('loading');
+            setButtonLoading(saveBtn, false);
         };
 
         // ========== PROFILE ==========
@@ -3387,8 +3457,7 @@
             e.preventDefault();
             
             const saveBtn = e.submitter;
-            saveBtn.disabled = true;
-            saveBtn.classList.add('loading');
+            setButtonLoading(saveBtn, true);
 
             const data = {
                 phone: document.getElementById('profile-phone').value,
@@ -3405,8 +3474,7 @@
                 showToast(result.message || 'บันทึกไม่สำเร็จ', 'error');
             }
 
-            saveBtn.disabled = false;
-            saveBtn.classList.remove('loading');
+            setButtonLoading(saveBtn, false);
         };
 
         window.logout = function() {
