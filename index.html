@@ -3,33 +3,40 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
-    <title id="page-title">Meeting Room · LINE For Firebase</title>
+    <title id="page-title">Meeting Room · LINE</title>
     <link rel="shortcut icon" href="https://cdn-icons-png.flaticon.com/512/1040/1040244.png">
     
-    <!-- Tailwind CSS -->
-    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <!-- Tailwind CSS - Production Ready (โหลดก่อน) -->
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet" media="print" onload="this.media='all'">
     
-    <!-- Fonts -->
+    <!-- Fonts (โหลดแบบ async) -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@300;400;500;600;700&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
     
-    <!-- LINE LIFF -->
+    <!-- LINE LIFF (โหลดก่อน เพราะจำเป็น) -->
     <script src="https://static.line-scdn.net/liff/edge/2.1/sdk.js"></script>
     
-    <!-- Font Awesome -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Font Awesome (โหลดแบบ async) -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" media="print" onload="this.media='all'">
     
-    <!-- SweetAlert2 -->
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <!-- SweetAlert2 (โหลดแบบ defer) -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11" defer></script>
     
-    <!-- Flatpickr -->
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
-    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
-    <script src="https://npmcdn.com/flatpickr/dist/l10n/th.js"></script>
+    <!-- Flatpickr (โหลดแบบ async) -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css" media="print" onload="this.media='all'">
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr" defer></script>
+    <script src="https://npmcdn.com/flatpickr/dist/l10n/th.js" defer></script>
     
     <style>
-        /* ===== CSS Variables ===== */
+        /* Critical CSS - โหลดก่อนทันที */
+        * {
+            font-family: 'IBM Plex Sans Thai', sans-serif;
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
         :root {
             --primary: #06c755;
             --primary-dark: #05b34a;
@@ -43,23 +50,14 @@
             --danger: #ef4444;
             --warning: #f59e0b;
             --info: #3b82f6;
-            --success: #06c755;
         }
-
-        * {
-            font-family: 'IBM Plex Sans Thai', sans-serif;
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
+        
         body {
             background-color: var(--bg);
             color: var(--text);
             padding-bottom: 70px;
         }
-
-        /* ===== Navbar ===== */
+        
         .navbar {
             position: sticky;
             top: 0;
@@ -69,7 +67,7 @@
             border-bottom: 1px solid var(--border);
             padding: 12px 16px;
         }
-
+        
         .navbar-content {
             max-width: 1200px;
             margin: 0 auto;
@@ -77,19 +75,19 @@
             align-items: center;
             justify-content: space-between;
         }
-
+        
         .navbar-logo {
             display: flex;
             align-items: center;
             gap: 8px;
             cursor: pointer;
         }
-
+        
         .navbar-logo i {
             color: var(--primary);
             font-size: 24px;
         }
-
+        
         .navbar-logo span {
             font-size: 18px;
             font-weight: 600;
@@ -97,8 +95,7 @@
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
         }
-
-        /* ===== Bottom Navigation ===== */
+        
         .bottom-nav {
             position: fixed;
             bottom: 0;
@@ -113,17 +110,7 @@
             backdrop-filter: blur(10px);
             background: rgba(26, 29, 36, 0.95);
         }
-
-        @media (min-width: 1024px) {
-            .bottom-nav {
-                max-width: 400px;
-                left: 50%;
-                transform: translateX(-50%);
-                border-radius: 50px;
-                margin-bottom: 10px;
-            }
-        }
-
+        
         .nav-item {
             flex: 1;
             display: flex;
@@ -133,26 +120,58 @@
             color: var(--text-secondary);
             font-size: 12px;
             cursor: pointer;
-            transition: color 0.2s;
         }
-
+        
         .nav-item.active {
             color: var(--primary);
         }
-
+        
         .nav-item i {
             font-size: 20px;
         }
-
+        
         .tab-content {
             display: none;
         }
-
+        
         .tab-content.active {
             display: block;
         }
-
-        /* ===== Cards ===== */
+        
+        @media (min-width: 1024px) {
+            .rooms-grid {
+                display: grid;
+                grid-template-columns: repeat(3, 1fr);
+                gap: 20px;
+                max-width: 1200px;
+                margin: 0 auto;
+                padding: 0 16px;
+            }
+            
+            .my-bookings-grid {
+                display: grid;
+                grid-template-columns: repeat(2, 1fr);
+                gap: 20px;
+            }
+            
+            .bottom-nav {
+                max-width: 400px;
+                left: 50%;
+                transform: translateX(-50%);
+                border-radius: 50px;
+                margin-bottom: 10px;
+            }
+        }
+        
+        @media (max-width: 1023px) {
+            .rooms-grid, .my-bookings-grid {
+                display: flex;
+                flex-direction: column;
+                gap: 16px;
+                padding: 0 16px;
+            }
+        }
+        
         .room-card {
             background: var(--bg-card);
             border: 1px solid var(--border);
@@ -161,12 +180,12 @@
             cursor: pointer;
             transition: all 0.2s;
         }
-
+        
         .room-card:hover {
             border-color: var(--primary);
             transform: translateY(-2px);
         }
-
+        
         .room-image {
             width: 100%;
             height: 160px;
@@ -176,12 +195,11 @@
             align-items: center;
             justify-content: center;
         }
-
+        
         .room-content {
             padding: 16px;
         }
-
-        /* ===== Badges ===== */
+        
         .badge {
             padding: 4px 10px;
             border-radius: 20px;
@@ -189,46 +207,43 @@
             font-weight: 500;
             display: inline-block;
         }
-
+        
         .badge-available {
             background: rgba(6,199,85,0.15);
             color: var(--primary);
             border: 1px solid rgba(6,199,85,0.3);
         }
-
+        
+        .badge-full {
+            background: rgba(239,68,68,0.15);
+            color: #ef4444;
+            border: 1px solid rgba(239,68,68,0.3);
+        }
+        
         .badge-pending {
             background: rgba(245,158,11,0.15);
             color: #f59e0b;
             border: 1px solid rgba(245,158,11,0.3);
         }
-
+        
         .badge-confirmed {
             background: rgba(6,199,85,0.15);
             color: var(--primary);
             border: 1px solid rgba(6,199,85,0.3);
         }
-
+        
         .badge-cancelled {
             background: rgba(156,163,175,0.15);
             color: #9ca3af;
             border: 1px solid rgba(156,163,175,0.3);
         }
-
+        
         .badge-rejected {
             background: rgba(239,68,68,0.15);
             color: #ef4444;
             border: 1px solid rgba(239,68,68,0.3);
         }
-
-        .capacity-badge {
-            background: var(--primary-light);
-            color: var(--primary);
-            padding: 4px 8px;
-            border-radius: 20px;
-            font-size: 12px;
-        }
-
-        /* ===== Buttons ===== */
+        
         .btn-primary {
             background: var(--primary);
             color: white;
@@ -244,29 +259,29 @@
             transition: all 0.2s;
             position: relative;
         }
-
+        
         .btn-primary:hover {
             background: var(--primary-dark);
             transform: scale(1.02);
         }
-
+        
         .btn-primary:active {
             opacity: 0.8;
             transform: scale(0.98);
         }
-
+        
         .btn-primary:disabled {
             opacity: 0.5;
             cursor: not-allowed;
             transform: none;
         }
-
+        
         .btn-primary.loading {
             color: transparent !important;
             pointer-events: none;
             position: relative;
         }
-
+        
         .btn-primary.loading::after {
             content: '';
             position: absolute;
@@ -281,7 +296,7 @@
             border-radius: 50%;
             animation: spin 0.6s linear infinite;
         }
-
+        
         .btn-outline {
             background: transparent;
             border: 1px solid var(--border);
@@ -296,18 +311,18 @@
             transition: all 0.2s;
             position: relative;
         }
-
+        
         .btn-outline:hover {
             background: rgba(255,255,255,0.05);
             border-color: var(--primary);
         }
-
+        
         .btn-outline.loading {
             color: transparent !important;
             pointer-events: none;
             position: relative;
         }
-
+        
         .btn-outline.loading::after {
             content: '';
             position: absolute;
@@ -322,7 +337,7 @@
             border-radius: 50%;
             animation: spin 0.6s linear infinite;
         }
-
+        
         .btn-danger {
             background: #ef4444;
             color: white;
@@ -338,17 +353,17 @@
             transition: all 0.2s;
             position: relative;
         }
-
+        
         .btn-danger:hover {
             background: #dc2626;
         }
-
+        
         .btn-danger.loading {
             color: transparent !important;
             pointer-events: none;
             position: relative;
         }
-
+        
         .btn-danger.loading::after {
             content: '';
             position: absolute;
@@ -363,7 +378,7 @@
             border-radius: 50%;
             animation: spin 0.6s linear infinite;
         }
-
+        
         .btn-success {
             background: #28a745;
             color: white;
@@ -372,24 +387,15 @@
             font-weight: 600;
             border: none;
             cursor: pointer;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
-            transition: all 0.2s;
             position: relative;
         }
-
-        .btn-success:hover {
-            background: #218838;
-        }
-
+        
         .btn-success.loading {
             color: transparent !important;
             pointer-events: none;
             position: relative;
         }
-
+        
         .btn-success.loading::after {
             content: '';
             position: absolute;
@@ -404,30 +410,7 @@
             border-radius: 50%;
             animation: spin 0.6s linear infinite;
         }
-
-        .filter-btn {
-            padding: 8px 16px;
-            border-radius: 20px;
-            background: var(--bg-card);
-            border: 1px solid var(--border);
-            color: var(--text-secondary);
-            font-size: 13px;
-            white-space: nowrap;
-            cursor: pointer;
-            transition: all 0.2s;
-        }
-
-        .filter-btn:hover {
-            border-color: var(--primary);
-        }
-
-        .filter-btn.active {
-            background: var(--primary);
-            color: white;
-            border-color: var(--primary);
-        }
-
-        /* ===== Profile ===== */
+        
         .profile-header {
             background: var(--bg-card);
             border-radius: 20px;
@@ -443,11 +426,11 @@
             margin-right: auto;
             transition: all 0.2s;
         }
-
+        
         .profile-header:hover {
             border-color: var(--primary);
         }
-
+        
         .profile-avatar {
             width: 60px;
             height: 60px;
@@ -455,8 +438,7 @@
             border: 3px solid var(--primary);
             object-fit: cover;
         }
-
-        /* ===== Stats ===== */
+        
         .stat-card {
             background: var(--bg-card);
             border: 1px solid var(--border);
@@ -464,8 +446,541 @@
             padding: 16px;
             text-align: center;
         }
+        
+        .search-box {
+            position: relative;
+            max-width: 1200px;
+            margin: 0 auto 16px;
+            padding: 0 16px;
+        }
+        
+        .search-box input {
+            width: 100%;
+            padding: 12px 12px 12px 44px;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 30px;
+            color: var(--text);
+            transition: all 0.2s;
+        }
+        
+        .search-box input:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 2px rgba(6,199,85,0.2);
+        }
+        
+        .search-box i {
+            position: absolute;
+            left: 28px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-secondary);
+        }
+        
+        .modal {
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.98);
+            z-index: 1000;
+            display: none;
+        }
+        
+        .modal.active {
+            display: flex;
+        }
+        
+        .modal-content {
+            background: var(--bg-card);
+            width: 100%;
+            height: 100vh;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        @media (min-width: 768px) {
+            .modal-content {
+                width: 90%;
+                max-width: 800px;
+                height: 90vh;
+                margin: 20px auto;
+                border-radius: 24px;
+            }
+        }
+        
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 16px;
+            border-bottom: 1px solid var(--border);
+        }
+        
+        .modal-title {
+            font-size: 20px;
+            font-weight: 600;
+            line-clamp: 2;
+            padding-right: 16px;
+        }
+        
+        .modal-close {
+            color: var(--text-secondary);
+            font-size: 24px;
+            cursor: pointer;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.05);
+            transition: all 0.2s;
+        }
+        
+        .modal-close:hover {
+            background: rgba(255,255,255,0.1);
+            color: var(--primary);
+        }
+        
+        .modal-body {
+            flex: 1;
+            overflow-y: auto;
+            padding: 16px;
+        }
+        
+        .modal-body::-webkit-scrollbar {
+            width: 4px;
+        }
+        
+        .modal-body::-webkit-scrollbar-thumb {
+            background: var(--primary);
+            border-radius: 2px;
+        }
+        
+        .modal-footer {
+            display: flex;
+            gap: 8px;
+            padding: 16px;
+            border-top: 1px solid var(--border);
+        }
+        
+        .modal-footer button {
+            flex: 1;
+        }
+        
+        .input-field {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            color: var(--text);
+            border-radius: 12px;
+            padding: 12px;
+            width: 100%;
+            margin-bottom: 12px;
+            transition: all 0.2s;
+        }
+        
+        .input-field:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 2px rgba(6,199,85,0.2);
+        }
+        
+        .empty-state {
+            text-align: center;
+            padding: 40px 20px;
+            background: var(--bg-card);
+            border-radius: 20px;
+            border: 1px solid var(--border);
+        }
+        
+        .hidden {
+            display: none !important;
+        }
+        
+        .line-clamp-2 {
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+        
+        .initial-loading {
+            position: fixed;
+            inset: 0;
+            background: var(--bg);
+            z-index: 2000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: opacity 0.3s;
+        }
+        
+        .initial-loading.hide {
+            opacity: 0;
+            pointer-events: none;
+        }
+        
+        .loading-spinner {
+            width: 60px;
+            height: 60px;
+            border: 4px solid var(--border);
+            border-top-color: var(--primary);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        .floating-book-btn {
+            position: fixed;
+            bottom: 90px;
+            right: 20px;
+            background: var(--primary);
+            color: white;
+            width: 60px;
+            height: 60px;
+            border-radius: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 15px rgba(6,199,85,0.3);
+            cursor: pointer;
+            z-index: 100;
+            transition: all 0.2s;
+        }
+        
+        .floating-book-btn:hover {
+            transform: scale(1.1);
+            box-shadow: 0 6px 20px rgba(6,199,85,0.4);
+        }
+        
+        .time-slot {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 10px;
+            margin-bottom: 8px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .time-slot.unavailable {
+            opacity: 0.5;
+            background: rgba(239,68,68,0.1);
+            border-color: rgba(239,68,68,0.3);
+        }
+        
+        .admin-section {
+            background: linear-gradient(135deg, rgba(6,199,85,0.1), transparent);
+            border: 1px solid var(--primary);
+            border-radius: 16px;
+            padding: 16px;
+            margin-bottom: 16px;
+        }
+        
+        .admin-stat {
+            background: var(--bg-card);
+            padding: 12px;
+            border-radius: 12px;
+            text-align: center;
+        }
+        
+        .user-row {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            margin-bottom: 8px;
+            transition: all 0.2s;
+        }
+        
+        .user-row:hover {
+            border-color: var(--primary);
+        }
+        
+        .user-avatar-sm {
+            width: 40px;
+            height: 40px;
+            border-radius: 20px;
+            object-fit: cover;
+        }
+        
+        .role-badge {
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 10px;
+            font-weight: 600;
+        }
+        
+        .role-admin {
+            background: rgba(239,68,68,0.2);
+            color: #ef4444;
+        }
+        
+        .role-manager {
+            background: rgba(245,158,11,0.2);
+            color: #f59e0b;
+        }
+        
+        .role-user {
+            background: rgba(107,114,128,0.2);
+            color: #9ca3af;
+        }
+        
+        .admin-tab-btn {
+            padding: 12px;
+            border-bottom: 2px solid transparent;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .admin-tab-btn.active {
+            border-bottom-color: var(--primary);
+            color: var(--primary);
+            font-weight: 600;
+        }
+        
+        .upload-area {
+            border: 2px dashed var(--border);
+            border-radius: 12px;
+            padding: 20px;
+            text-align: center;
+            margin-bottom: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .upload-area:hover {
+            border-color: var(--primary);
+            background: rgba(6,199,85,0.05);
+        }
+        
+        .image-preview {
+            width: 100%;
+            max-height: 200px;
+            object-fit: cover;
+            border-radius: 12px;
+            margin-top: 12px;
+            display: none;
+        }
 
-        /* ===== Quick Actions ===== */
+        #navbar-app-name {
+            background: linear-gradient(135deg, #fff, var(--primary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .skeleton-card {
+            background: linear-gradient(90deg, var(--bg-card) 25%, #252930 50%, var(--bg-card) 75%);
+            background-size: 200% 100%;
+            animation: loading 1.5s infinite;
+            border-radius: 20px;
+            height: 200px;
+        }
+        
+        @keyframes loading {
+            0% { background-position: 200% 0; }
+            100% { background-position: -200% 0; }
+        }
+        
+        /* ===== ปฏิทิน ===== */
+        .calendar-container {
+            background: var(--bg-card);
+            border-radius: 24px;
+            padding: 20px;
+            margin: 16px;
+            border: 1px solid var(--border);
+        }
+        
+        .calendar-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        
+        .calendar-month {
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--primary);
+        }
+        
+        .calendar-nav-btn {
+            background: transparent;
+            border: 1px solid var(--border);
+            color: var(--text);
+            width: 36px;
+            height: 36px;
+            border-radius: 18px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+        }
+        
+        .calendar-nav-btn:hover {
+            border-color: var(--primary);
+            color: var(--primary);
+        }
+        
+        .calendar-weekdays {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            text-align: center;
+            margin-bottom: 10px;
+            color: var(--text-secondary);
+            font-size: 14px;
+            font-weight: 500;
+        }
+        
+        .calendar-days {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 4px;
+        }
+        
+        .calendar-day {
+            aspect-ratio: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background: var(--bg);
+            border-radius: 12px;
+            cursor: pointer;
+            font-size: 14px;
+            position: relative;
+            transition: all 0.2s;
+            border: 1px solid transparent;
+        }
+        
+        .calendar-day:hover {
+            border-color: var(--primary);
+            transform: scale(1.02);
+        }
+        
+        .calendar-day.today {
+            border: 2px solid var(--primary);
+            font-weight: bold;
+        }
+        
+        .calendar-day.selected {
+            background: var(--primary);
+            color: white;
+        }
+        
+        .calendar-day.other-month {
+            opacity: 0.3;
+        }
+        
+        .calendar-day.has-booking {
+            background: rgba(6,199,85,0.1);
+            border: 1px solid var(--primary);
+        }
+        
+        .calendar-day.has-booking::after {
+            content: '';
+            position: absolute;
+            bottom: 4px;
+            width: 4px;
+            height: 4px;
+            border-radius: 2px;
+            background: var(--primary);
+        }
+        
+        .calendar-day.has-booking.multiple::after {
+            width: 8px;
+            background: var(--warning);
+        }
+        
+        .booking-indicator {
+            display: flex;
+            gap: 2px;
+            justify-content: center;
+            margin-top: 2px;
+        }
+        
+        .booking-dot {
+            width: 4px;
+            height: 4px;
+            border-radius: 2px;
+            background: var(--primary);
+        }
+        
+        .booking-dot.multiple {
+            width: 6px;
+            height: 6px;
+            background: var(--warning);
+        }
+        
+        .date-bookings-list {
+            margin-top: 20px;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        
+        .date-booking-item {
+            background: var(--bg);
+            border-radius: 12px;
+            padding: 12px;
+            margin-bottom: 8px;
+            border-left: 4px solid var(--primary);
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .date-booking-item:hover {
+            background: #252930;
+            transform: translateX(4px);
+        }
+        
+        .date-booking-item.pending {
+            border-left-color: var(--warning);
+        }
+        
+        .date-booking-time {
+            font-size: 12px;
+            color: var(--text-secondary);
+        }
+        
+        .date-booking-title {
+            font-weight: 600;
+            margin: 4px 0;
+        }
+        
+        .date-booking-room {
+            font-size: 12px;
+            color: var(--primary);
+        }
+        
+        .capacity-badge {
+            background: var(--primary-light);
+            color: var(--primary);
+            padding: 4px 8px;
+            border-radius: 20px;
+            font-size: 12px;
+        }
+        
+        .facility-tag {
+            background: rgba(255,255,255,0.05);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            padding: 4px 12px;
+            font-size: 11px;
+            color: var(--text-secondary);
+            display: inline-block;
+            margin-right: 6px;
+            margin-bottom: 6px;
+        }
+
         .quick-actions {
             display: flex;
             gap: 8px;
@@ -500,375 +1015,35 @@
             color: var(--text-secondary);
         }
 
-        /* ===== Search ===== */
-        .search-box {
-            position: relative;
-            max-width: 1200px;
-            margin: 0 auto 16px;
-            padding: 0 16px;
-        }
-
-        .search-box input {
-            width: 100%;
-            padding: 12px 12px 12px 44px;
-            background: var(--bg-card);
-            border: 1px solid var(--border);
-            border-radius: 30px;
-            color: var(--text);
-            transition: all 0.2s;
-        }
-
-        .search-box input:focus {
-            outline: none;
-            border-color: var(--primary);
-            box-shadow: 0 0 0 2px rgba(6,199,85,0.2);
-        }
-
-        .search-box i {
+        .loading-overlay {
             position: absolute;
-            left: 28px;
-            top: 50%;
-            transform: translateY(-50%);
-            color: var(--text-secondary);
-        }
-
-        /* ===== Modal ===== */
-        .modal {
-            position: fixed;
             inset: 0;
-            background: rgba(0,0,0,0.98);
-            z-index: 1000;
-            display: none;
-        }
-
-        .modal.active {
-            display: flex;
-        }
-
-        .modal-content {
-            background: var(--bg-card);
-            width: 100%;
-            height: 100vh;
-            overflow-y: auto;
-            display: flex;
-            flex-direction: column;
-        }
-
-        @media (min-width: 768px) {
-            .modal-content {
-                width: 90%;
-                max-width: 800px;
-                height: 90vh;
-                margin: 20px auto;
-                border-radius: 24px;
-            }
-        }
-
-        .modal-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 16px;
-            border-bottom: 1px solid var(--border);
-        }
-
-        .modal-title {
-            font-size: 20px;
-            font-weight: 600;
-        }
-
-        .modal-close {
-            color: var(--text-secondary);
-            font-size: 24px;
-            cursor: pointer;
-            width: 40px;
-            height: 40px;
+            background: rgba(0,0,0,0.7);
             display: flex;
             align-items: center;
             justify-content: center;
+            z-index: 10;
+            border-radius: inherit;
+        }
+        
+        .loading-spinner-small {
+            width: 30px;
+            height: 30px;
+            border: 3px solid var(--border);
+            border-top-color: var(--primary);
             border-radius: 50%;
-            background: rgba(255,255,255,0.05);
-            transition: all 0.2s;
+            animation: spin 0.6s linear infinite;
         }
 
-        .modal-close:hover {
-            background: rgba(255,255,255,0.1);
-            color: var(--primary);
-        }
-
-        .modal-body {
-            flex: 1;
-            overflow-y: auto;
-            padding: 16px;
-        }
-
-        .modal-body::-webkit-scrollbar {
-            width: 4px;
-        }
-
-        .modal-body::-webkit-scrollbar-thumb {
-            background: var(--primary);
-            border-radius: 2px;
-        }
-
-        .modal-footer {
-            display: flex;
-            gap: 8px;
-            padding: 16px;
-            border-top: 1px solid var(--border);
-        }
-
-        .modal-footer button {
-            flex: 1;
-        }
-
-        /* ===== Forms ===== */
-        .input-field {
-            background: var(--bg-card);
-            border: 1px solid var(--border);
-            color: var(--text);
-            border-radius: 12px;
-            padding: 12px;
+        .room-image img {
             width: 100%;
-            margin-bottom: 12px;
-            transition: all 0.2s;
-        }
-
-        .input-field:focus {
-            outline: none;
-            border-color: var(--primary);
-            box-shadow: 0 0 0 2px rgba(6,199,85,0.2);
-        }
-
-        .input-field::placeholder {
-            color: var(--text-secondary);
-            opacity: 0.5;
-        }
-
-        /* ===== Calendar ===== */
-        .calendar-container {
-            background: var(--bg-card);
-            border-radius: 24px;
-            padding: 20px;
-            margin: 16px;
-            border: 1px solid var(--border);
-        }
-
-        .calendar-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 20px;
-        }
-
-        .calendar-month {
-            font-size: 18px;
-            font-weight: 600;
-            color: var(--primary);
-        }
-
-        .calendar-nav-btn {
-            background: transparent;
-            border: 1px solid var(--border);
-            color: var(--text);
-            width: 36px;
-            height: 36px;
-            border-radius: 18px;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: all 0.2s;
-        }
-
-        .calendar-nav-btn:hover {
-            border-color: var(--primary);
-            color: var(--primary);
-        }
-
-        .calendar-weekdays {
-            display: grid;
-            grid-template-columns: repeat(7, 1fr);
-            text-align: center;
-            margin-bottom: 10px;
-            color: var(--text-secondary);
-            font-size: 14px;
-            font-weight: 500;
-        }
-
-        .calendar-days {
-            display: grid;
-            grid-template-columns: repeat(7, 1fr);
-            gap: 4px;
-        }
-
-        .calendar-day {
-            aspect-ratio: 1;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            background: var(--bg);
-            border-radius: 12px;
-            cursor: pointer;
-            font-size: 14px;
-            position: relative;
-            transition: all 0.2s;
-            border: 1px solid transparent;
-        }
-
-        .calendar-day:hover {
-            border-color: var(--primary);
-            transform: scale(1.02);
-        }
-
-        .calendar-day.today {
-            border: 2px solid var(--primary);
-            font-weight: bold;
-        }
-
-        .calendar-day.selected {
-            background: var(--primary);
-            color: white;
-        }
-
-        .calendar-day.other-month {
-            opacity: 0.3;
-        }
-
-        .calendar-day.has-booking {
-            background: rgba(6,199,85,0.1);
-            border: 1px solid var(--primary);
-        }
-
-        .calendar-day.has-booking::after {
-            content: '';
-            position: absolute;
-            bottom: 4px;
-            width: 4px;
-            height: 4px;
-            border-radius: 2px;
-            background: var(--primary);
-        }
-
-        .calendar-day.has-booking.multiple::after {
-            width: 8px;
-            background: var(--warning);
-        }
-
-        .date-bookings-list {
-            margin-top: 20px;
-            max-height: 300px;
-            overflow-y: auto;
-        }
-
-        .date-booking-item {
-            background: var(--bg);
-            border-radius: 12px;
-            padding: 12px;
-            margin-bottom: 8px;
-            border-left: 4px solid var(--primary);
-            cursor: pointer;
-            transition: all 0.2s;
-        }
-
-        .date-booking-item:hover {
-            background: #252930;
-            transform: translateX(4px);
-        }
-
-        .date-booking-item.pending {
-            border-left-color: var(--warning);
-        }
-
-        .date-booking-time {
-            font-size: 12px;
-            color: var(--text-secondary);
-        }
-
-        .date-booking-title {
-            font-weight: 600;
-            margin: 4px 0;
-        }
-
-        .date-booking-room {
-            font-size: 12px;
-            color: var(--primary);
-        }
-
-        /* ===== Admin ===== */
-        .admin-section {
-            background: linear-gradient(135deg, rgba(6,199,85,0.1), transparent);
-            border: 1px solid var(--primary);
-            border-radius: 16px;
-            padding: 16px;
-            margin-bottom: 16px;
-        }
-
-        .admin-stat {
-            background: var(--bg-card);
-            padding: 12px;
-            border-radius: 12px;
-            text-align: center;
-        }
-
-        .user-row {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            padding: 12px;
-            background: var(--bg-card);
-            border: 1px solid var(--border);
-            border-radius: 12px;
-            margin-bottom: 8px;
-            transition: all 0.2s;
-        }
-
-        .user-row:hover {
-            border-color: var(--primary);
-        }
-
-        .user-avatar-sm {
-            width: 40px;
-            height: 40px;
-            border-radius: 20px;
+            height: 100%;
             object-fit: cover;
         }
 
-        .role-badge {
-            padding: 4px 8px;
-            border-radius: 12px;
-            font-size: 10px;
-            font-weight: 600;
-        }
-
-        .role-admin {
-            background: rgba(239,68,68,0.2);
-            color: #ef4444;
-        }
-
-        .role-manager {
-            background: rgba(245,158,11,0.2);
-            color: #f59e0b;
-        }
-
-        .role-user {
-            background: rgba(107,114,128,0.2);
-            color: #9ca3af;
-        }
-
-        .admin-tab-btn {
-            padding: 12px;
-            border-bottom: 2px solid transparent;
-            cursor: pointer;
-            transition: all 0.2s;
-            white-space: nowrap;
-        }
-
-        .admin-tab-btn.active {
-            border-bottom-color: var(--primary);
+        .room-image i {
+            font-size: 48px;
             color: var(--primary);
-            font-weight: 600;
         }
 
         .room-management-item {
@@ -894,171 +1069,15 @@
             display: flex;
             gap: 8px;
         }
-
-        /* ===== Upload ===== */
-        .upload-area {
-            border: 2px dashed var(--border);
-            border-radius: 12px;
-            padding: 20px;
-            text-align: center;
-            margin-bottom: 12px;
-            cursor: pointer;
-            transition: all 0.2s;
-        }
-
-        .upload-area:hover {
-            border-color: var(--primary);
-            background: rgba(6,199,85,0.05);
-        }
-
-        .image-preview {
-            width: 100%;
-            max-height: 200px;
-            object-fit: cover;
-            border-radius: 12px;
-            margin-top: 12px;
-            display: none;
-        }
-
-        /* ===== Facility Tags ===== */
-        .facility-tag {
-            background: rgba(255,255,255,0.05);
-            border: 1px solid var(--border);
-            border-radius: 20px;
-            padding: 4px 12px;
-            font-size: 11px;
-            color: var(--text-secondary);
-            display: inline-block;
-            margin-right: 6px;
-            margin-bottom: 6px;
-        }
-
-        /* ===== Loading ===== */
-        .initial-loading {
-            position: fixed;
-            inset: 0;
-            background: var(--bg);
-            z-index: 2000;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            transition: opacity 0.3s;
-        }
-
-        .initial-loading.hide {
-            opacity: 0;
-            pointer-events: none;
-        }
-
-        .loading-spinner {
-            width: 60px;
-            height: 60px;
-            border: 4px solid var(--border);
-            border-top-color: var(--primary);
-            border-radius: 50%;
-            animation: spin 0.8s linear infinite;
-        }
-
-        .loading-spinner-small {
-            width: 30px;
-            height: 30px;
-            border: 3px solid var(--border);
-            border-top-color: var(--primary);
-            border-radius: 50%;
-            animation: spin 0.6s linear infinite;
-        }
-
-        @keyframes spin {
-            to { transform: rotate(360deg); }
-        }
-
+        
+        /* Animation keyframes */
         @keyframes slideUp {
             from { transform: translateY(100%); opacity: 0; }
             to { transform: translateY(0); opacity: 1; }
         }
-
         @keyframes slideDown {
             from { transform: translateY(0); opacity: 1; }
             to { transform: translateY(100%); opacity: 0; }
-        }
-
-        .skeleton-card {
-            background: linear-gradient(90deg, var(--bg-card) 25%, #252930 50%, var(--bg-card) 75%);
-            background-size: 200% 100%;
-            animation: loading 1.5s infinite;
-            border-radius: 20px;
-            height: 200px;
-        }
-
-        @keyframes loading {
-            0% { background-position: 200% 0; }
-            100% { background-position: -200% 0; }
-        }
-
-        /* ===== Floating Button ===== */
-        .floating-book-btn {
-            position: fixed;
-            bottom: 90px;
-            right: 20px;
-            background: var(--primary);
-            color: white;
-            width: 60px;
-            height: 60px;
-            border-radius: 30px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            box-shadow: 0 4px 15px rgba(6,199,85,0.3);
-            cursor: pointer;
-            z-index: 100;
-            transition: all 0.2s;
-        }
-
-        .floating-book-btn:hover {
-            transform: scale(1.1);
-            box-shadow: 0 6px 20px rgba(6,199,85,0.4);
-        }
-
-        /* ===== Grid Layouts ===== */
-        @media (min-width: 1024px) {
-            .rooms-grid {
-                display: grid;
-                grid-template-columns: repeat(3, 1fr);
-                gap: 20px;
-                max-width: 1200px;
-                margin: 0 auto;
-                padding: 0 16px;
-            }
-            
-            .my-bookings-grid {
-                display: grid;
-                grid-template-columns: repeat(2, 1fr);
-                gap: 20px;
-                max-width: 1200px;
-                margin: 0 auto;
-                padding: 0 16px;
-            }
-        }
-        
-        @media (max-width: 1023px) {
-            .rooms-grid, .my-bookings-grid {
-                display: flex;
-                flex-direction: column;
-                gap: 16px;
-                padding: 0 16px;
-            }
-        }
-
-        .hidden {
-            display: none !important;
-        }
-
-        .line-clamp-2 {
-            display: -webkit-box;
-            -webkit-line-clamp: 2;
-            -webkit-box-orient: vertical;
-            overflow: hidden;
         }
     </style>
 </head>
@@ -1066,7 +1085,7 @@
     <!-- Initial Loading -->
     <div class="initial-loading" id="initial-loading">
         <div class="loading-spinner"></div>
-        <div class="mt-4 text-[#06c755] font-medium">กำลังโหลด...</div>
+        <div class="loading-text mt-4 text-[#06c755]">กำลังโหลด...</div>
     </div>
     
     <!-- Floating Book Button -->
@@ -1091,12 +1110,12 @@
             <!-- Profile Header -->
             <div class="profile-header" id="profile-header">
                 <img id="profile-avatar" src="https://via.placeholder.com/60/2a2e36/06c755?text=..." alt="avatar" class="profile-avatar">
-                <div class="flex-1 min-w-0">
-                    <h2 id="profile-name" class="text-lg font-bold truncate">กำลังโหลด...</h2>
-                    <p id="profile-email" class="text-sm text-gray-400 truncate"></p>
+                <div class="flex-1">
+                    <h2 id="profile-name" class="text-lg font-bold">กำลังโหลด...</h2>
+                    <p id="profile-email" class="text-sm text-gray-400"></p>
                     <p id="profile-role" class="text-xs text-[#06c755] mt-1"></p>
                 </div>
-                <i class="fas fa-chevron-down text-gray-400 flex-shrink-0"></i>
+                <i class="fas fa-chevron-down text-gray-400"></i>
             </div>
 
             <!-- Quick Actions -->
@@ -1154,7 +1173,8 @@
                 </div>
                 
                 <div class="calendar-days" id="calendar-days">
-                    <!-- Calendar days will be rendered here -->
+                    <!-- Skeleton for calendar -->
+                    ${Array(35).fill(0).map(() => '<div class="calendar-day skeleton"></div>').join('')}
                 </div>
                 
                 <!-- Selected Date Bookings -->
@@ -1188,7 +1208,7 @@
             </div>
             
             <!-- Filter tabs -->
-            <div class="flex gap-2 overflow-x-auto px-4 mb-4 pb-1">
+            <div class="flex gap-2 overflow-x-auto px-4 mb-4">
                 <button class="filter-btn active" data-booking-filter="all">ทั้งหมด</button>
                 <button class="filter-btn" data-booking-filter="confirmed">อนุมัติแล้ว</button>
                 <button class="filter-btn" data-booking-filter="pending">รออนุมัติ</button>
@@ -1204,8 +1224,8 @@
             <div class="max-w-7xl mx-auto px-4">
                 <div class="flex justify-between items-center mb-4">
                     <h2 class="text-xl font-bold text-[#06c755]">จัดการระบบ</h2>
-                    <button id="refresh-admin" class="text-[#06c755] text-sm flex items-center gap-1">
-                        <i class="fas fa-sync-alt"></i>รีเฟรช
+                    <button id="refresh-admin" class="text-[#06c755] text-sm">
+                        <i class="fas fa-sync-alt mr-1"></i>รีเฟรช
                     </button>
                 </div>
 
@@ -1260,7 +1280,7 @@
 
                 <!-- Admin: Rooms -->
                 <div id="admin-rooms-tab" class="admin-tab hidden">
-                    <button class="btn-primary w-full mb-4" onclick="showCreateRoomModal()">
+                    <button class="btn-primary mb-4" onclick="showCreateRoomModal()">
                         <i class="fas fa-plus mr-2"></i>เพิ่มห้องใหม่
                     </button>
                     <div id="rooms-management-list" class="space-y-3"></div>
@@ -1293,7 +1313,7 @@
                             <label class="block text-sm text-gray-400 mb-1">แจ้งเตือนล่วงหน้า (นาที)</label>
                             <select id="setting-reminder-minutes" class="input-field">
                                 <option value="15">15 นาที</option>
-                                <option value="30">30 นาที</option>
+                                <option value="30" selected>30 นาที</option>
                                 <option value="60">1 ชั่วโมง</option>
                                 <option value="120">2 ชั่วโมง</option>
                             </select>
@@ -1304,12 +1324,209 @@
                     
                     <!-- Database Reset (Admin Only) -->
                     <div class="admin-section border-red-500/30">
-                        <h3 class="font-semibold mb-3 text-red-500">⚠️ เครื่องมือสำหรับผู้ดูแล</h3>
+                        <h3 class="font-semibold mb-3 text-red-500">เครื่องมือสำหรับผู้ดูแล</h3>
                         <button onclick="resetDatabase()" class="btn-danger w-full">
-                            <i class="fas fa-database mr-2"></i>รีเซ็ตฐานข้อมูล
+                            <i class="fas fa-database mr-2"></i>รีเซ็ตฐานข้อมูล (ล้างข้อมูลทั้งหมด)
                         </button>
                         <p class="text-xs text-gray-400 mt-2">คำเตือน: การกดปุ่มนี้จะล้างข้อมูลทั้งหมดและตั้งค่าเริ่มต้นใหม่</p>
                     </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Room Detail Modal -->
+        <div class="modal" id="room-modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3 class="modal-title" id="modal-title">กำลังโหลด...</h3>
+                    <button class="modal-close" onclick="closeModal()">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div class="modal-body" id="modal-body">
+                    <div class="flex justify-center items-center py-10">
+                        <div class="loading-spinner w-10 h-10"></div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn-primary" onclick="showBookingModal(state.currentRoom?.roomId)" id="modal-book-btn">
+                        <i class="fas fa-calendar-check"></i> จองห้อง
+                    </button>
+                    <button class="btn-outline" onclick="closeModal()">ปิด</button>
+                </div>
+                <div id="modal-admin-controls" class="px-4 pb-4 hidden">
+                    <p class="text-sm text-gray-400 mb-2">จัดการห้อง</p>
+                    <div class="flex gap-2">
+                        <button id="modal-edit-btn" class="btn-outline flex-1 text-sm" onclick="editCurrentRoom()" disabled>
+                            <i class="fas fa-edit mr-2"></i>แก้ไข
+                        </button>
+                        <button id="modal-delete-btn" class="btn-danger flex-1 text-sm" onclick="deleteCurrentRoom()" disabled>
+                            <i class="fas fa-trash mr-2"></i>ลบ
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Booking Detail Modal -->
+        <div class="modal" id="booking-modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3 class="modal-title">รายละเอียดการจอง</h3>
+                    <button class="modal-close" onclick="closeBookingDetailModal()">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div class="modal-body" id="booking-modal-body">
+                    <div class="flex justify-center items-center py-10">
+                        <div class="loading-spinner w-10 h-10"></div>
+                    </div>
+                </div>
+                <div class="modal-footer" id="booking-modal-footer">
+                    <button class="btn-outline" onclick="closeBookingDetailModal()">ปิด</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Create/Edit Booking Modal (มีวันที่สิ้นสุด) -->
+        <div class="modal" id="booking-create-modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3 class="modal-title" id="booking-modal-title">จองห้องประชุม</h3>
+                    <button class="modal-close" onclick="closeBookingCreateModal()">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <form id="booking-form" onsubmit="saveBooking(event)">
+                        <input type="hidden" id="edit-booking-id">
+                        <select id="booking-room" class="input-field" required>
+                            <option value="">เลือกห้องประชุม</option>
+                        </select>
+                        <input type="text" id="booking-title" placeholder="หัวข้อการประชุม" class="input-field" required maxlength="100">
+                        <textarea id="booking-description" placeholder="รายละเอียด (เช่น วัตถุประสงค์, จำนวนผู้เข้าร่วม)" class="input-field" rows="3" maxlength="500"></textarea>
+                        
+                        <!-- ลิงค์ประชุม -->
+                        <input type="text" id="booking-meeting-link" placeholder="ลิงค์ประชุม (Zoom, Teams, etc.)" class="input-field">
+                        
+                        <div class="grid grid-cols-2 gap-2">
+                            <div>
+                                <label class="text-xs text-gray-400 mb-1 block">วันที่เริ่ม</label>
+                                <input type="text" id="booking-date" class="input-field" placeholder="เลือกวันที่เริ่ม" required readonly>
+                            </div>
+                            <div>
+                                <label class="text-xs text-gray-400 mb-1 block">วันที่สิ้นสุด</label>
+                                <input type="text" id="booking-end-date" class="input-field" placeholder="เลือกวันที่สิ้นสุด" required readonly>
+                            </div>
+                        </div>
+                        
+                        <div class="grid grid-cols-2 gap-2">
+                            <div>
+                                <label class="text-xs text-gray-400 mb-1 block">เวลาเริ่ม</label>
+                                <input type="text" id="booking-start" class="input-field" placeholder="เลือกเวลา" required readonly>
+                            </div>
+                            <div>
+                                <label class="text-xs text-gray-400 mb-1 block">เวลาสิ้นสุด</label>
+                                <input type="text" id="booking-end" class="input-field" placeholder="เลือกเวลา" required readonly>
+                            </div>
+                        </div>
+                        
+                        <div class="grid grid-cols-2 gap-2">
+                            <div>
+                                <label class="text-xs text-gray-400 mb-1 block">จำนวนผู้เข้าร่วม</label>
+                                <input type="number" id="booking-attendees" class="input-field" placeholder="จำนวน" min="1" value="4">
+                            </div>
+                        </div>
+                        
+                        <div id="availability-status" class="text-sm mb-3 hidden"></div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="submit" form="booking-form" class="btn-primary flex-1" id="save-booking-btn">จอง</button>
+                    <button type="button" class="btn-outline flex-1" onclick="closeBookingCreateModal()">ยกเลิก</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Create/Edit Room Modal -->
+        <div class="modal" id="room-create-modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3 class="modal-title" id="room-modal-title">เพิ่มห้องใหม่</h3>
+                    <button class="modal-close" onclick="closeRoomModal()">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <form id="room-form" onsubmit="saveRoom(event)">
+                        <input type="hidden" id="edit-room-id">
+                        <input type="text" id="room-name" placeholder="ชื่อห้อง" class="input-field" required maxlength="50">
+                        <input type="number" id="room-capacity" placeholder="ความจุ (คน)" class="input-field" required min="1">
+                        <input type="text" id="room-location" placeholder="สถานที่/ชั้น" class="input-field" required>
+                        <textarea id="room-description" placeholder="รายละเอียดห้อง" class="input-field" rows="3"></textarea>
+                        <input type="text" id="room-facilities" placeholder="สิ่งอำนวยความสะดวก (คั่นด้วย , เช่น โปรเจคเตอร์, จอ, ไวท์บอร์ด)" class="input-field">
+                        
+                        <div class="upload-area" onclick="document.getElementById('room-image-file').click()">
+                            <i class="fas fa-cloud-upload-alt text-3xl text-gray-400 mb-2"></i>
+                            <p class="text-sm text-gray-400">คลิกเพื่ออัปโหลดรูปภาพห้อง</p>
+                        </div>
+                        <input type="file" id="room-image-file" accept="image/*" style="display: none" onchange="previewRoomImage(this)">
+                        <img id="room-image-preview" class="image-preview">
+                        <input type="hidden" id="room-image">
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="submit" form="room-form" class="btn-primary flex-1" id="save-room-btn">บันทึก</button>
+                    <button type="button" class="btn-outline flex-1" onclick="closeRoomModal()">ยกเลิก</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Profile Settings Modal -->
+        <div class="modal" id="profile-modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3 class="modal-title">แก้ไขโปรไฟล์</h3>
+                    <button class="modal-close" onclick="closeProfileModal()">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <form id="profile-form" onsubmit="saveProfile(event)">
+                        <input type="text" id="profile-phone" placeholder="เบอร์โทรศัพท์" class="input-field" maxlength="10">
+                        <input type="text" id="profile-department" placeholder="แผนก/หน่วยงาน" class="input-field" maxlength="50">
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="submit" form="profile-form" class="btn-primary flex-1">บันทึก</button>
+                    <button type="button" class="btn-outline flex-1" onclick="closeProfileModal()">ยกเลิก</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Role Modal -->
+        <div class="modal" id="role-modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3 class="modal-title">จัดการสิทธิ์ผู้ใช้</h3>
+                    <button class="modal-close" onclick="closeRoleModal()">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <form id="role-form" onsubmit="saveUserRole(event)">
+                        <input type="hidden" id="role-user-id">
+                        <p id="role-user-name" class="text-white mb-4"></p>
+                        <select id="user-role" class="input-field">
+                            <option value="user">👤 ผู้ใช้ทั่วไป</option>
+                            <option value="manager">👥 ผู้จัดการ</option>
+                            <option value="admin">👑 ผู้ดูแลระบบ</option>
+                        </select>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="submit" form="role-form" class="btn-primary flex-1">บันทึก</button>
+                    <button type="button" class="btn-outline flex-1" onclick="closeRoleModal()">ยกเลิก</button>
                 </div>
             </div>
         </div>
@@ -1331,226 +1548,13 @@
         </div>
     </div>
 
-    <!-- ===== MODALS ===== -->
-
-    <!-- Room Detail Modal -->
-    <div class="modal" id="room-modal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3 class="modal-title" id="modal-title">กำลังโหลด...</h3>
-                <button class="modal-close" onclick="closeModal()">
-                    <i class="fas fa-times"></i>
-                </button>
-            </div>
-            <div class="modal-body" id="modal-body">
-                <div class="flex justify-center items-center py-10">
-                    <div class="loading-spinner w-10 h-10"></div>
-                </div>
-            </div>
-            <div class="modal-footer">
-                <button class="btn-primary" onclick="showBookingModal(state.currentRoom?.roomId)" id="modal-book-btn">
-                    <i class="fas fa-calendar-check"></i> จองห้อง
-                </button>
-                <button class="btn-outline" onclick="closeModal()">ปิด</button>
-            </div>
-            <div id="modal-admin-controls" class="px-4 pb-4 hidden">
-                <p class="text-sm text-gray-400 mb-2">จัดการห้อง</p>
-                <div class="flex gap-2">
-                    <button id="modal-edit-btn" class="btn-outline flex-1 text-sm" onclick="editCurrentRoom()" disabled>
-                        <i class="fas fa-edit mr-2"></i>แก้ไข
-                    </button>
-                    <button id="modal-delete-btn" class="btn-danger flex-1 text-sm" onclick="deleteCurrentRoom()" disabled>
-                        <i class="fas fa-trash mr-2"></i>ลบ
-                    </button>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Booking Detail Modal -->
-    <div class="modal" id="booking-modal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3 class="modal-title">รายละเอียดการจอง</h3>
-                <button class="modal-close" onclick="closeBookingDetailModal()">
-                    <i class="fas fa-times"></i>
-                </button>
-            </div>
-            <div class="modal-body" id="booking-modal-body">
-                <div class="flex justify-center items-center py-10">
-                    <div class="loading-spinner w-10 h-10"></div>
-                </div>
-            </div>
-            <div class="modal-footer" id="booking-modal-footer">
-                <button class="btn-outline" onclick="closeBookingDetailModal()">ปิด</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Create/Edit Booking Modal -->
-    <div class="modal" id="booking-create-modal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3 class="modal-title" id="booking-modal-title">จองห้องประชุม</h3>
-                <button class="modal-close" onclick="closeBookingCreateModal()">
-                    <i class="fas fa-times"></i>
-                </button>
-            </div>
-            <div class="modal-body">
-                <form id="booking-form" onsubmit="saveBooking(event)">
-                    <input type="hidden" id="edit-booking-id">
-                    
-                    <select id="booking-room" class="input-field" required>
-                        <option value="">เลือกห้องประชุม</option>
-                    </select>
-                    
-                    <input type="text" id="booking-title" placeholder="หัวข้อการประชุม" class="input-field" required maxlength="100">
-                    
-                    <textarea id="booking-description" placeholder="รายละเอียด (เช่น วัตถุประสงค์, จำนวนผู้เข้าร่วม)" class="input-field" rows="3" maxlength="500"></textarea>
-                    
-                    <input type="text" id="booking-meeting-link" placeholder="ลิงค์ประชุม (Zoom, Teams, etc.)" class="input-field">
-                    
-                    <div class="grid grid-cols-2 gap-2">
-                        <div>
-                            <label class="text-xs text-gray-400 mb-1 block">วันที่เริ่ม</label>
-                            <input type="text" id="booking-date" class="input-field" placeholder="เลือกวันที่เริ่ม" required readonly>
-                        </div>
-                        <div>
-                            <label class="text-xs text-gray-400 mb-1 block">วันที่สิ้นสุด</label>
-                            <input type="text" id="booking-end-date" class="input-field" placeholder="เลือกวันที่สิ้นสุด" required readonly>
-                        </div>
-                    </div>
-                    
-                    <div class="grid grid-cols-2 gap-2">
-                        <div>
-                            <label class="text-xs text-gray-400 mb-1 block">เวลาเริ่ม</label>
-                            <input type="text" id="booking-start" class="input-field" placeholder="เลือกเวลา" required readonly>
-                        </div>
-                        <div>
-                            <label class="text-xs text-gray-400 mb-1 block">เวลาสิ้นสุด</label>
-                            <input type="text" id="booking-end" class="input-field" placeholder="เลือกเวลา" required readonly>
-                        </div>
-                    </div>
-                    
-                    <div>
-                        <label class="text-xs text-gray-400 mb-1 block">จำนวนผู้เข้าร่วม</label>
-                        <input type="number" id="booking-attendees" class="input-field" placeholder="จำนวน" min="1" value="4" required>
-                    </div>
-                    
-                    <div id="availability-status" class="text-sm mb-3 hidden"></div>
-                </form>
-            </div>
-            <div class="modal-footer">
-                <button type="submit" form="booking-form" class="btn-primary flex-1" id="save-booking-btn">จอง</button>
-                <button type="button" class="btn-outline flex-1" onclick="closeBookingCreateModal()">ยกเลิก</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Create/Edit Room Modal -->
-    <div class="modal" id="room-create-modal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3 class="modal-title" id="room-modal-title">เพิ่มห้องใหม่</h3>
-                <button class="modal-close" onclick="closeRoomModal()">
-                    <i class="fas fa-times"></i>
-                </button>
-            </div>
-            <div class="modal-body">
-                <form id="room-form" onsubmit="saveRoom(event)">
-                    <input type="hidden" id="edit-room-id">
-                    
-                    <input type="text" id="room-name" placeholder="ชื่อห้อง" class="input-field" required maxlength="50">
-                    
-                    <input type="number" id="room-capacity" placeholder="ความจุ (คน)" class="input-field" required min="1">
-                    
-                    <input type="text" id="room-location" placeholder="สถานที่/ชั้น" class="input-field" required>
-                    
-                    <textarea id="room-description" placeholder="รายละเอียดห้อง" class="input-field" rows="3"></textarea>
-                    
-                    <input type="text" id="room-facilities" placeholder="สิ่งอำนวยความสะดวก (คั่นด้วย , เช่น โปรเจคเตอร์, จอ, ไวท์บอร์ด)" class="input-field">
-                    
-                    <!-- อัปโหลดรูปภาพ - ส่งเป็น Base64 -->
-                    <div class="upload-area" onclick="document.getElementById('room-image-file').click()">
-                        <i class="fas fa-cloud-upload-alt text-3xl text-gray-400 mb-2"></i>
-                        <p class="text-sm text-gray-400">คลิกเพื่ออัปโหลดรูปภาพห้อง</p>
-                        <p class="text-xs text-gray-500 mt-1">(ขนาดไม่เกิน 2MB, JPG/PNG)</p>
-                    </div>
-                    
-                    <input type="file" id="room-image-file" accept="image/jpeg,image/png" style="display: none" onchange="previewRoomImage(this)">
-                    <img id="room-image-preview" class="image-preview">
-                    <input type="hidden" id="room-image">
-                    
-                    <!-- แสดงสถานะการอัปโหลด -->
-                    <div id="upload-progress" class="hidden text-center text-sm text-[#06c755] mb-2">
-                        <i class="fas fa-spinner fa-spin mr-2"></i>กำลังอัปโหลด...
-                    </div>
-                </form>
-            </div>
-            <div class="modal-footer">
-                <button type="submit" form="room-form" class="btn-primary flex-1" id="save-room-btn">บันทึก</button>
-                <button type="button" class="btn-outline flex-1" onclick="closeRoomModal()">ยกเลิก</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Profile Settings Modal -->
-    <div class="modal" id="profile-modal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3 class="modal-title">แก้ไขโปรไฟล์</h3>
-                <button class="modal-close" onclick="closeProfileModal()">
-                    <i class="fas fa-times"></i>
-                </button>
-            </div>
-            <div class="modal-body">
-                <form id="profile-form" onsubmit="saveProfile(event)">
-                    <input type="text" id="profile-phone" placeholder="เบอร์โทรศัพท์" class="input-field" maxlength="10">
-                    <input type="text" id="profile-department" placeholder="แผนก/หน่วยงาน" class="input-field" maxlength="50">
-                </form>
-            </div>
-            <div class="modal-footer">
-                <button type="submit" form="profile-form" class="btn-primary flex-1">บันทึก</button>
-                <button type="button" class="btn-outline flex-1" onclick="closeProfileModal()">ยกเลิก</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Role Modal -->
-    <div class="modal" id="role-modal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3 class="modal-title">จัดการสิทธิ์ผู้ใช้</h3>
-                <button class="modal-close" onclick="closeRoleModal()">
-                    <i class="fas fa-times"></i>
-                </button>
-            </div>
-            <div class="modal-body">
-                <form id="role-form" onsubmit="saveUserRole(event)">
-                    <input type="hidden" id="role-user-id">
-                    <p id="role-user-name" class="text-white mb-4"></p>
-                    <select id="user-role" class="input-field">
-                        <option value="user">👤 ผู้ใช้ทั่วไป</option>
-                        <option value="manager">👥 ผู้จัดการ</option>
-                        <option value="admin">👑 ผู้ดูแลระบบ</option>
-                    </select>
-                </form>
-            </div>
-            <div class="modal-footer">
-                <button type="submit" form="role-form" class="btn-primary flex-1">บันทึก</button>
-                <button type="button" class="btn-outline flex-1" onclick="closeRoleModal()">ยกเลิก</button>
-            </div>
-        </div>
-    </div>
-
+    <!-- Scripts -->
     <script>
         // ========== CONFIG ==========
         const CONFIG = {
-            GAS_URL: 'https://script.google.com/macros/s/AKfycbwEkTSINEvnyBdapUWbJ8djVpdLt6rN7NlaXn5cKMow7RJtY3gI19-RSMyFHsWBxII-vA/exec',
+            GAS_URL: 'https://script.google.com/macros/s/AKfycbxJhYLELB6wLE6h3LJtAm5sS92AN2NReQEaenI-JOxNRHFhw7X_XoreWH8UHWNvpg1Z/exec',
             LIFF_ID: '2008904120-nqYHD5BT',
-            REQUEST_TIMEOUT: 25000, // 25 seconds
-            MAX_RETRIES: 3,
-            RETRY_DELAY: 1000
+            PAGE_SIZE: 20
         };
 
         // ========== STATE ==========
@@ -1560,7 +1564,6 @@
             bookings: [],
             myBookings: [],
             pendingBookings: [],
-            allBookings: [],
             users: [],
             currentDate: new Date(),
             currentMonth: new Date(),
@@ -1570,17 +1573,15 @@
             currentBooking: null,
             isAdmin: false,
             isManager: false,
-            settings: {
+            settings: { 
                 appName: 'Meeting Room',
                 requireApproval: 'true',
                 reminderMinutes: '30'
             },
-            initialized: false,
-            requestQueue: new Map(), // ป้องกัน request ซ้ำ
-            activeRequests: 0
+            initialized: false
         };
 
-        // ========== DOM CACHE ==========
+        // ========== DOM Cache ==========
         const $ = {
             initLoading: document.getElementById('initial-loading'),
             pageTitle: document.getElementById('page-title'),
@@ -1633,27 +1634,14 @@
 
         // ========== UTILS ==========
         function showToast(msg, type = 'success') {
-            const colors = {
-                success: '#06c755',
-                warning: '#f59e0b',
-                error: '#ef4444',
-                info: '#3b82f6'
-            };
-            
-            const toast = document.getElementById('global-toast');
-            if (toast) {
-                toast.remove();
-            }
-            
-            const toastEl = document.createElement('div');
-            toastEl.id = 'global-toast';
-            toastEl.style.cssText = `
+            const toast = document.createElement('div');
+            toast.style.cssText = `
                 position: fixed;
                 bottom: 80px;
                 left: 16px;
                 right: 16px;
                 background: #1a1d24;
-                border-left: 4px solid ${colors[type] || colors.success};
+                border-left: 4px solid ${type === 'success' ? '#06c755' : type === 'warning' ? '#f59e0b' : '#ef4444'};
                 border-radius: 12px;
                 padding: 12px 16px;
                 color: white;
@@ -1662,14 +1650,12 @@
                 margin: 0 auto;
                 box-shadow: 0 4px 12px rgba(0,0,0,0.5);
                 animation: slideUp 0.3s ease;
-                font-size: 14px;
             `;
-            toastEl.textContent = msg;
-            document.body.appendChild(toastEl);
-            
+            toast.textContent = msg;
+            document.body.appendChild(toast);
             setTimeout(() => {
-                toastEl.style.animation = 'slideDown 0.3s ease';
-                setTimeout(() => toastEl.remove(), 300);
+                toast.style.animation = 'slideDown 0.3s ease';
+                setTimeout(() => toast.remove(), 300);
             }, 3000);
         }
 
@@ -1745,210 +1731,60 @@
             $.navbarAppName.textContent = name;
         }
 
-        // ========== แปลง File เป็น Base64 ==========
-        function fileToBase64(file) {
-            return new Promise((resolve, reject) => {
-                const reader = new FileReader();
-                reader.readAsDataURL(file);
-                reader.onload = () => resolve(reader.result);
-                reader.onerror = error => reject(error);
-            });
-        }
-
-        // ========== API CALL พร้อม Retry และ Debounce ==========
-        async function callGAS(path, data = {}, options = {}) {
-            const {
-                retryCount = 0,
-                debounceKey = null,
-                useCache = false,
-                priority = 'normal' // 'high', 'normal', 'low'
-            } = options;
-
-            // ป้องกัน request ซ้ำ
-            if (debounceKey) {
-                if (state.requestQueue.has(debounceKey)) {
-                    console.log(`Debouncing ${debounceKey} - request already in progress`);
-                    return state.requestQueue.get(debounceKey);
-                }
-            }
-
-            // จำกัดจำนวน request พร้อมกัน
-            if (priority !== 'high' && state.activeRequests >= 3) {
-                await new Promise(resolve => setTimeout(resolve, 500));
-            }
-
-            const requestId = debounceKey || `${path}_${Date.now()}`;
-            state.activeRequests++;
-
-            const makeRequest = async (retry) => {
-                try {
-                    const formData = new FormData();
-                    formData.append('path', path);
-                    
-                    // เพิ่ม timestamp เพื่อป้องกัน cache
-                    formData.append('_t', Date.now().toString());
-                    
-                    if (state.user?.lineUserId) {
-                        formData.append('lineUserId', state.user.lineUserId);
-                    }
-                    
-                    // แนบข้อมูล - ถ้าเป็น Base64 string ให้ส่งตรงๆ ไม่ต้องแปลง
-                    Object.keys(data).forEach(key => {
-                        if (data[key] !== undefined && data[key] !== null) {
-                            formData.append(key, data[key]);
-                        }
-                    });
-
-                    const controller = new AbortController();
-                    const timeoutId = setTimeout(() => controller.abort(), CONFIG.REQUEST_TIMEOUT);
-
-                    const res = await fetch(CONFIG.GAS_URL, { 
-                        method: 'POST', 
-                        body: formData,
-                        signal: controller.signal
-                    });
-                    
-                    clearTimeout(timeoutId);
-                    
-                    if (!res.ok) {
-                        throw new Error(`HTTP error! status: ${res.status}`);
-                    }
-                    
-                    const text = await res.text();
-                    
-                    // ลอง parse JSON
-                    try {
-                        return JSON.parse(text);
-                    } catch (e) {
-                        console.error('Invalid JSON response:', text.substring(0, 200));
-                        return { 
-                            success: false, 
-                            message: 'รูปแบบข้อมูลไม่ถูกต้อง',
-                            raw: text.substring(0, 200)
-                        };
-                    }
-                    
-                } catch (error) {
-                    if (error.name === 'AbortError') {
-                        throw new Error('การเชื่อมต่อหมดเวลา กรุณาลองใหม่อีกครั้ง');
-                    }
-                    throw error;
-                }
-            };
-
+        // ========== API CALL ==========
+        async function callGAS(path, data = {}) {
             try {
-                // สร้าง promise และเก็บไว้ใน queue
-                const requestPromise = (async () => {
-                    let lastError;
-                    
-                    for (let i = 0; i <= retryCount; i++) {
-                        try {
-                            if (i > 0) {
-                                console.log(`Retry ${i} for ${path}`);
-                                await new Promise(resolve => 
-                                    setTimeout(resolve, CONFIG.RETRY_DELAY * Math.pow(2, i - 1))
-                                );
-                            }
-                            
-                            const result = await makeRequest(i);
-                            
-                            // ถ้าเจอ lock timeout ให้รอแล้ว retry
-                            if (!result.success && 
-                                result.message && 
-                                result.message.includes('หมดเวลาการล็อก')) {
-                                console.log('Lock timeout detected, retrying...');
-                                continue;
-                            }
-                            
-                            return result;
-                            
-                        } catch (error) {
-                            console.error(`Request attempt ${i + 1} failed:`, error);
-                            lastError = error;
-                        }
-                    }
-                    
-                    return { 
-                        success: false, 
-                        message: lastError?.message || 'เกิดข้อผิดพลาดในการเชื่อมต่อ' 
-                    };
-                })();
-
-                // เก็บไว้ใน queue ถ้ามี debounceKey
-                if (debounceKey) {
-                    state.requestQueue.set(debounceKey, requestPromise);
-                    // ล้าง queue เมื่อเสร็จ
-                    requestPromise.finally(() => {
-                        state.requestQueue.delete(debounceKey);
-                        state.activeRequests--;
-                    });
-                } else {
-                    requestPromise.finally(() => {
-                        state.activeRequests--;
-                    });
-                }
-
-                return await requestPromise;
+                const formData = new FormData();
+                formData.append('path', path);
+                if (state.user?.lineUserId) formData.append('lineUserId', state.user.lineUserId);
                 
+                Object.keys(data).forEach(key => {
+                    if (data[key] !== undefined && data[key] !== null) {
+                        formData.append(key, data[key]);
+                    }
+                });
+
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 15000);
+
+                const res = await fetch(CONFIG.GAS_URL, { 
+                    method: 'POST', 
+                    body: formData,
+                    signal: controller.signal
+                });
+                
+                clearTimeout(timeoutId);
+                
+                const text = await res.text();
+                return JSON.parse(text);
             } catch (error) {
-                state.activeRequests--;
-                console.error('API Call failed:', error);
-                return { 
-                    success: false, 
-                    message: 'ไม่สามารถติดต่อเซิร์ฟเวอร์ได้' 
-                };
+                console.error('API Error:', error);
+                return { success: false, message: 'connection error' };
             }
         }
 
-        // ========== อัปโหลดรูปภาพ - ส่งเป็น Base64 (แก้ไขแล้ว) ==========
-        async function uploadImage(file) {
-            if (!file) return null;
-            
-            // ตรวจสอบขนาดไฟล์ (ไม่เกิน 2MB)
-            if (file.size > 2 * 1024 * 1024) {
-                showToast('รูปภาพต้องมีขนาดไม่เกิน 2MB', 'error');
-                return null;
-            }
-            
-            // ตรวจสอบประเภทไฟล์
-            if (!file.type.match(/^image\/(jpeg|png)$/)) {
-                showToast('รองรับเฉพาะไฟล์ JPG และ PNG เท่านั้น', 'error');
-                return null;
-            }
-
-            const progressEl = document.getElementById('upload-progress');
-            if (progressEl) progressEl.classList.remove('hidden');
-
+        // ========== IMAGE UPLOAD ==========
+        async function uploadImageToDrive(file) {
             try {
-                // แปลง File เป็น Base64
-                const base64 = await fileToBase64(file);
-                
-                // ตัดส่วน prefix ออก (data:image/jpeg;base64,)
-                const base64Data = base64.split(',')[1];
-                
-                // เรียกใช้ callGAS พร้อมส่ง Base64 ตามที่ Backend ต้องการ
+                const base64 = await new Promise((resolve) => {
+                    const reader = new FileReader();
+                    reader.onload = () => resolve(reader.result.split(',')[1]);
+                    reader.readAsDataURL(file);
+                });
+
                 const result = await callGAS('uploadImage', {
                     fileName: file.name,
-                    fileData: base64Data,
-                    mimeType: file.type
-                }, {
-                    retryCount: 1,
-                    priority: 'high'
+                    fileType: file.type,
+                    fileData: base64
                 });
 
                 if (result.success) {
-                    // คืนค่า URL รูปภาพ
-                    return result.data?.fileUrl || result.data?.url;
-                } else {
-                    showToast(result.message || 'อัปโหลดรูปไม่สำเร็จ', 'error');
-                    return null;
+                    return result.data.fileUrl;
                 }
+                return null;
             } catch (error) {
                 console.error('Upload error:', error);
-                showToast('เกิดข้อผิดพลาดในการอัปโหลด', 'error');
                 return null;
-            } finally {
-                if (progressEl) progressEl.classList.add('hidden');
             }
         }
 
@@ -1964,11 +1800,214 @@
             }
         };
 
+        // ========== CALENDAR FUNCTIONS ==========
+        async function loadMonthBookings(year, month) {
+            try {
+                const startDate = new Date(year, month, 1);
+                const endDate = new Date(year, month + 1, 0);
+                
+                const startStr = formatDateForInput(startDate);
+                const endStr = formatDateForInput(endDate);
+                
+                const result = await callGAS('bookings', {
+                    startDate: startStr,
+                    endDate: endStr,
+                    showPast: 'true'
+                });
+                
+                if (result.success) {
+                    state.dateBookings = {};
+                    result.data.bookings.forEach(booking => {
+                        const date = new Date(booking.startTime).toISOString().split('T')[0];
+                        if (!state.dateBookings[date]) {
+                            state.dateBookings[date] = [];
+                        }
+                        state.dateBookings[date].push(booking);
+                    });
+                    
+                    renderCalendar();
+                }
+            } catch (error) {
+                console.error('Load month bookings error:', error);
+                renderCalendar();
+            }
+        }
+
+        function renderCalendar() {
+            const year = state.currentMonth.getFullYear();
+            const month = state.currentMonth.getMonth();
+            
+            $.currentMonth.textContent = formatMonthThai(state.currentMonth);
+            
+            const firstDay = new Date(year, month, 1);
+            const lastDay = new Date(year, month + 1, 0);
+            
+            const startDay = firstDay.getDay();
+            const totalDays = lastDay.getDate();
+            
+            const prevMonthLastDay = new Date(year, month, 0).getDate();
+            
+            let html = '';
+            
+            // Previous month days
+            for (let i = startDay - 1; i >= 0; i--) {
+                const day = prevMonthLastDay - i;
+                const date = new Date(year, month - 1, day);
+                const dateStr = formatDateForInput(date);
+                const hasBooking = state.dateBookings[dateStr]?.length > 0;
+                const bookingCount = state.dateBookings[dateStr]?.length || 0;
+                const isToday = isSameDay(date, new Date());
+                
+                html += renderCalendarDay(day, true, hasBooking, isToday, dateStr, bookingCount);
+            }
+            
+            // Current month days
+            for (let day = 1; day <= totalDays; day++) {
+                const date = new Date(year, month, day);
+                const dateStr = formatDateForInput(date);
+                const bookings = state.dateBookings[dateStr] || [];
+                const hasBooking = bookings.length > 0;
+                const bookingCount = bookings.length;
+                const isToday = isSameDay(date, new Date());
+                const isSelected = isSameDay(date, state.selectedDate);
+                
+                html += renderCalendarDay(day, false, hasBooking, isToday, dateStr, bookingCount, isSelected);
+            }
+            
+            // Next month days
+            const totalCells = 42;
+            const remainingCells = totalCells - (startDay + totalDays);
+            for (let day = 1; day <= remainingCells; day++) {
+                const date = new Date(year, month + 1, day);
+                const dateStr = formatDateForInput(date);
+                const hasBooking = state.dateBookings[dateStr]?.length > 0;
+                const bookingCount = state.dateBookings[dateStr]?.length || 0;
+                
+                html += renderCalendarDay(day, true, hasBooking, false, dateStr, bookingCount);
+            }
+            
+            $.calendarDays.innerHTML = html;
+        }
+
+        function renderCalendarDay(day, isOtherMonth, hasBooking, isToday, dateStr, bookingCount = 0, isSelected = false) {
+            let classes = 'calendar-day';
+            if (isOtherMonth) classes += ' other-month';
+            if (isToday) classes += ' today';
+            if (isSelected) classes += ' selected';
+            if (hasBooking) {
+                classes += ' has-booking';
+                if (bookingCount > 1) {
+                    classes += ' multiple';
+                }
+            }
+            
+            return `
+                <div class="${classes}" onclick="selectDate('${dateStr}')">
+                    ${day}
+                </div>
+            `;
+        }
+
+        function isSameDay(date1, date2) {
+            return date1.getFullYear() === date2.getFullYear() &&
+                   date1.getMonth() === date2.getMonth() &&
+                   date1.getDate() === date2.getDate();
+        }
+
+        window.selectDate = async function(dateStr) {
+            state.selectedDate = new Date(dateStr);
+            renderCalendar();
+            
+            const result = await callGAS('bookings', {
+                date: dateStr,
+                showPast: 'true'
+            });
+            
+            if (result.success && result.data.bookings.length > 0) {
+                const bookings = result.data.bookings;
+                const dateObj = new Date(dateStr);
+                const dateThai = dateObj.toLocaleDateString('th-TH', { 
+                    weekday: 'long', 
+                    day: 'numeric', 
+                    month: 'long', 
+                    year: 'numeric' 
+                });
+                
+                $.selectedDateTitle.textContent = `📅 การจองวันที่ ${dateThai}`;
+                $.selectedDateBookingsList.innerHTML = bookings.map(b => {
+                    const statusClass = b.status === 'confirmed' ? '' : 'pending';
+                    return `
+                        <div class="date-booking-item ${statusClass}" onclick="showBookingDetail('${b.bookingId}')">
+                            <div class="date-booking-time">
+                                <i class="far fa-clock mr-1"></i> ${formatTime(b.startTime)} - ${formatTime(b.endTime)}
+                            </div>
+                            <div class="date-booking-title">${b.title}</div>
+                            <div class="date-booking-room">${b.roomName} | โดย: ${b.userName}</div>
+                        </div>
+                    `;
+                }).join('');
+                
+                $.selectedDateBookings.classList.remove('hidden');
+            } else {
+                $.selectedDateBookings.classList.add('hidden');
+            }
+        };
+
+        window.changeMonth = function(delta) {
+            const newMonth = new Date(state.currentMonth);
+            newMonth.setMonth(newMonth.getMonth() + delta);
+            state.currentMonth = newMonth;
+            loadMonthBookings(newMonth.getFullYear(), newMonth.getMonth());
+        };
+
+        window.goToToday = function() {
+            state.currentMonth = new Date();
+            state.selectedDate = new Date();
+            loadMonthBookings(state.currentMonth.getFullYear(), state.currentMonth.getMonth());
+            selectDate(formatDateForInput(new Date()));
+        };
+
+        window.showAllRooms = function() {
+            $.searchInput.value = '';
+            renderRooms();
+        };
+
+        window.resetDatabase = async function() {
+            if (!state.isAdmin) {
+                showToast('เฉพาะผู้ดูแลระบบเท่านั้น', 'error');
+                return;
+            }
+            
+            const btn = event.target;
+            setButtonLoading(btn, true);
+            
+            const result = await Swal.fire({
+                title: 'รีเซ็ตฐานข้อมูล',
+                text: 'คุณแน่ใจหรือไม่? ข้อมูลทั้งหมดจะถูกลบและกลับสู่ค่าเริ่มต้น',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#ef4444',
+                confirmButtonText: 'ใช่, รีเซ็ต',
+                cancelButtonText: 'ยกเลิก'
+            });
+
+            if (result.isConfirmed) {
+                const apiResult = await callGAS('setupDatabase');
+                if (apiResult.success) {
+                    showToast('รีเซ็ตฐานข้อมูลสำเร็จ');
+                    setTimeout(() => location.reload(), 1500);
+                } else {
+                    showToast(apiResult.message || 'เกิดข้อผิดพลาด', 'error');
+                }
+            }
+            
+            setButtonLoading(btn, false);
+        };
+
         // ========== LIFF INIT ==========
         async function initLIFF() {
             try {
                 await liff.init({ liffId: CONFIG.LIFF_ID });
-                
                 if (!liff.isLoggedIn()) {
                     liff.login();
                     return;
@@ -1977,22 +2016,23 @@
                 const profile = await liff.getProfile();
                 const idToken = liff.getDecodedIDToken();
 
-                // โหลดข้อมูลผู้ใช้ (ไม่ใช้ cache เพราะต้องการข้อมูลล่าสุด)
-                const userResult = await callGAS('user/profile', {
+                // โหลดเฉพาะข้อมูล user profile ก่อน (จำเป็นที่สุด)
+                const result = await callGAS('user/profile', {
                     lineUserId: profile.userId,
                     displayName: profile.displayName,
                     pictureUrl: profile.pictureUrl || '',
                     email: idToken?.email || ''
-                }, { retryCount: 2, priority: 'high' });
+                });
 
-                if (userResult.success) {
-                    state.user = userResult.data;
+                if (result.success) {
+                    state.user = result.data;
                     state.isAdmin = state.user.role === 'admin';
                     state.isManager = state.isAdmin || state.user.role === 'manager';
 
+                    // อัปเดต UI ทันทีที่ได้ user data
                     $.profileName.textContent = state.user.displayName || 'ผู้ใช้';
                     $.profileEmail.textContent = state.user.email || '';
-                    $.profileAvatar.src = state.user.pictureUrl || 'https://via.placeholder.com/60/2a2e36/06c755?text=User';
+                    $.profileAvatar.src = state.user.pictureUrl || 'https://via.placeholder.com/60';
                     $.profileRole.textContent = {
                         admin: '👑 ผู้ดูแลระบบ',
                         manager: '👥 ผู้จัดการ',
@@ -2009,128 +2049,80 @@
                         if ($.quickBookBtn) $.quickBookBtn.classList.remove('hidden');
                     }
 
-                    // โหลด settings
-                    await loadSettings();
-                    
-                    // โหลดข้อมูลต่างๆ แบบไม่ต้องรอกัน
-                    const loadPromises = [
-                        loadRooms().catch(e => console.log('Rooms load error:', e)),
-                        loadMyBookings().catch(e => console.log('My bookings load error:', e)),
-                        loadTodayStats().catch(e => console.log('Stats load error:', e))
-                    ];
-
-                    // โหลดข้อมูลปฏิทิน
-                    loadPromises.push(
-                        loadMonthBookings(
-                            state.currentMonth.getFullYear(), 
-                            state.currentMonth.getMonth()
-                        ).catch(e => console.log('Calendar load error:', e))
-                    );
-
-                    if (state.isManager) {
-                        loadPromises.push(
-                            loadUsers().catch(e => console.log('Users load error:', e)),
-                            loadAdminStats().catch(e => console.log('Admin stats error:', e)),
-                            loadPendingBookings().catch(e => console.log('Pending bookings error:', e)),
-                            loadAllBookings().catch(e => console.log('All bookings error:', e)),
-                            loadRoomsManagement().catch(e => console.log('Rooms management error:', e))
-                        );
-                    }
-
-                    // รอให้โหลดทั้งหมดเสร็จ (หรือ timeout)
-                    await Promise.race([
-                        Promise.all(loadPromises),
-                        new Promise(resolve => setTimeout(resolve, 5000))
-                    ]);
-
+                    // ซ่อน loading ทันทีที่ได้ user data (ไม่ต้องรอ data อื่น)
                     $.initLoading.classList.add('hide');
                     state.initialized = true;
+
+                    // โหลด settings แบบไม่ต้องรอ
+                    loadSettings().catch(console.warn);
                     
-                    // เริ่มต้น date pickers
-                    initDatePickers();
+                    // โหลดข้อมูลอื่นๆ แบบ parallel และค่อยๆ อัปเดต UI
+                    loadInitialData();
+                    
+                    // ถ้าเป็น manager ค่อยโหลด data เพิ่มเติม
+                    if (state.isManager) {
+                        loadManagerData();
+                    }
                 }
             } catch (error) {
                 console.error('LIFF init error:', error);
                 $.initLoading.classList.add('hide');
-                showToast('ไม่สามารถเชื่อมต่อ LINE ได้ กรุณาลองใหม่อีกครั้ง', 'error');
+                showToast('ไม่สามารถเชื่อมต่อ LINE ได้', 'error');
             }
         }
 
-        // ========== DATE PICKERS ==========
-        function initDatePickers() {
-            // ตรวจสอบว่า flatpickr โหลดแล้วหรือยัง
-            if (typeof flatpickr === 'undefined') {
-                // ถ้ายังไม่โหลด ให้ลองใหม่ภายหลัง
-                setTimeout(initDatePickers, 500);
-                return;
-            }
-            
+        // โหลดข้อมูลเริ่มต้นที่จำเป็น
+        async function loadInitialData() {
             try {
-                flatpickr.localize(flatpickr.l10ns.th);
+                // โหลดห้องประชุมก่อน (จำเป็น)
+                const roomsPromise = loadRooms();
                 
-                flatpickr("#booking-date", {
-                    dateFormat: "Y-m-d",
-                    minDate: "today",
-                    locale: "th",
-                    onChange: function(selectedDates, dateStr) {
-                        const endPicker = document.getElementById('booking-end-date')._flatpickr;
-                        if (endPicker) endPicker.set('minDate', dateStr);
-                        checkAvailability();
-                    }
-                });
+                // โหลดปฏิทินเดือนปัจจุบัน
+                const calendarPromise = loadMonthBookings(
+                    state.currentMonth.getFullYear(), 
+                    state.currentMonth.getMonth()
+                );
                 
-                flatpickr("#booking-end-date", {
-                    dateFormat: "Y-m-d",
-                    minDate: "today",
-                    locale: "th",
-                    onChange: function() {
-                        checkAvailability();
-                    }
-                });
+                // โหลดข้อมูลสถิติวันนี้แบบเบาๆ
+                const statsPromise = loadTodayStats();
                 
-                flatpickr("#booking-start", {
-                    enableTime: true,
-                    noCalendar: true,
-                    dateFormat: "H:i",
-                    time_24hr: true,
-                    minuteIncrement: 15,
-                    minTime: "08:00",
-                    maxTime: "18:00",
-                    onChange: function() {
-                        checkAvailability();
-                    }
-                });
+                // รอให้ข้อมูลพื้นฐานโหลดเสร็จ (พร้อมกัน)
+                await Promise.all([roomsPromise, calendarPromise, statsPromise]);
                 
-                flatpickr("#booking-end", {
-                    enableTime: true,
-                    noCalendar: true,
-                    dateFormat: "H:i",
-                    time_24hr: true,
-                    minuteIncrement: 15,
-                    minTime: "08:00",
-                    maxTime: "19:00",
-                    onChange: function() {
-                        checkAvailability();
-                    }
-                });
-            } catch (e) {
-                console.error('Flatpickr init error:', e);
+                // หลังจากได้ข้อมูลพื้นฐานแล้ว ค่อยโหลดการจองของฉัน
+                loadMyBookings().catch(console.warn);
+                
+            } catch (error) {
+                console.error('Error loading initial data:', error);
             }
+        }
+
+        // โหลดข้อมูลสำหรับ manager/admin แบบ lazy
+        function loadManagerData() {
+            // หน่วงเวลาเล็กน้อย เพื่อไม่ให้แย่ง bandwidth กับข้อมูลหลัก
+            setTimeout(() => {
+                Promise.all([
+                    loadUsers().catch(console.warn),
+                    loadAdminStats().catch(console.warn),
+                    loadPendingBookings().catch(console.warn),
+                    loadAllBookings().catch(console.warn),
+                    loadRoomsManagement().catch(console.warn)
+                ]).catch(console.warn);
+            }, 500);
         }
 
         // ========== ROOMS ==========
         async function loadRooms() {
-            const result = await callGAS('rooms', {}, { 
-                debounceKey: 'loadRooms',
-                retryCount: 2,
-                useCache: true 
-            });
-            
-            if (result.success) {
-                state.rooms = result.data || [];
-                renderRooms();
+            try {
+                const result = await callGAS('rooms');
+                
+                if (result.success) {
+                    state.rooms = result.data || [];
+                    renderRooms();
+                }
+            } catch (error) {
+                console.error('Load rooms error:', error);
             }
-            return result;
         }
 
         function renderRooms() {
@@ -2140,12 +2132,16 @@
                 r.location?.toLowerCase().includes(search)
             );
 
+            if (!filtered.length && state.rooms.length === 0) {
+                // ถ้ายังไม่มีข้อมูล ให้แสดง skeleton
+                return;
+            }
+
             if (!filtered.length) {
                 $.roomsList.innerHTML = `
                     <div class="col-span-full text-center py-10 text-gray-400">
                         <i class="fas fa-door-open text-3xl mb-3"></i>
-                        <p>ไม่พบห้องประชุม</p>
-                        ${state.isAdmin ? '<button class="btn-primary text-sm mt-3" onclick="showCreateRoomModal()"><i class="fas fa-plus mr-1"></i>เพิ่มห้องแรก</button>' : ''}
+                        <p>ไม่มีห้องประชุม</p>
                     </div>
                 `;
                 return;
@@ -2153,7 +2149,7 @@
 
             $.roomsList.innerHTML = filtered.map(r => {
                 const imageHtml = r.imageUrl ? 
-                    `<img src="${r.imageUrl}" loading="lazy" class="w-full h-full object-cover" onerror="this.style.display=\'none\'; this.parentElement.innerHTML=\'<i class=\\\'fas fa-door-open text-4xl text-[#06c755]\\\'></i>\';">` : 
+                    `<img src="${r.imageUrl}" class="w-full h-full object-cover" loading="lazy" onerror="this.style.display='none'; this.parentElement.innerHTML='<i class=\\'fas fa-door-open text-4xl text-[#06c755]\\'></i>';">` : 
                     `<i class="fas fa-door-open text-4xl text-[#06c755]"></i>`;
                 
                 return `
@@ -2181,11 +2177,15 @@
 
         // ========== ROOMS MANAGEMENT ==========
         async function loadRoomsManagement() {
-            const result = await callGAS('rooms', {}, { debounceKey: 'loadRoomsManagement' });
-            
-            if (result.success) {
-                const rooms = result.data || [];
-                renderRoomsManagement(rooms);
+            try {
+                const result = await callGAS('rooms');
+                
+                if (result.success) {
+                    const rooms = result.data || [];
+                    renderRoomsManagement(rooms);
+                }
+            } catch (error) {
+                console.error('Load rooms management error:', error);
             }
         }
 
@@ -2236,7 +2236,7 @@
             $.modal.classList.add('active');
             $.modalBody.innerHTML = '<div class="flex justify-center py-10"><div class="loading-spinner w-10 h-10"></div></div>';
             
-            const result = await callGAS('room', { roomId }, { debounceKey: `room_${roomId}` });
+            const result = await callGAS('room', { roomId });
             
             if (result.success) {
                 const room = result.data;
@@ -2251,12 +2251,12 @@
                     roomId, 
                     date: dateStr,
                     showPast: 'false'
-                }, { debounceKey: `bookings_${roomId}_${dateStr}` });
+                });
                 
                 const todayBookings = bookingsResult.success ? bookingsResult.data.bookings : [];
 
                 const imageHtml = room.imageUrl ? 
-                    `<img src="${room.imageUrl}" class="w-full max-h-80 object-cover rounded-xl mb-4" loading="lazy" onerror="this.style.display=\'none\';">` : 
+                    `<img src="${room.imageUrl}" class="w-full max-h-80 object-cover rounded-xl mb-4" loading="lazy" onerror="this.style.display='none';">` : 
                     `<div class="w-full h-48 flex items-center justify-center bg-gradient-to-br from-[#2a2e36] to-[#1a1d24] rounded-xl mb-4">
                         <i class="fas fa-door-open text-6xl text-[#06c755]"></i>
                     </div>`;
@@ -2365,9 +2365,6 @@
             document.getElementById('booking-end').value = endTime.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' });
             
             document.getElementById('booking-create-modal').classList.add('active');
-            
-            // Check availability after modal opens
-            setTimeout(checkAvailability, 500);
         };
 
         window.closeBookingCreateModal = function() {
@@ -2414,7 +2411,7 @@
                 roomId,
                 startTime: startDateTime.toISOString(),
                 endTime: endDateTime.toISOString()
-            }, { debounceKey: `check_avail_${roomId}_${startDateTime.getTime()}` });
+            });
             
             if (result.success) {
                 if (result.data.available) {
@@ -2436,7 +2433,7 @@
             }
         }
 
-        // ========== FLEX MESSAGE ==========
+        // ========== สร้าง Flex Message สำหรับส่งไปแชท ==========
         function createBookingFlexMessage(booking) {
             const startTime = new Date(booking.startTime);
             const endTime = new Date(booking.endTime);
@@ -2604,6 +2601,7 @@
             };
         }
 
+        // ========== ส่ง Flex Message ไปยังแชท ==========
         async function sendBookingToChat(bookingData) {
             try {
                 if (!liff.isInClient()) {
@@ -2621,31 +2619,6 @@
                 return false;
             }
         }
-
-        window.shareBookingViaPicker = async function(bookingId) {
-            try {
-                if (!liff.isInClient()) {
-                    showToast('กรุณาเปิดใน LINE', 'warning');
-                    return;
-                }
-
-                const result = await callGAS('booking', { bookingId });
-                if (!result.success) {
-                    showToast('ไม่พบข้อมูลการจอง', 'error');
-                    return;
-                }
-
-                const booking = result.data;
-                const flexMessage = createBookingFlexMessage(booking);
-
-                await liff.shareTargetPicker([flexMessage]);
-                showToast('แชร์การจองสำเร็จ');
-                
-            } catch (error) {
-                console.error('Share via picker error:', error);
-                showToast('ไม่สามารถแชร์ได้', 'error');
-            }
-        };
 
         window.saveBooking = async function(e) {
             e.preventDefault();
@@ -2680,28 +2653,38 @@
 
                 if (id) data.bookingId = id;
 
-                const result = await callGAS(id ? 'booking/update' : 'booking/create', data, { 
-                    retryCount: 2,
-                    priority: 'high'
-                });
+                const result = await callGAS(id ? 'booking/update' : 'booking/create', data);
 
                 if (result.success) {
                     showToast(id ? 'แก้ไขการจองสำเร็จ' : 'จองห้องสำเร็จ');
                     
                     closeBookingCreateModal();
                     
-                    // โหลดข้อมูลใหม่แบบไม่ต้องรอ
-                    Promise.all([
+                    await Promise.all([
                         loadRooms(), 
                         loadMyBookings(), 
                         loadTodayStats(),
                         loadMonthBookings(state.currentMonth.getFullYear(), state.currentMonth.getMonth())
-                    ]).catch(e => console.log('Reload after booking error:', e));
+                    ]);
                     
-                    // Send to chat for new bookings
-                    if (!id && result.data?.bookingData && liff.isInClient()) {
+                    if (!id && result.data?.bookingData) {
                         setTimeout(async () => {
                             await sendBookingToChat(result.data.bookingData);
+                            
+                            if (liff.isInClient()) {
+                                const shareResult = await Swal.fire({
+                                    title: 'แชร์การจอง',
+                                    text: 'ต้องการแชร์ข้อมูลการจองนี้ไปยังแชทอื่นหรือไม่?',
+                                    icon: 'question',
+                                    showCancelButton: true,
+                                    confirmButtonText: 'แชร์ต่อ',
+                                    cancelButtonText: 'ไม่ต้องการ'
+                                });
+
+                                if (shareResult.isConfirmed) {
+                                    await shareBookingViaPicker(result.data.bookingData.bookingId);
+                                }
+                            }
                         }, 500);
                     }
                 } else {
@@ -2715,15 +2698,49 @@
             }
         };
 
+        // ========== SHARE BOOKING VIA SHARE TARGET PICKER ==========
+        window.shareBookingViaPicker = async function(bookingId) {
+            try {
+                if (!liff.isInClient()) {
+                    showToast('กรุณาเปิดใน LINE', 'warning');
+                    return;
+                }
+
+                const result = await callGAS('booking', { bookingId });
+                if (!result.success) {
+                    showToast('ไม่พบข้อมูลการจอง', 'error');
+                    return;
+                }
+
+                const booking = result.data;
+                const flexMessage = createBookingFlexMessage(booking);
+
+                await liff.shareTargetPicker([flexMessage]);
+                showToast('แชร์การจองสำเร็จ');
+                
+            } catch (error) {
+                console.error('Share via picker error:', error);
+                showToast('ไม่สามารถแชร์ได้', 'error');
+            }
+        };
+
+        window.shareBooking = async function(bookingId) {
+            await shareBookingViaPicker(bookingId);
+        };
+
         // ========== MY BOOKINGS ==========
         async function loadMyBookings() {
-            const result = await callGAS('user/bookings', {
-                lineUserId: state.user?.lineUserId
-            }, { debounceKey: 'myBookings' });
+            try {
+                const result = await callGAS('user/bookings', {
+                    lineUserId: state.user?.lineUserId
+                });
 
-            if (result.success) {
-                state.myBookings = result.data || [];
-                renderMyBookings('all');
+                if (result.success) {
+                    state.myBookings = result.data || [];
+                    renderMyBookings('all');
+                }
+            } catch (error) {
+                console.error('Load my bookings error:', error);
             }
         }
 
@@ -2783,7 +2800,7 @@
                     <div class="flex justify-between items-center text-xs">
                         <span class="text-gray-500"><i class="fas fa-users mr-1"></i> ${b.attendees || 0} คน</span>
                         ${b.meetingLink ? '<span class="text-blue-500"><i class="fas fa-video mr-1"></i> มีลิงค์</span>' : ''}
-                        ${b.status === 'confirmed' && b.userId === state.user?.lineUserId ? `
+                        ${b.status === 'confirmed' ? `
                             <button class="text-red-500" onclick="cancelBooking('${b.bookingId}'); event.stopPropagation();">
                                 <i class="fas fa-times mr-1"></i>ยกเลิก
                             </button>
@@ -2802,7 +2819,7 @@
             document.getElementById('booking-modal').classList.add('active');
             document.getElementById('booking-modal-body').innerHTML = '<div class="flex justify-center py-10"><div class="loading-spinner w-10 h-10"></div></div>';
             
-            const result = await callGAS('booking', { bookingId }, { debounceKey: `booking_${bookingId}` });
+            const result = await callGAS('booking', { bookingId });
             
             if (result.success) {
                 const b = result.data;
@@ -2887,12 +2904,12 @@
                 const footer = document.getElementById('booking-modal-footer');
                 const now = new Date();
                 const endTime = new Date(b.endTime);
-                const canCancel = b.status === 'confirmed' && endTime > now && b.userId === state.user?.lineUserId;
+                const canCancel = b.status === 'confirmed' && endTime > now;
                 
                 footer.innerHTML = `
-                    ${canCancel ? `
+                    ${canCancel && b.userId === state.user.lineUserId ? `
                         <button class="btn-danger flex-1" onclick="cancelBooking('${b.bookingId}')">
-                            <i class="fas fa-times mr-2"></i>ยกเลิก
+                            <i class="fas fa-times mr-2"></i>ยกเลิกการจอง
                         </button>
                     ` : ''}
                     <button class="btn-outline flex-1" onclick="shareBookingViaPicker('${b.bookingId}')">
@@ -2923,7 +2940,7 @@
                 const apiResult = await callGAS('booking/cancel', { 
                     bookingId,
                     lineUserId: state.user.lineUserId
-                }, { priority: 'high' });
+                });
 
                 if (apiResult.success) {
                     showToast('ยกเลิกการจองสำเร็จ');
@@ -2942,37 +2959,49 @@
 
         // ========== ADMIN FUNCTIONS ==========
         async function loadAdminStats() {
-            const result = await callGAS('admin/stats', {}, { debounceKey: 'adminStats' });
-            if (result.success) {
-                $.adminUsers.textContent = result.data.users || 0;
-                $.adminRooms.textContent = result.data.rooms || 0;
-                $.adminBookings.textContent = result.data.bookings || 0;
-                $.adminPending.textContent = result.data.pending || 0;
+            try {
+                const result = await callGAS('admin/stats');
+                if (result.success) {
+                    $.adminUsers.textContent = result.data.users || 0;
+                    $.adminRooms.textContent = result.data.rooms || 0;
+                    $.adminBookings.textContent = result.data.bookings || 0;
+                    $.adminPending.textContent = result.data.pending || 0;
+                }
+            } catch (error) {
+                console.error('Load admin stats error:', error);
             }
         }
 
         async function loadTodayStats() {
-            const result = await callGAS('admin/stats', {}, { debounceKey: 'todayStats' });
-            if (result.success) {
-                $.statRooms.textContent = result.data.rooms || 0;
-                $.statToday.textContent = result.data.today || 0;
-                $.statPending.textContent = result.data.pending || 0;
+            try {
+                const result = await callGAS('admin/stats');
+                if (result.success) {
+                    $.statRooms.textContent = result.data.rooms || 0;
+                    $.statToday.textContent = result.data.today || 0;
+                    $.statPending.textContent = result.data.pending || 0;
+                }
+            } catch (error) {
+                console.error('Load stats error:', error);
             }
         }
 
         async function loadPendingBookings() {
-            const result = await callGAS('admin/pending-bookings', {}, { debounceKey: 'pendingBookings' });
-            if (result.success) {
-                state.pendingBookings = result.data || [];
-                renderPendingBookings();
-                
-                const count = state.pendingBookings.length;
-                if (count > 0 && $.pendingBadge) {
-                    $.pendingBadge.textContent = count > 9 ? '9+' : count;
-                    $.pendingBadge.classList.remove('hidden');
-                } else if ($.pendingBadge) {
-                    $.pendingBadge.classList.add('hidden');
+            try {
+                const result = await callGAS('admin/pending-bookings');
+                if (result.success) {
+                    state.pendingBookings = result.data || [];
+                    renderPendingBookings();
+                    
+                    const count = state.pendingBookings.length;
+                    if (count > 0) {
+                        $.pendingBadge.textContent = count > 9 ? '9+' : count;
+                        $.pendingBadge.classList.remove('hidden');
+                    } else {
+                        $.pendingBadge.classList.add('hidden');
+                    }
                 }
+            } catch (error) {
+                console.error('Load pending bookings error:', error);
             }
         }
 
@@ -3008,7 +3037,7 @@
         window.approveBooking = async function(bookingId, btn) {
             setButtonLoading(btn, true);
             
-            const result = await callGAS('booking/approve', { bookingId }, { priority: 'high' });
+            const result = await callGAS('booking/approve', { bookingId });
             
             if (result.success) {
                 showToast('อนุมัติการจองสำเร็จ');
@@ -3044,7 +3073,7 @@
                 const apiResult = await callGAS('booking/reject', { 
                     bookingId,
                     reason: result.value || 'ไม่ระบุเหตุผล'
-                }, { priority: 'high' });
+                });
                 
                 if (apiResult.success) {
                     showToast('ปฏิเสธการจองสำเร็จ');
@@ -3064,10 +3093,14 @@
         };
 
         async function loadAllBookings() {
-            const result = await callGAS('admin/all-bookings', {}, { debounceKey: 'allBookings' });
-            if (result.success) {
-                state.allBookings = result.data || [];
-                renderAllBookings();
+            try {
+                const result = await callGAS('admin/all-bookings');
+                if (result.success) {
+                    state.allBookings = result.data || [];
+                    renderAllBookings();
+                }
+            } catch (error) {
+                console.error('Load all bookings error:', error);
             }
         }
 
@@ -3110,10 +3143,14 @@
         }
 
         async function loadUsers() {
-            const result = await callGAS('admin/users', {}, { debounceKey: 'users' });
-            if (result.success) {
-                state.users = result.data || [];
-                renderUsers();
+            try {
+                const result = await callGAS('admin/users');
+                if (result.success) {
+                    state.users = result.data || [];
+                    renderUsers();
+                }
+            } catch (error) {
+                console.error('Load users error:', error);
             }
         }
 
@@ -3131,14 +3168,14 @@
 
             $.usersList.innerHTML = filtered.map(u => `
                 <div class="user-row">
-                    <img src="${u.pictureUrl || 'https://via.placeholder.com/40/2a2e36/06c755?text=User'}" class="user-avatar-sm" loading="lazy">
-                    <div class="flex-1 min-w-0">
-                        <p class="font-semibold text-sm truncate">${u.displayName || ''}</p>
-                        <p class="text-xs text-gray-400 truncate">${u.email || ''}</p>
+                    <img src="${u.pictureUrl || 'https://via.placeholder.com/40'}" class="user-avatar-sm" loading="lazy">
+                    <div class="flex-1">
+                        <p class="font-semibold text-sm">${u.displayName || ''}</p>
+                        <p class="text-xs text-gray-400">${u.email || ''}</p>
                     </div>
-                    <span class="role-badge role-${u.role}">${{admin:'ผู้ดูแล', manager:'ผู้จัดการ', user:'ผู้ใช้'}[u.role] || u.role}</span>
+                    <span class="role-badge role-${u.role}">${{admin:'ผู้ดูแล', manager:'ผู้จัดการ', user:'ผู้ใช้'}[u.role]}</span>
                     ${state.isAdmin ? `
-                        <button class="text-[#06c755] text-xs flex-shrink-0" onclick="showRoleModal('${u.lineUserId}', '${u.displayName}', '${u.role}')">
+                        <button class="text-[#06c755] text-xs" onclick="showRoleModal('${u.lineUserId}', '${u.displayName}', '${u.role}')">
                             <i class="fas fa-cog"></i>
                         </button>
                     ` : ''}
@@ -3170,7 +3207,7 @@
                 targetUserId: userId,
                 role,
                 lineUserId: state.user.lineUserId
-            }, { priority: 'high' });
+            });
 
             if (result.success) {
                 showToast('อัปเดตสิทธิ์สำเร็จ');
@@ -3180,8 +3217,7 @@
                 if (userId === state.user?.lineUserId) {
                     const userResult = await callGAS('user/profile', {
                         lineUserId: state.user.lineUserId
-                    }, { priority: 'high' });
-                    
+                    });
                     if (userResult.success) {
                         state.user = userResult.data;
                         state.isAdmin = state.user.role === 'admin';
@@ -3237,15 +3273,9 @@
                 let imageUrl = document.getElementById('room-image').value;
                 const file = document.getElementById('room-image-file').files[0];
 
-                // อัปโหลดรูปภาพ (ถ้ามี) - ใช้ฟังก์ชัน uploadImage ที่แก้ไขแล้ว
                 if (file) {
-                    const uploaded = await uploadImage(file);
-                    if (uploaded) {
-                        imageUrl = uploaded;
-                    } else {
-                        setButtonLoading(btn, false);
-                        return; // หยุดถ้าอัปโหลดไม่สำเร็จ
-                    }
+                    const uploaded = await uploadImageToDrive(file);
+                    if (uploaded) imageUrl = uploaded;
                 }
 
                 const data = {
@@ -3260,21 +3290,14 @@
 
                 if (id) data.roomId = id;
 
-                const result = await callGAS(id ? 'room/update' : 'room/create', data, { 
-                    retryCount: 2,
-                    priority: 'high'
-                });
+                const result = await callGAS(id ? 'room/update' : 'room/create', data);
 
                 if (result.success) {
                     showToast(id ? 'แก้ไขห้องสำเร็จ' : 'เพิ่มห้องสำเร็จ');
                     closeRoomModal();
-                    
-                    // โหลดข้อมูลใหม่
-                    await Promise.all([
-                        loadRooms(),
-                        loadRoomsManagement(),
-                        state.isAdmin ? loadAdminStats() : Promise.resolve()
-                    ]);
+                    await loadRooms();
+                    await loadRoomsManagement();
+                    if (state.isAdmin) await loadAdminStats();
                 } else {
                     showToast(result.message || 'เกิดข้อผิดพลาด', 'error');
                 }
@@ -3327,16 +3350,14 @@
                 const apiResult = await callGAS('room/delete', { 
                     roomId: state.currentRoom.roomId,
                     lineUserId: state.user.lineUserId
-                }, { priority: 'high' });
+                });
 
                 if (apiResult.success) {
                     showToast('ลบห้องสำเร็จ');
                     closeModal();
-                    await Promise.all([
-                        loadRooms(),
-                        loadRoomsManagement(),
-                        loadAdminStats()
-                    ]);
+                    await loadRooms();
+                    await loadRoomsManagement();
+                    await loadAdminStats();
                 } else {
                     showToast(apiResult.message || 'ลบไม่สำเร็จ', 'error');
                 }
@@ -3345,174 +3366,10 @@
             }
         };
 
-        // ========== CALENDAR FUNCTIONS ==========
-        async function loadMonthBookings(year, month) {
-            const startDate = new Date(year, month, 1);
-            const endDate = new Date(year, month + 1, 0);
-            
-            const startStr = formatDateForInput(startDate);
-            const endStr = formatDateForInput(endDate);
-            
-            const result = await callGAS('bookings', {
-                startDate: startStr,
-                endDate: endStr,
-                showPast: 'true'
-            }, { debounceKey: `month_${year}_${month}` });
-            
-            if (result.success) {
-                state.dateBookings = {};
-                if (result.data?.bookings) {
-                    result.data.bookings.forEach(booking => {
-                        const date = new Date(booking.startTime).toISOString().split('T')[0];
-                        if (!state.dateBookings[date]) {
-                            state.dateBookings[date] = [];
-                        }
-                        state.dateBookings[date].push(booking);
-                    });
-                }
-                renderCalendar();
-            }
-        }
-
-        function renderCalendar() {
-            const year = state.currentMonth.getFullYear();
-            const month = state.currentMonth.getMonth();
-            
-            $.currentMonth.textContent = formatMonthThai(state.currentMonth);
-            
-            const firstDay = new Date(year, month, 1);
-            const lastDay = new Date(year, month + 1, 0);
-            
-            const startDay = firstDay.getDay();
-            const totalDays = lastDay.getDate();
-            
-            const prevMonthLastDay = new Date(year, month, 0).getDate();
-            
-            let html = '';
-            
-            // Previous month days
-            for (let i = startDay - 1; i >= 0; i--) {
-                const day = prevMonthLastDay - i;
-                const date = new Date(year, month - 1, day);
-                const dateStr = formatDateForInput(date);
-                const hasBooking = state.dateBookings[dateStr]?.length > 0;
-                const bookingCount = state.dateBookings[dateStr]?.length || 0;
-                const isToday = isSameDay(date, new Date());
-                
-                html += renderCalendarDay(day, true, hasBooking, isToday, dateStr, bookingCount);
-            }
-            
-            // Current month days
-            for (let day = 1; day <= totalDays; day++) {
-                const date = new Date(year, month, day);
-                const dateStr = formatDateForInput(date);
-                const bookings = state.dateBookings[dateStr] || [];
-                const hasBooking = bookings.length > 0;
-                const bookingCount = bookings.length;
-                const isToday = isSameDay(date, new Date());
-                const isSelected = isSameDay(date, state.selectedDate);
-                
-                html += renderCalendarDay(day, false, hasBooking, isToday, dateStr, bookingCount, isSelected);
-            }
-            
-            // Next month days
-            const totalCells = 42;
-            const remainingCells = totalCells - (startDay + totalDays);
-            for (let day = 1; day <= remainingCells; day++) {
-                const date = new Date(year, month + 1, day);
-                const dateStr = formatDateForInput(date);
-                const hasBooking = state.dateBookings[dateStr]?.length > 0;
-                const bookingCount = state.dateBookings[dateStr]?.length || 0;
-                
-                html += renderCalendarDay(day, true, hasBooking, false, dateStr, bookingCount);
-            }
-            
-            $.calendarDays.innerHTML = html;
-        }
-
-        function renderCalendarDay(day, isOtherMonth, hasBooking, isToday, dateStr, bookingCount = 0, isSelected = false) {
-            let classes = 'calendar-day';
-            if (isOtherMonth) classes += ' other-month';
-            if (isToday) classes += ' today';
-            if (isSelected) classes += ' selected';
-            if (hasBooking) {
-                classes += ' has-booking';
-                if (bookingCount > 1) {
-                    classes += ' multiple';
-                }
-            }
-            
-            return `<div class="${classes}" onclick="selectDate('${dateStr}')">${day}</div>`;
-        }
-
-        function isSameDay(date1, date2) {
-            return date1.getFullYear() === date2.getFullYear() &&
-                   date1.getMonth() === date2.getMonth() &&
-                   date1.getDate() === date2.getDate();
-        }
-
-        window.selectDate = async function(dateStr) {
-            state.selectedDate = new Date(dateStr);
-            renderCalendar();
-            
-            const result = await callGAS('bookings', {
-                date: dateStr,
-                showPast: 'true'
-            }, { debounceKey: `date_${dateStr}` });
-            
-            if (result.success && result.data?.bookings?.length > 0) {
-                const bookings = result.data.bookings;
-                const dateObj = new Date(dateStr);
-                const dateThai = dateObj.toLocaleDateString('th-TH', { 
-                    weekday: 'long', 
-                    day: 'numeric', 
-                    month: 'long', 
-                    year: 'numeric' 
-                });
-                
-                $.selectedDateTitle.textContent = `📅 การจองวันที่ ${dateThai}`;
-                $.selectedDateBookingsList.innerHTML = bookings.map(b => {
-                    const statusClass = b.status === 'confirmed' ? '' : 'pending';
-                    return `
-                        <div class="date-booking-item ${statusClass}" onclick="showBookingDetail('${b.bookingId}')">
-                            <div class="date-booking-time">
-                                <i class="far fa-clock mr-1"></i> ${formatTime(b.startTime)} - ${formatTime(b.endTime)}
-                            </div>
-                            <div class="date-booking-title">${b.title}</div>
-                            <div class="date-booking-room">${b.roomName} | โดย: ${b.userName}</div>
-                        </div>
-                    `;
-                }).join('');
-                
-                $.selectedDateBookings.classList.remove('hidden');
-            } else {
-                $.selectedDateBookings.classList.add('hidden');
-            }
-        };
-
-        window.changeMonth = function(delta) {
-            const newMonth = new Date(state.currentMonth);
-            newMonth.setMonth(newMonth.getMonth() + delta);
-            state.currentMonth = newMonth;
-            loadMonthBookings(newMonth.getFullYear(), newMonth.getMonth());
-        };
-
-        window.goToToday = function() {
-            state.currentMonth = new Date();
-            state.selectedDate = new Date();
-            loadMonthBookings(state.currentMonth.getFullYear(), state.currentMonth.getMonth());
-            selectDate(formatDateForInput(new Date()));
-        };
-
-        window.showAllRooms = function() {
-            $.searchInput.value = '';
-            renderRooms();
-        };
-
         // ========== SETTINGS ==========
         async function loadSettings() {
             try {
-                const result = await callGAS('admin/settings/get', {}, { debounceKey: 'settings' });
+                const result = await callGAS('admin/settings/get');
                 
                 if (result.success) {
                     state.settings = result.data || {
@@ -3536,6 +3393,7 @@
                         }
                         
                         $.settingRequireApproval.checked = isChecked;
+                        console.log('Setting requireApproval:', requireApproval, '->', isChecked);
                     }
                     
                     if ($.settingReminderMinutes) {
@@ -3544,8 +3402,8 @@
                     
                     updateAppName(state.settings.appName);
                 } else {
-                    // ลองโหลดจาก endpoint เก่า
-                    const fallbackResult = await callGAS('settings', {}, { debounceKey: 'settings_fallback' });
+                    console.log('Fallback to old settings path');
+                    const fallbackResult = await callGAS('settings');
                     
                     if (fallbackResult.success) {
                         state.settings = fallbackResult.data || {
@@ -3576,6 +3434,8 @@
                         }
                         
                         updateAppName(state.settings.appName);
+                    } else {
+                        console.error('Failed to load settings');
                     }
                 }
             } catch (error) {
@@ -3600,7 +3460,7 @@
                 lineUserId: state.user.lineUserId
             };
 
-            const result = await callGAS('admin/settings/update', data, { priority: 'high' });
+            const result = await callGAS('admin/settings/update', data);
             
             if (result.success) {
                 showToast('บันทึกสำเร็จ');
@@ -3611,33 +3471,6 @@
             }
 
             setButtonLoading(saveBtn, false);
-        };
-
-        window.resetDatabase = async function() {
-            if (!state.isAdmin) {
-                showToast('เฉพาะผู้ดูแลระบบเท่านั้น', 'error');
-                return;
-            }
-            
-            const result = await Swal.fire({
-                title: 'รีเซ็ตฐานข้อมูล',
-                text: 'คุณแน่ใจหรือไม่? ข้อมูลทั้งหมดจะถูกลบและกลับสู่ค่าเริ่มต้น',
-                icon: 'warning',
-                showCancelButton: true,
-                confirmButtonColor: '#ef4444',
-                confirmButtonText: 'ใช่, รีเซ็ต',
-                cancelButtonText: 'ยกเลิก'
-            });
-
-            if (result.isConfirmed) {
-                const apiResult = await callGAS('reset-database', { confirm: 'RESET_ALL' }, { priority: 'high' });
-                if (apiResult.success) {
-                    showToast('รีเซ็ตฐานข้อมูลสำเร็จ');
-                    setTimeout(() => location.reload(), 1500);
-                } else {
-                    showToast(apiResult.message || 'เกิดข้อผิดพลาด', 'error');
-                }
-            }
         };
 
         // ========== PROFILE ==========
@@ -3663,7 +3496,7 @@
                 lineUserId: state.user.lineUserId
             };
 
-            const result = await callGAS('user/update', data, { priority: 'high' });
+            const result = await callGAS('user/update', data);
             if (result.success) {
                 showToast('บันทึกสำเร็จ');
                 Object.assign(state.user, data);
@@ -3704,34 +3537,28 @@
 
         // ========== EVENT LISTENERS ==========
         let searchTimer;
-        if ($.searchInput) {
-            $.searchInput.addEventListener('input', () => {
-                clearTimeout(searchTimer);
-                searchTimer = setTimeout(() => {
-                    renderRooms();
-                }, 300);
-            });
-        }
+        $.searchInput.addEventListener('input', () => {
+            clearTimeout(searchTimer);
+            searchTimer = setTimeout(() => {
+                renderRooms();
+            }, 300);
+        });
 
-        if ($.userSearch) {
-            $.userSearch.addEventListener('input', renderUsers);
-        }
+        $.userSearch?.addEventListener('input', renderUsers);
         
-        if ($.adminBookingSearch) {
-            $.adminBookingSearch.addEventListener('input', renderAllBookings);
-        }
+        $.adminBookingSearch?.addEventListener('input', () => {
+            renderAllBookings();
+        });
 
-        if ($.refreshAdmin) {
-            $.refreshAdmin.addEventListener('click', () => {
-                if (state.isManager) {
-                    loadAdminStats();
-                    loadUsers();
-                    loadPendingBookings();
-                    loadAllBookings();
-                    loadRoomsManagement();
-                }
-            });
-        }
+        $.refreshAdmin?.addEventListener('click', () => {
+            if (state.isManager) {
+                loadAdminStats();
+                loadUsers();
+                loadPendingBookings();
+                loadAllBookings();
+                loadRoomsManagement();
+            }
+        });
 
         document.querySelectorAll('.admin-tab-btn').forEach(btn => {
             btn.addEventListener('click', () => {
@@ -3767,7 +3594,7 @@
             });
         });
 
-        document.getElementById('profile-header')?.addEventListener('click', () => {
+        document.getElementById('profile-header').addEventListener('click', () => {
             Swal.fire({
                 title: state.user?.displayName,
                 text: state.user?.email,
