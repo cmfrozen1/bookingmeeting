@@ -6,8 +6,8 @@
     <title id="page-title">Meeting Room · LINE</title>
     <link rel="shortcut icon" href="https://cdn-icons-png.flaticon.com/512/1040/1040244.png">
     
-    <!-- Tailwind -->
-    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Tailwind CSS - Production Ready -->
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
     
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -1247,7 +1247,7 @@
                     <div id="users-list" class="space-y-2"></div>
                 </div>
 
-                <!-- Admin: Settings -->
+                <!-- Admin: Settings (FIXED) -->
                 <div id="admin-settings-tab" class="admin-tab hidden">
                     <div class="admin-section">
                         <h3 class="font-semibold mb-3">ตั้งค่าระบบ</h3>
@@ -3235,27 +3235,80 @@
             }
         };
 
-        // ========== SETTINGS ==========
+        // ========== SETTINGS (FIXED) ==========
         async function loadSettings() {
-            const result = await callGAS('settings');
-            if (result.success) {
-                state.settings = result.data || {
-                    appName: 'Meeting Room',
-                    requireApproval: 'true',
-                    reminderMinutes: '30'
-                };
+            try {
+                const result = await callGAS('admin/settings/get');
                 
-                document.getElementById('setting-app-name').value = state.settings.appName || 'Meeting Room';
-                
-                if ($.settingRequireApproval) {
-                    $.settingRequireApproval.checked = state.settings.requireApproval === 'true';
+                if (result.success) {
+                    state.settings = result.data || {
+                        appName: 'Meeting Room',
+                        requireApproval: 'true',
+                        reminderMinutes: '30'
+                    };
+                    
+                    document.getElementById('setting-app-name').value = state.settings.appName || 'Meeting Room';
+                    
+                    if ($.settingRequireApproval) {
+                        const requireApproval = state.settings.requireApproval;
+                        let isChecked = false;
+                        
+                        if (typeof requireApproval === 'string') {
+                            isChecked = requireApproval.toLowerCase() === 'true' || requireApproval === '1';
+                        } else if (typeof requireApproval === 'boolean') {
+                            isChecked = requireApproval;
+                        } else if (typeof requireApproval === 'number') {
+                            isChecked = requireApproval === 1;
+                        }
+                        
+                        $.settingRequireApproval.checked = isChecked;
+                        console.log('Setting requireApproval:', requireApproval, '->', isChecked);
+                    }
+                    
+                    if ($.settingReminderMinutes) {
+                        $.settingReminderMinutes.value = state.settings.reminderMinutes || '30';
+                    }
+                    
+                    updateAppName(state.settings.appName);
+                } else {
+                    console.log('Fallback to old settings path');
+                    const fallbackResult = await callGAS('settings');
+                    
+                    if (fallbackResult.success) {
+                        state.settings = fallbackResult.data || {
+                            appName: 'Meeting Room',
+                            requireApproval: 'true',
+                            reminderMinutes: '30'
+                        };
+                        
+                        document.getElementById('setting-app-name').value = state.settings.appName || 'Meeting Room';
+                        
+                        if ($.settingRequireApproval) {
+                            const requireApproval = state.settings.requireApproval;
+                            let isChecked = false;
+                            
+                            if (typeof requireApproval === 'string') {
+                                isChecked = requireApproval.toLowerCase() === 'true' || requireApproval === '1';
+                            } else if (typeof requireApproval === 'boolean') {
+                                isChecked = requireApproval;
+                            } else if (typeof requireApproval === 'number') {
+                                isChecked = requireApproval === 1;
+                            }
+                            
+                            $.settingRequireApproval.checked = isChecked;
+                        }
+                        
+                        if ($.settingReminderMinutes) {
+                            $.settingReminderMinutes.value = state.settings.reminderMinutes || '30';
+                        }
+                        
+                        updateAppName(state.settings.appName);
+                    } else {
+                        console.error('Failed to load settings');
+                    }
                 }
-                
-                if ($.settingReminderMinutes) {
-                    $.settingReminderMinutes.value = state.settings.reminderMinutes || '30';
-                }
-                
-                updateAppName(state.settings.appName);
+            } catch (error) {
+                console.error('Load settings error:', error);
             }
         }
 
