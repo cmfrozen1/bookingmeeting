@@ -2422,7 +2422,7 @@
             }
         }
 
-        // ========== สร้าง Flex Message สำหรับแชร์ ==========
+        // ========== สร้าง Flex Message สำหรับส่งไปแชท ==========
         function createBookingFlexMessage(booking) {
             const startTime = new Date(booking.startTime);
             const endTime = new Date(booking.endTime);
@@ -2444,7 +2444,7 @@
             const statusColor = booking.status === 'confirmed' ? '#06c755' : '#f59e0b';
             const statusText = booking.status === 'confirmed' ? '✅ อนุมัติแล้ว' : '⏳ รออนุมัติ';
 
-            const flexMessage = {
+            return {
                 type: 'flex',
                 altText: `📅 การจอง: ${booking.title}`,
                 contents: {
@@ -2588,50 +2588,31 @@
                     }
                 }
             };
-
-            if (booking.meetingLink) {
-                flexMessage.contents.footer = {
-                    type: 'box',
-                    layout: 'vertical',
-                    contents: [
-                        {
-                            type: 'button',
-                            action: {
-                                type: 'uri',
-                                label: '🔗 เข้าร่วมประชุม',
-                                uri: booking.meetingLink
-                            },
-                            style: 'primary',
-                            color: '#06c755'
-                        }
-                    ]
-                };
-            }
-
-            return flexMessage;
         }
 
         // ========== ส่ง Flex Message ไปยังแชท ==========
-        async function shareBookingToChat(bookingData) {
+        async function sendBookingToChat(bookingData) {
             try {
-                // ถ้าไม่อยู่ใน LINE Client ให้ข้ามไป
+                // ตรวจสอบว่าอยู่ใน LINE Client หรือไม่
                 if (!liff.isInClient()) {
-                    console.log('Not in LINE client, skip sharing');
-                    return;
+                    console.log('Not in LINE client, cannot send message');
+                    return false;
                 }
 
                 const flexMessage = createBookingFlexMessage(bookingData);
                 
                 // ส่งข้อความไปยังแชทปัจจุบัน
                 await liff.sendMessages([flexMessage]);
-                console.log('Message sent successfully');
+                console.log('Flex message sent successfully');
                 
                 // แสดง toast แจ้งเตือน
                 showToast('ส่งข้อมูลการจองไปยังแชทแล้ว');
                 
+                return true;
             } catch (error) {
-                console.error('Error sending message to chat:', error);
+                console.error('Error sending flex message:', error);
                 // ไม่ต้องแสดง error เพราะไม่กระทบการทำงานหลัก
+                return false;
             }
         }
 
@@ -2684,16 +2665,17 @@
                         loadMonthBookings(state.currentMonth.getFullYear(), state.currentMonth.getMonth())
                     ]);
                     
-                    // ถ้าเป็นการจองใหม่และมีข้อมูลการจอง ให้ส่ง Flex Message ไปยังแชท
+                    // ถ้าเป็นการจองใหม่และมีข้อมูลการจอง ให้ส่ง Flex Message ไปยังแชททันที
                     if (!id && result.data?.bookingData) {
                         // รอสักครู่เพื่อให้ UI อัพเดทแล้วค่อยส่งข้อความ
                         setTimeout(async () => {
-                            await shareBookingToChat(result.data.bookingData);
+                            // ส่ง Flex Message ไปยังแชท
+                            await sendBookingToChat(result.data.bookingData);
                             
-                            // ถ้าอยู่ใน LINE Client ให้ถามว่าแชร์ต่อหรือไม่
+                            // ถ้าอยู่ใน LINE Client ให้ถามว่าแชร์ต่อหรือไม่ (เป็นตัวเลือกเสริม)
                             if (liff.isInClient()) {
                                 const shareResult = await Swal.fire({
-                                    title: 'ส่งข้อมูลการจอง',
+                                    title: 'แชร์การจอง',
                                     text: 'ต้องการแชร์ข้อมูลการจองนี้ไปยังแชทอื่นหรือไม่?',
                                     icon: 'question',
                                     showCancelButton: true,
