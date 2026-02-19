@@ -177,10 +177,12 @@
             border-radius: 20px;
             overflow: hidden;
             cursor: pointer;
+            transition: all 0.2s;
         }
         
-        .room-card:active {
+        .room-card:hover {
             border-color: var(--primary);
+            transform: translateY(-2px);
         }
         
         .room-image {
@@ -188,6 +190,9 @@
             height: 160px;
             object-fit: cover;
             background: linear-gradient(135deg, #2a2e36, #1a1d24);
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
         
         .room-content {
@@ -250,15 +255,23 @@
             align-items: center;
             justify-content: center;
             gap: 8px;
+            transition: all 0.2s;
+        }
+        
+        .btn-primary:hover {
+            background: var(--primary-dark);
+            transform: scale(1.02);
         }
         
         .btn-primary:active {
             opacity: 0.8;
+            transform: scale(0.98);
         }
         
         .btn-primary:disabled {
             opacity: 0.5;
             cursor: not-allowed;
+            transform: none;
         }
         
         .btn-primary.loading {
@@ -293,10 +306,12 @@
             align-items: center;
             justify-content: center;
             gap: 8px;
+            transition: all 0.2s;
         }
         
-        .btn-outline:active {
+        .btn-outline:hover {
             background: rgba(255,255,255,0.05);
+            border-color: var(--primary);
         }
         
         .btn-outline.loading {
@@ -332,10 +347,11 @@
             align-items: center;
             justify-content: center;
             gap: 8px;
+            transition: all 0.2s;
         }
         
-        .btn-danger:active {
-            opacity: 0.8;
+        .btn-danger:hover {
+            background: #dc2626;
         }
         
         .btn-success {
@@ -371,6 +387,11 @@
             max-width: 1200px;
             margin-left: auto;
             margin-right: auto;
+            transition: all 0.2s;
+        }
+        
+        .profile-header:hover {
+            border-color: var(--primary);
         }
         
         .profile-avatar {
@@ -403,11 +424,13 @@
             border: 1px solid var(--border);
             border-radius: 30px;
             color: var(--text);
+            transition: all 0.2s;
         }
         
         .search-box input:focus {
             outline: none;
             border-color: var(--primary);
+            box-shadow: 0 0 0 2px rgba(6,199,85,0.2);
         }
         
         .search-box i {
@@ -475,9 +498,10 @@
             justify-content: center;
             border-radius: 50%;
             background: rgba(255,255,255,0.05);
+            transition: all 0.2s;
         }
         
-        .modal-close:active {
+        .modal-close:hover {
             background: rgba(255,255,255,0.1);
             color: var(--primary);
         }
@@ -516,11 +540,13 @@
             padding: 12px;
             width: 100%;
             margin-bottom: 12px;
+            transition: all 0.2s;
         }
         
         .input-field:focus {
             outline: none;
             border-color: var(--primary);
+            box-shadow: 0 0 0 2px rgba(6,199,85,0.2);
         }
         
         .empty-state {
@@ -550,7 +576,7 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            transition: opacity 0.15s;
+            transition: opacity 0.3s;
         }
         
         .initial-loading.hide {
@@ -586,6 +612,12 @@
             box-shadow: 0 4px 15px rgba(6,199,85,0.3);
             cursor: pointer;
             z-index: 100;
+            transition: all 0.2s;
+        }
+        
+        .floating-book-btn:hover {
+            transform: scale(1.1);
+            box-shadow: 0 6px 20px rgba(6,199,85,0.4);
         }
         
         .time-slot {
@@ -629,6 +661,11 @@
             border: 1px solid var(--border);
             border-radius: 12px;
             margin-bottom: 8px;
+            transition: all 0.2s;
+        }
+        
+        .user-row:hover {
+            border-color: var(--primary);
         }
         
         .user-avatar-sm {
@@ -664,6 +701,7 @@
             padding: 12px;
             border-bottom: 2px solid transparent;
             cursor: pointer;
+            transition: all 0.2s;
         }
         
         .admin-tab-btn.active {
@@ -679,10 +717,12 @@
             text-align: center;
             margin-bottom: 12px;
             cursor: pointer;
+            transition: all 0.2s;
         }
         
         .upload-area:hover {
             border-color: var(--primary);
+            background: rgba(6,199,85,0.05);
         }
         
         .image-preview {
@@ -703,7 +743,7 @@
         .skeleton-card {
             background: linear-gradient(90deg, var(--bg-card) 25%, #252930 50%, var(--bg-card) 75%);
             background-size: 200% 100%;
-            animation: loading 1s infinite;
+            animation: loading 1.5s infinite;
             border-radius: 20px;
             height: 200px;
         }
@@ -746,6 +786,7 @@
             display: flex;
             align-items: center;
             justify-content: center;
+            transition: all 0.2s;
         }
         
         .calendar-nav-btn:hover {
@@ -786,6 +827,7 @@
         
         .calendar-day:hover {
             border-color: var(--primary);
+            transform: scale(1.02);
         }
         
         .calendar-day.today {
@@ -836,10 +878,12 @@
             margin-bottom: 8px;
             border-left: 4px solid var(--primary);
             cursor: pointer;
+            transition: all 0.2s;
         }
         
         .date-booking-item:hover {
             background: #252930;
+            transform: translateX(4px);
         }
         
         .date-booking-item.pending {
@@ -896,10 +940,12 @@
             padding: 12px;
             text-align: center;
             cursor: pointer;
+            transition: all 0.2s;
         }
 
-        .quick-action-btn:active {
+        .quick-action-btn:hover {
             border-color: var(--primary);
+            background: rgba(6,199,85,0.05);
         }
 
         .quick-action-icon {
@@ -913,7 +959,6 @@
             color: var(--text-secondary);
         }
 
-        /* ===== Loading States ===== */
         .loading-overlay {
             position: absolute;
             inset: 0;
@@ -932,6 +977,17 @@
             border-top-color: var(--primary);
             border-radius: 50%;
             animation: spin 0.6s linear infinite;
+        }
+
+        .room-image img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .room-image i {
+            font-size: 48px;
+            color: var(--primary);
         }
     </style>
 </head>
@@ -1148,7 +1204,7 @@
                     <div id="users-list" class="space-y-2"></div>
                 </div>
 
-                <!-- Admin: Settings (FIXED) -->
+                <!-- Admin: Settings -->
                 <div id="admin-settings-tab" class="admin-tab hidden">
                     <div class="admin-section">
                         <h3 class="font-semibold mb-3">ตั้งค่าระบบ</h3>
@@ -1495,10 +1551,14 @@
                 max-width: 400px;
                 margin: 0 auto;
                 box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+                animation: slideUp 0.3s ease;
             `;
             toast.textContent = msg;
             document.body.appendChild(toast);
-            setTimeout(() => toast.remove(), 3000);
+            setTimeout(() => {
+                toast.style.animation = 'slideDown 0.3s ease';
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
         }
 
         function formatDateThai(dateStr) {
@@ -1589,6 +1649,7 @@
                 const text = await res.text();
                 return JSON.parse(text);
             } catch (error) {
+                console.error('API Error:', error);
                 return { success: false, message: 'connection error' };
             }
         }
@@ -1609,10 +1670,11 @@
                 });
 
                 if (result.success) {
-                    return `https://lh5.googleusercontent.com/d/${result.data.fileId}=s0`;
+                    return result.data.fileUrl; // ส่งกลับ lh5 URL
                 }
                 return null;
-            } catch {
+            } catch (error) {
+                console.error('Upload error:', error);
                 return null;
             }
         }
@@ -1893,6 +1955,7 @@
                     initDatePickers();
                 }
             } catch (error) {
+                console.error('LIFF init error:', error);
                 $.initLoading.classList.add('hide');
                 showToast('ไม่สามารถเชื่อมต่อ LINE ได้', 'error');
             }
@@ -1965,10 +2028,15 @@
                 return;
             }
 
-            $.roomsList.innerHTML = filtered.map(r => `
+            $.roomsList.innerHTML = filtered.map(r => {
+                const imageHtml = r.imageUrl ? 
+                    `<img src="${r.imageUrl}" class="w-full h-full object-cover" onerror="this.style.display='none'; this.parentElement.innerHTML='<i class=\'fas fa-door-open text-4xl text-[#06c755]\'></i>';">` : 
+                    `<i class="fas fa-door-open text-4xl text-[#06c755]"></i>`;
+                
+                return `
                 <div class="room-card" onclick="showRoomDetail('${r.roomId}')">
-                    <div class="room-image" style="background: linear-gradient(135deg, #2a2e36, #1a1d24); display: flex; align-items: center; justify-content: center;">
-                        <i class="fas fa-door-open text-4xl text-[#06c755]"></i>
+                    <div class="room-image">
+                        ${imageHtml}
                     </div>
                     <div class="room-content">
                         <div class="flex justify-between items-start mb-2">
@@ -1985,7 +2053,7 @@
                         </div>
                     </div>
                 </div>
-            `).join('');
+            `}).join('');
         }
 
         window.showRoomDetail = async function(roomId) {
@@ -2011,8 +2079,14 @@
                 
                 const todayBookings = bookingsResult.success ? bookingsResult.data.bookings : [];
 
+                const imageHtml = room.imageUrl ? 
+                    `<img src="${room.imageUrl}" class="w-full max-h-80 object-cover rounded-xl mb-4" onerror="this.style.display='none';">` : 
+                    `<div class="w-full h-48 flex items-center justify-center bg-gradient-to-br from-[#2a2e36] to-[#1a1d24] rounded-xl mb-4">
+                        <i class="fas fa-door-open text-6xl text-[#06c755]"></i>
+                    </div>`;
+
                 $.modalBody.innerHTML = `
-                    ${room.imageUrl ? `<img src="${room.imageUrl}" class="w-full max-h-80 object-cover rounded-xl mb-4">` : ''}
+                    ${imageHtml}
                     <div class="flex gap-2 mb-4 flex-wrap">
                         <span class="capacity-badge"><i class="fas fa-users mr-1"></i> รองรับ ${room.capacity} คน</span>
                         <span class="badge badge-available">พร้อมใช้งาน</span>
@@ -2229,6 +2303,7 @@
                     showToast(result.message || 'เกิดข้อผิดพลาด', 'error');
                 }
             } catch (error) {
+                console.error('Save booking error:', error);
                 showToast('เกิดข้อผิดพลาด', 'error');
             } finally {
                 btn.disabled = false;
@@ -2772,7 +2847,8 @@
                 } else {
                     showToast(result.message || 'เกิดข้อผิดพลาด', 'error');
                 }
-            } catch {
+            } catch (error) {
+                console.error('Save room error:', error);
                 showToast('เกิดข้อผิดพลาด', 'error');
             } finally {
                 btn.disabled = false;
@@ -3028,6 +3104,20 @@
         } else {
             initLIFF();
         }
+
+        // Add animation keyframes
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes slideUp {
+                from { transform: translateY(100%); opacity: 0; }
+                to { transform: translateY(0); opacity: 1; }
+            }
+            @keyframes slideDown {
+                from { transform: translateY(0); opacity: 1; }
+                to { transform: translateY(100%); opacity: 0; }
+            }
+        `;
+        document.head.appendChild(style);
     </script>
 </body>
 </html>
