@@ -1247,7 +1247,7 @@
                     <div id="users-list" class="space-y-2"></div>
                 </div>
 
-                <!-- Admin: Settings (FIXED) -->
+                <!-- Admin: Settings -->
                 <div id="admin-settings-tab" class="admin-tab hidden">
                     <div class="admin-section">
                         <h3 class="font-semibold mb-3">ตั้งค่าระบบ</h3>
@@ -2415,14 +2415,6 @@
                         loadTodayStats(),
                         loadMonthBookings(state.currentMonth.getFullYear(), state.currentMonth.getMonth())
                     ]);
-                    
-                    // ส่ง Flex Message ไปยังแชท LINE
-                    if (liff.isInClient()) {
-                        const bookingDetail = await callGAS('booking', { bookingId: result.data.bookingId });
-                        if (bookingDetail.success) {
-                            await shareBookingToChat(bookingDetail.data);
-                        }
-                    }
                 } else {
                     showToast(result.message || 'เกิดข้อผิดพลาด', 'error');
                 }
@@ -2435,24 +2427,47 @@
             }
         };
 
-        // ========== SHARE BOOKING TO CHAT ==========
-        async function shareBookingToChat(booking) {
+        // ========== SHARE BOOKING VIA SHARE TARGET PICKER ==========
+        window.shareBookingViaPicker = async function(bookingId) {
             try {
+                if (!liff.isInClient()) {
+                    showToast('กรุณาเปิดใน LINE', 'warning');
+                    return;
+                }
+
+                const result = await callGAS('booking', { bookingId });
+                if (!result.success) {
+                    showToast('ไม่พบข้อมูลการจอง', 'error');
+                    return;
+                }
+
+                const booking = result.data;
                 const startTime = new Date(booking.startTime);
                 const endTime = new Date(booking.endTime);
-                const dateStr = startTime.toLocaleDateString('th-TH', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
-                const timeStr = startTime.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' }) + ' - ' + 
-                                endTime.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' }) + ' น.';
+                const dateStr = startTime.toLocaleDateString('th-TH', { 
+                    weekday: 'long', 
+                    year: 'numeric', 
+                    month: 'long', 
+                    day: 'numeric' 
+                });
+                const timeStr = startTime.toLocaleTimeString('th-TH', { 
+                    hour: '2-digit', 
+                    minute: '2-digit' 
+                }) + ' - ' + 
+                endTime.toLocaleTimeString('th-TH', { 
+                    hour: '2-digit', 
+                    minute: '2-digit' 
+                }) + ' น.';
                 
                 const statusColor = booking.status === 'confirmed' ? '#06c755' : '#f59e0b';
                 const statusText = booking.status === 'confirmed' ? '✅ อนุมัติแล้ว' : '⏳ รออนุมัติ';
-                
+
                 const flexMessage = {
                     type: 'flex',
-                    altText: '📅 รายละเอียดการจอง',
+                    altText: `📅 การจอง: ${booking.title}`,
                     contents: {
                         type: 'bubble',
-                        body: {
+                        header: {
                             type: 'box',
                             layout: 'vertical',
                             contents: [
@@ -2462,14 +2477,19 @@
                                     weight: 'bold',
                                     size: 'xl',
                                     color: '#06c755'
-                                },
+                                }
+                            ]
+                        },
+                        body: {
+                            type: 'box',
+                            layout: 'vertical',
+                            contents: [
                                 {
                                     type: 'text',
                                     text: booking.roomName,
                                     weight: 'bold',
                                     size: 'lg',
-                                    wrap: true,
-                                    margin: 'md'
+                                    wrap: true
                                 },
                                 {
                                     type: 'text',
@@ -2570,12 +2590,23 @@
                                             ]
                                         }
                                     ]
+                                },
+                                {
+                                    type: 'separator',
+                                    margin: 'lg'
+                                },
+                                {
+                                    type: 'text',
+                                    text: '👤 ผู้จอง: ' + booking.userName,
+                                    size: 'sm',
+                                    color: '#888888',
+                                    margin: 'lg'
                                 }
                             ]
                         }
                     }
                 };
-                
+
                 if (booking.meetingLink) {
                     flexMessage.contents.footer = {
                         type: 'box',
@@ -2594,21 +2625,18 @@
                         ]
                     };
                 }
+
+                await liff.shareTargetPicker([flexMessage]);
+                showToast('แชร์การจองสำเร็จ');
                 
-                await liff.sendMessages([flexMessage]);
             } catch (error) {
-                console.error('Share to chat error:', error);
+                console.error('Share via picker error:', error);
+                showToast('ไม่สามารถแชร์ได้', 'error');
             }
-        }
+        };
 
         window.shareBooking = async function(bookingId) {
-            const result = await callGAS('booking', { bookingId });
-            if (result.success && liff.isInClient()) {
-                await shareBookingToChat(result.data);
-                showToast('แชร์การจองสำเร็จ');
-            } else {
-                showToast('กรุณาเปิดใน LINE', 'warning');
-            }
+            await shareBookingViaPicker(bookingId);
         };
 
         // ========== MY BOOKINGS ==========
@@ -2686,7 +2714,7 @@
                         ` : ''}
                     </div>
                     <div class="mt-2 flex gap-2">
-                        <button class="text-xs text-[#06c755]" onclick="shareBooking('${b.bookingId}'); event.stopPropagation();">
+                        <button class="text-xs text-[#06c755]" onclick="shareBookingViaPicker('${b.bookingId}'); event.stopPropagation();">
                             <i class="fas fa-share-alt mr-1"></i>แชร์
                         </button>
                     </div>
@@ -2791,7 +2819,7 @@
                             <i class="fas fa-times mr-2"></i>ยกเลิกการจอง
                         </button>
                     ` : ''}
-                    <button class="btn-outline flex-1" onclick="shareBooking('${b.bookingId}')">
+                    <button class="btn-outline flex-1" onclick="shareBookingViaPicker('${b.bookingId}')">
                         <i class="fas fa-share-alt mr-2"></i>แชร์
                     </button>
                     <button class="btn-outline flex-1" onclick="closeBookingDetailModal()">ปิด</button>
@@ -3235,7 +3263,7 @@
             }
         };
 
-        // ========== SETTINGS (FIXED) ==========
+        // ========== SETTINGS ==========
         async function loadSettings() {
             try {
                 const result = await callGAS('admin/settings/get');
