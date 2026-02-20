@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
+    <title>จัดการระบบ · Meeting Room</title>
+    <link rel="shortcut icon" href="https://cdn-icons-png.flaticon.com/512/1040/1040244.png">
+    
+    <!-- Tailwind CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet" media="print" onload="this.media='all'">
+    
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@300;400;500;600;700&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
+    
+    <!-- LINE LIFF -->
+    <script src="https://static.line-scdn.net/liff/edge/2.1/sdk.js"></script>
+    
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" media="print" onload="this.media='all'">
+    
+    <!-- SweetAlert2 -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11" defer></script>
+    
+    <!-- Flatpickr -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css" media="print" onload="this.media='all'">
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr" defer></script>
+    <script src="https://npmcdn.com/flatpickr/dist/l10n/th.js" defer></script>
+    
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+    <!-- Initial Loading -->
+    <div class="initial-loading" id="initial-loading">
+        <div class="loading-spinner"></div>
+        <div class="loading-text mt-4 text-[#06c755]">กำลังโหลด...</div>
+    </div>
+
+    <!-- Navbar -->
+    <nav class="navbar">
+        <div class="navbar-content">
+            <div class="navbar-logo" onclick="window.location.href='index.html'">
+                <i class="fas fa-door-open"></i>
+                <span id="navbar-app-name">Meeting Room</span>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="admin-container">
+        <!-- Profile Header -->
+        <div class="profile-header" id="profile-header">
+            <img id="profile-avatar" src="https://via.placeholder.com/60/2a2e36/06c755?text=..." alt="avatar" class="profile-avatar">
+            <div class="flex-1">
+                <h2 id="profile-name" class="text-lg font-bold">กำลังโหลด...</h2>
+                <p id="profile-email" class="text-sm text-gray-400"></p>
+                <p id="profile-role" class="text-xs text-[#06c755] mt-1"></p>
+            </div>
+            <i class="fas fa-chevron-down text-gray-400"></i>
+        </div>
+
+        <div class="flex justify-between items-center mb-4">
+            <h2 class="text-xl font-bold text-[#06c755]">จัดการระบบ</h2>
+            <button id="refresh-admin" class="text-[#06c755] text-sm">
+                <i class="fas fa-sync-alt mr-1"></i>รีเฟรช
+            </button>
+        </div>
+
+        <!-- Admin Stats -->
+        <div class="admin-section">
+            <h3 class="font-semibold mb-3">สถิติ</h3>
+            <div class="grid grid-cols-2 gap-3">
+                <div class="admin-stat">
+                    <p class="text-xs text-gray-400">ผู้ใช้</p>
+                    <p id="admin-users" class="text-xl font-bold text-[#06c755]">0</p>
+                </div>
+                <div class="admin-stat">
+                    <p class="text-xs text-gray-400">ห้อง</p>
+                    <p id="admin-rooms" class="text-xl font-bold text-[#06c755]">0</p>
+                </div>
+                <div class="admin-stat">
+                    <p class="text-xs text-gray-400">การจอง</p>
+                    <p id="admin-bookings" class="text-xl font-bold text-[#06c755]">0</p>
+                </div>
+                <div class="admin-stat">
+                    <p class="text-xs text-gray-400">รออนุมัติ</p>
+                    <p id="admin-pending" class="text-xl font-bold text-yellow-500">0</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Admin Tabs -->
+        <div class="flex border-b border-[#2a2e36] mb-4 overflow-x-auto">
+            <button class="admin-tab-btn flex-1 py-2 text-center active" data-admin-tab="pending">
+                รออนุมัติ <span id="pending-badge" class="ml-1 bg-yellow-500 text-white text-xs rounded-full px-1.5 py-0.5 hidden">0</span>
+            </button>
+            <button class="admin-tab-btn flex-1 py-2 text-center" data-admin-tab="bookings">การจองทั้งหมด</button>
+            <button class="admin-tab-btn flex-1 py-2 text-center" data-admin-tab="rooms">จัดการห้อง</button>
+            <button class="admin-tab-btn flex-1 py-2 text-center" data-admin-tab="users">จัดการผู้ใช้</button>
+            <button class="admin-tab-btn flex-1 py-2 text-center" data-admin-tab="settings">ตั้งค่า</button>
+        </div>
+
+        <!-- Admin: Pending -->
+        <div id="admin-pending-tab" class="admin-tab">
+            <h3 class="font-semibold mb-3">รายการรออนุมัติ</h3>
+            <div id="pending-bookings-list" class="space-y-3"></div>
+        </div>
+
+        <!-- Admin: All Bookings -->
+        <div id="admin-bookings-tab" class="admin-tab hidden">
+            <div class="search-box px-0 mb-4">
+                <i class="fas fa-search"></i>
+                <input type="text" id="admin-booking-search" placeholder="ค้นหาการจอง...">
+            </div>
+            <div id="all-bookings-list" class="space-y-3"></div>
+        </div>
+
+        <!-- Admin: Rooms -->
+        <div id="admin-rooms-tab" class="admin-tab hidden">
+            <button class="btn-primary mb-4" onclick="showCreateRoomModal()">
+                <i class="fas fa-plus mr-2"></i>เพิ่มห้องใหม่
+            </button>
+            <div id="rooms-management-list" class="space-y-3"></div>
+        </div>
+
+        <!-- Admin: Users -->
+        <div id="admin-users-tab" class="admin-tab hidden">
+            <div class="search-box px-0 mb-4">
+                <i class="fas fa-search"></i>
+                <input type="text" id="user-search" placeholder="ค้นหาผู้ใช้...">
+            </div>
+            <div id="users-list" class="space-y-2"></div>
+        </div>
+
+        <!-- Admin: Settings -->
+        <div id="admin-settings-tab" class="admin-tab hidden">
+            <div class="admin-section">
+                <h3 class="font-semibold mb-3">ตั้งค่าระบบ</h3>
+                <form id="settings-form" onsubmit="saveSettings(event)">
+                    <label class="block text-sm text-gray-400 mb-1">ชื่อระบบ</label>
+                    <input type="text" id="setting-app-name" class="input-field" value="Meeting Room" required>
+                    
+                    <div class="mb-4">
+                        <label class="flex items-center gap-2 cursor-pointer">
+                            <input type="checkbox" id="setting-require-approval" class="w-4 h-4 text-[#06c755] rounded border-gray-600 focus:ring-[#06c755] focus:ring-2">
+                            <span class="text-sm text-gray-400 select-none">ต้องอนุมัติการจองก่อน</span>
+                        </label>
+                    </div>
+                    
+                    <label class="block text-sm text-gray-400 mb-1">แจ้งเตือนล่วงหน้า (นาที)</label>
+                    <select id="setting-reminder-minutes" class="input-field">
+                        <option value="15">15 นาที</option>
+                        <option value="30" selected>30 นาที</option>
+                        <option value="60">1 ชั่วโมง</option>
+                        <option value="120">2 ชั่วโมง</option>
+                    </select>
+                    
+                    <button type="submit" class="btn-primary w-full" id="settings-save-btn">บันทึกการตั้งค่า</button>
+                </form>
+            </div>
+            
+            <!-- Database Reset (Admin Only) -->
+            <div class="admin-section border-red-500/30">
+                <h3 class="font-semibold mb-3 text-red-500">เครื่องมือสำหรับผู้ดูแล</h3>
+                <button onclick="resetDatabase()" class="btn-danger w-full">
+                    <i class="fas fa-database mr-2"></i>รีเซ็ตฐานข้อมูล (ล้างข้อมูลทั้งหมด)
+                </button>
+                <p class="text-xs text-gray-400 mt-2">คำเตือน: การกดปุ่มนี้จะล้างข้อมูลทั้งหมดและตั้งค่าเริ่มต้นใหม่</p>
+            </div>
+        </div>
+    </main>
+
+    <!-- Bottom Navigation -->
+    <div class="bottom-nav">
+        <div class="nav-item" data-page="index.html">
+            <i class="fas fa-door-open"></i>
+            <span>ห้องประชุม</span>
+        </div>
+        <div class="nav-item" data-page="my-bookings.html">
+            <i class="fas fa-calendar-check"></i>
+            <span>การจองของฉัน</span>
+        </div>
+        <div class="nav-item active admin-only" data-page="admin.html">
+            <i class="fas fa-cog"></i>
+            <span>จัดการ</span>
+        </div>
+    </div>
+
+    <!-- Modals (imported) -->
+    <div id="modals-container"></div>
+
+    <!-- Scripts -->
+    <script src="js/config.js"></script>
+    <script src="js/utils.js"></script>
+    <script src="js/api.js"></script>
+    <script src="js/auth.js"></script>
+    <script src="js/admin.js" data-page="admin"></script>
+    
+    <script>
+        // โหลด modals
+        fetch('shared/modals.html')
+            .then(res => res.text())
+            .then(html => {
+                document.getElementById('modals-container').innerHTML = html;
+            });
+        
+        // จัดการ navigation
+        document.querySelectorAll('.nav-item').forEach(item => {
+            item.addEventListener('click', () => {
+                const page = item.dataset.page;
+                if (page) window.location.href = page;
+            });
+        });
+        
+        // จัดการโปรไฟล์
+        document.getElementById('profile-header').addEventListener('click', () => {
+            Swal.fire({
+                title: window.state.user?.displayName,
+                text: window.state.user?.email,
+                showCancelButton: true,
+                confirmButtonText: 'แก้ไขโปรไฟล์',
+                cancelButtonText: 'ออกจากระบบ'
+            }).then(r => {
+                if (r.isConfirmed) showProfileSettings();
+                else if (r.dismiss === Swal.DismissReason.cancel) logout();
+            });
+        });
+    </script>
+</body>
+</html>
