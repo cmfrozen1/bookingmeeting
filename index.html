@@ -18,6 +18,7 @@
     <link rel="preconnect" href="https://static.line-scdn.net">
     <link rel="dns-prefetch" href="https://script.google.com">
     <link rel="preconnect" href="https://script.google.com" crossorigin>
+    <link rel="preload" href="https://static.line-scdn.net/liff/edge/2.1/sdk.js" as="script">
     <script src="https://static.line-scdn.net/liff/edge/2.1/sdk.js" async></script>
     
     <!-- Font Awesome (โหลดแบบ async) -->
@@ -1743,9 +1744,10 @@
         }
 
         // ========== API CALL ==========
-        // Cache สำหรับ GET-like requests เพื่อไม่เรียกซ้ำในช่วงเวลาสั้น
+        // Cache สำหรับ GET-like requests เพื่อไม่เรียกซ้ำในช่วงเวลาสั้น (Ultra-Fast)
         const _gasCache = new Map();
-        const _GAS_CACHE_TTL = 8000; // 8 วินาที
+        const _gasPending = new Map(); // ป้องกันการเรียก API ซ้ำซ้อนที่กำลังรออยู่
+        const _GAS_CACHE_TTL = 15000; // เพิ่มเป็น 15 วินาที
         const _GAS_READONLY_PATHS = new Set(['rooms', 'admin/stats', 'admin/settings/get', 'settings']);
 
         async function callGAS(path, data = {}) {
@@ -1757,7 +1759,61 @@
                     if (cached && Date.now() - cached.ts < _GAS_CACHE_TTL) {
                         return cached.data;
                     }
+                    
+                    // ถ้ามีการเรียก API เดียวกันค้างอยู่ ให้รอตัวเดิม (Ultra-Fast)
+                    if (_gasPending.has(path)) {
+                        return await _gasPending.get(path);
+                    }
                 }
+
+                const fetchPromise = (async () => {
+                    const formData = new FormData();
+                    formData.append('path', path);
+                    if (state.user?.lineUserId) formData.append('lineUserId', state.user.lineUserId);
+                    
+                    Object.keys(data).forEach(key => {
+                        if (data[key] !== undefined && data[key] !== null) {
+                            formData.append(key, data[key]);
+                        }
+                    });
+
+                    const controller = new AbortController();
+                    const timeoutId = setTimeout(() => controller.abort(), 15000);
+
+                    const res = await fetch(CONFIG.GAS_URL, { 
+                        method: 'POST', 
+                        body: formData,
+                        signal: controller.signal
+                    });
+                    
+                    clearTimeout(timeoutId);
+                    
+                    const text = await res.text();
+                    const parsed = JSON.parse(text);
+
+                    // เก็บ cache เฉพาะเมื่อ success
+                    if (isReadOnly && parsed.success) {
+                        _gasCache.set(path, { data: parsed, ts: Date.now() });
+                    }
+
+                    return parsed;
+                })();
+
+                if (isReadOnly) {
+                    _gasPending.set(path, fetchPromise);
+                    try {
+                        return await fetchPromise;
+                    } finally {
+                        _gasPending.delete(path);
+                    }
+                }
+
+                return await fetchPromise;
+            } catch (error) {
+                console.error('API Error:', error);
+                return { success: false, message: 'connection error' };
+            }
+        }
 
                 const formData = new FormData();
                 formData.append('path', path);
@@ -2073,15 +2129,16 @@
                     Promise.resolve(liff.getDecodedIDToken())
                 ]);
 
-                // เรียก user/profile + rooms พร้อมกันในทีเดียว เพื่อลดจำนวน round-trip
-                const [result, roomsResult] = await Promise.all([
+                // เรียก user/profile + rooms + settings พร้อมกันในทีเดียว เพื่อลดจำนวน round-trip (Ultra-Fast)
+                const [result, roomsResult, settingsResult] = await Promise.all([
                     callGAS('user/profile', {
                         lineUserId: profile.userId,
                         displayName: profile.displayName,
                         pictureUrl: profile.pictureUrl || '',
                         email: idToken?.email || ''
                     }),
-                    callGAS('rooms')
+                    callGAS('rooms'),
+                    callGAS('settings')
                 ]);
 
                 if (result.success) {
@@ -2119,8 +2176,13 @@
                     $.initLoading.classList.add('hide');
                     state.initialized = true;
 
-                    // โหลด settings + ปฏิทิน + สถิติ แบบ background (ไม่บล็อก UI)
-                    loadSettings().catch(console.warn);
+                    // อัปเดต settings ทันทีถ้าโหลดเสร็จแล้ว
+                    if (settingsResult.success) {
+                        state.settings = settingsResult.data || {};
+                        updateAppName(state.settings.appName || 'Meeting Room');
+                    }
+
+                    // โหลดปฏิทิน + สถิติ แบบ background (ไม่บล็อก UI)
                     loadMonthBookings(
                         state.currentMonth.getFullYear(),
                         state.currentMonth.getMonth()
@@ -2130,7 +2192,7 @@
                     setTimeout(() => {
                         loadTodayStats().catch(console.warn);
                         loadMyBookings().catch(console.warn);
-                    }, 300);
+                    }, 100);
 
                     // ถ้าเป็น manager ค่อยโหลด data เพิ่มเติม
                     if (state.isManager) {
@@ -2731,24 +2793,28 @@
                     ]);
                     
                     if (!id && result.data?.bookingData) {
-                        setTimeout(async () => {
-                            await sendBookingToChat(result.data.bookingData);
+                        // ส่งข้อความเข้าแชททันที (ไม่ต้องรอถาม)
+                        (async () => {
+                            const sent = await sendBookingToChat(result.data.bookingData);
                             
-                            if (liff.isInClient()) {
-                                const shareResult = await Swal.fire({
-                                    title: 'แชร์การจอง',
-                                    text: 'ต้องการแชร์ข้อมูลการจองนี้ไปยังแชทอื่นหรือไม่?',
-                                    icon: 'question',
-                                    showCancelButton: true,
-                                    confirmButtonText: 'แชร์ต่อ',
-                                    cancelButtonText: 'ไม่ต้องการ'
-                                });
+                            // ถ้าส่งสำเร็จและอยู่ใน LINE Client ค่อยถามเรื่องแชร์ต่อ
+                            if (sent && liff.isInClient()) {
+                                setTimeout(async () => {
+                                    const shareResult = await Swal.fire({
+                                        title: 'ส่งข้อมูลสำเร็จ',
+                                        text: 'ส่งรายละเอียดการจองเข้าแชทนี้แล้ว ต้องการแชร์ไปยังแชทอื่นด้วยหรือไม่?',
+                                        icon: 'success',
+                                        showCancelButton: true,
+                                        confirmButtonText: 'แชร์ไปยังแชทอื่น',
+                                        cancelButtonText: 'ปิด'
+                                    });
 
-                                if (shareResult.isConfirmed) {
-                                    await shareBookingViaPicker(result.data.bookingData.bookingId);
-                                }
+                                    if (shareResult.isConfirmed) {
+                                        await shareBookingViaPicker(result.data.bookingData.bookingId);
+                                    }
+                                }, 800);
                             }
-                        }, 500);
+                        })();
                     }
                 } else {
                     showToast(result.message || 'เกิดข้อผิดพลาด', 'error');
