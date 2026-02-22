@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="th">
 <head>
@@ -1183,7 +1182,6 @@
                 
                 <div class="calendar-days" id="calendar-days">
                     <!-- Skeleton for calendar -->
-                    ${Array(35).fill(0).map(() => '<div class="calendar-day skeleton"></div>').join('')}
                 </div>
                 
                 <!-- Selected Date Bookings -->
@@ -1443,7 +1441,7 @@
                         <div class="grid grid-cols-2 gap-2">
                             <div>
                                 <label class="text-xs text-gray-400 mb-1 block">จำนวนผู้เข้าร่วม</label>
-                                <input type="number" id="booking-attendees" class="input-field" placeholder="จำนวน" min="1" value="4">
+                                <input type="number" id="booking-attendees" class="input-field" placeholder="จำนวน" min="1" value="4" required>
                             </div>
                         </div>
                         
@@ -1451,7 +1449,7 @@
                     </form>
                 </div>
                 <div class="modal-footer">
-                    <button type="submit" form="booking-form" class="btn-primary flex-1" id="save-booking-btn">จอง</button>
+                    <button type="submit" form="booking-form" class="btn-primary flex-1" id="save-booking-btn" disabled>จอง</button>
                     <button type="button" class="btn-outline flex-1" onclick="closeBookingCreateModal()">ยกเลิก</button>
                 </div>
             </div>
@@ -1587,7 +1585,8 @@
                 requireApproval: 'true',
                 reminderMinutes: '30'
             },
-            initialized: false
+            initialized: false,
+            flatpickrInstances: {}
         };
 
         // ========== DOM Cache ==========
@@ -1638,7 +1637,14 @@
             currentMonth: document.getElementById('current-month'),
             selectedDateBookings: document.getElementById('selected-date-bookings'),
             selectedDateTitle: document.getElementById('selected-date-title'),
-            selectedDateBookingsList: document.getElementById('selected-date-bookings-list')
+            selectedDateBookingsList: document.getElementById('selected-date-bookings-list'),
+            bookingDate: document.getElementById('booking-date'),
+            bookingEndDate: document.getElementById('booking-end-date'),
+            bookingStart: document.getElementById('booking-start'),
+            bookingEnd: document.getElementById('booking-end'),
+            bookingAttendees: document.getElementById('booking-attendees'),
+            saveBookingBtn: document.getElementById('save-booking-btn'),
+            availabilityStatus: document.getElementById('availability-status')
         };
 
         // ========== UTILS ==========
@@ -1738,6 +1744,117 @@
             if (!name) name = 'Meeting Room';
             $.pageTitle.textContent = name + ' · LINE';
             $.navbarAppName.textContent = name;
+        }
+
+        // ========== FLATPICKR INITIALIZATION ==========
+        function initFlatpickr() {
+            if (typeof flatpickr === 'undefined') {
+                setTimeout(initFlatpickr, 100);
+                return;
+            }
+
+            // วันที่เริ่ม
+            if ($.bookingDate && !state.flatpickrInstances.bookingDate) {
+                state.flatpickrInstances.bookingDate = flatpickr($.bookingDate, {
+                    locale: 'th',
+                    dateFormat: 'Y-m-d',
+                    minDate: 'today',
+                    onChange: function(selectedDates, dateStr) {
+                        // อัพเดทวันที่สิ้นสุดให้มีค่าเริ่มต้นเป็นวันเดียวกัน
+                        if ($.bookingEndDate && !$.bookingEndDate.value) {
+                            $.bookingEndDate.value = dateStr;
+                        }
+                        validateBookingForm();
+                        checkAvailability();
+                    }
+                });
+            }
+
+            // วันที่สิ้นสุด
+            if ($.bookingEndDate && !state.flatpickrInstances.bookingEndDate) {
+                state.flatpickrInstances.bookingEndDate = flatpickr($.bookingEndDate, {
+                    locale: 'th',
+                    dateFormat: 'Y-m-d',
+                    minDate: 'today',
+                    onChange: function() {
+                        validateBookingForm();
+                        checkAvailability();
+                    }
+                });
+            }
+
+            // เวลาเริ่ม
+            if ($.bookingStart && !state.flatpickrInstances.bookingStart) {
+                state.flatpickrInstances.bookingStart = flatpickr($.bookingStart, {
+                    enableTime: true,
+                    noCalendar: true,
+                    dateFormat: 'H:i',
+                    time_24hr: true,
+                    minTime: '08:00',
+                    maxTime: '20:00',
+                    minuteIncrement: 15,
+                    onChange: function() {
+                        validateBookingForm();
+                        checkAvailability();
+                    }
+                });
+            }
+
+            // เวลาสิ้นสุด
+            if ($.bookingEnd && !state.flatpickrInstances.bookingEnd) {
+                state.flatpickrInstances.bookingEnd = flatpickr($.bookingEnd, {
+                    enableTime: true,
+                    noCalendar: true,
+                    dateFormat: 'H:i',
+                    time_24hr: true,
+                    minTime: '08:15',
+                    maxTime: '20:00',
+                    minuteIncrement: 15,
+                    onChange: function() {
+                        validateBookingForm();
+                        checkAvailability();
+                    }
+                });
+            }
+        }
+
+        // ========== VALIDATE BOOKING FORM ==========
+        function validateBookingForm() {
+            const roomId = document.getElementById('booking-room')?.value;
+            const title = document.getElementById('booking-title')?.value;
+            const date = $.bookingDate?.value;
+            const endDate = $.bookingEndDate?.value;
+            const start = $.bookingStart?.value;
+            const end = $.bookingEnd?.value;
+            const attendees = parseInt($.bookingAttendees?.value) || 0;
+
+            // ตรวจสอบจำนวนผู้เข้าร่วม (ต้องมีอย่างน้อย 1 คน)
+            if (!attendees || attendees < 1) {
+                if ($.availabilityStatus) {
+                    $.availabilityStatus.innerHTML = '<span class="text-red-500">⚠️ จำนวนผู้เข้าร่วมต้องมีอย่างน้อย 1 คน</span>';
+                    $.availabilityStatus.classList.remove('hidden');
+                }
+                $.saveBookingBtn.disabled = true;
+                return false;
+            }
+
+            if (!roomId || !title || !date || !endDate || !start || !end) {
+                $.saveBookingBtn.disabled = true;
+                return false;
+            }
+
+            // ตรวจสอบวันที่เริ่ม <= วันที่สิ้นสุด
+            if (date && endDate && date > endDate) {
+                if ($.availabilityStatus) {
+                    $.availabilityStatus.innerHTML = '<span class="text-red-500">⚠️ วันที่สิ้นสุดต้องไม่ก่อนวันที่เริ่ม</span>';
+                    $.availabilityStatus.classList.remove('hidden');
+                }
+                $.saveBookingBtn.disabled = true;
+                return false;
+            }
+
+            $.saveBookingBtn.disabled = false;
+            return true;
         }
 
         // ========== API CALL ==========
@@ -2061,6 +2178,9 @@
                 $.initLoading.classList.add('hide');
                 state.initialized = true;
 
+                // Initialize Flatpickr
+                initFlatpickr();
+
                 // Load non-critical data in background
                 loadSettings().then(s => {
                     if(s.success) localStorage.setItem('settings_cache', JSON.stringify(state.settings));
@@ -2373,7 +2493,7 @@
             document.getElementById('booking-meeting-link').value = '';
             document.getElementById('booking-attendees').value = '4';
             document.getElementById('availability-status').classList.add('hidden');
-            document.getElementById('save-booking-btn').disabled = false;
+            document.getElementById('save-booking-btn').disabled = true;
             
             const roomSelect = document.getElementById('booking-room');
             roomSelect.innerHTML = '<option value="">เลือกห้องประชุม</option>';
@@ -2392,10 +2512,24 @@
             const endTime = new Date(nextHour);
             endTime.setHours(nextHour.getHours() + 1, 0, 0, 0);
             
-            document.getElementById('booking-date').value = formatDateForInput(nextHour);
-            document.getElementById('booking-end-date').value = formatDateForInput(nextHour);
-            document.getElementById('booking-start').value = nextHour.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' });
-            document.getElementById('booking-end').value = endTime.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' });
+            // รีเซ็ต flatpickr values
+            if (state.flatpickrInstances.bookingDate) {
+                state.flatpickrInstances.bookingDate.setDate(formatDateForInput(nextHour), true);
+            }
+            if (state.flatpickrInstances.bookingEndDate) {
+                state.flatpickrInstances.bookingEndDate.setDate(formatDateForInput(nextHour), true);
+            }
+            if (state.flatpickrInstances.bookingStart) {
+                state.flatpickrInstances.bookingStart.setDate(nextHour.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' }), true);
+            }
+            if (state.flatpickrInstances.bookingEnd) {
+                state.flatpickrInstances.bookingEnd.setDate(endTime.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' }), true);
+            }
+            
+            // ตรวจสอบความถูกต้องหลังจากตั้งค่า
+            setTimeout(() => {
+                validateBookingForm();
+            }, 100);
             
             document.getElementById('booking-create-modal').classList.add('active');
         };
@@ -2406,37 +2540,63 @@
 
         async function checkAvailability() {
             const roomId = document.getElementById('booking-room').value;
-            const startDate = document.getElementById('booking-date').value;
-            const endDate = document.getElementById('booking-end-date').value;
-            const start = document.getElementById('booking-start').value;
-            const end = document.getElementById('booking-end').value;
+            const startDate = $.bookingDate?.value;
+            const endDate = $.bookingEndDate?.value;
+            const start = $.bookingStart?.value;
+            const end = $.bookingEnd?.value;
+            const attendees = parseInt($.bookingAttendees?.value) || 0;
             
             if (!roomId || !startDate || !endDate || !start || !end) return;
+            
+            // ตรวจสอบจำนวนผู้เข้าร่วม
+            if (attendees < 1) {
+                $.availabilityStatus.innerHTML = '<span class="text-red-500">⚠️ จำนวนผู้เข้าร่วมต้องมีอย่างน้อย 1 คน</span>';
+                $.availabilityStatus.classList.remove('hidden');
+                $.saveBookingBtn.disabled = true;
+                return;
+            }
             
             const startDateTime = new Date(`${startDate}T${start}:00`);
             const endDateTime = new Date(`${endDate}T${end}:00`);
             
             if (startDateTime >= endDateTime) {
-                document.getElementById('availability-status').innerHTML = '<span class="text-red-500">⚠️ เวลาสิ้นสุดต้องมากกว่าเวลาเริ่ม</span>';
-                document.getElementById('availability-status').classList.remove('hidden');
-                document.getElementById('save-booking-btn').disabled = true;
+                $.availabilityStatus.innerHTML = '<span class="text-red-500">⚠️ เวลาสิ้นสุดต้องมากกว่าเวลาเริ่ม</span>';
+                $.availabilityStatus.classList.remove('hidden');
+                $.saveBookingBtn.disabled = true;
+                return;
+            }
+            
+            // ตรวจสอบว่าวันที่เริ่มไม่เกินวันที่สิ้นสุด
+            if (startDate > endDate) {
+                $.availabilityStatus.innerHTML = '<span class="text-red-500">⚠️ วันที่สิ้นสุดต้องไม่ก่อนวันที่เริ่ม</span>';
+                $.availabilityStatus.classList.remove('hidden');
+                $.saveBookingBtn.disabled = true;
                 return;
             }
             
             const startHour = startDateTime.getHours();
             const endHour = endDateTime.getHours();
             if (startHour < 8 || endHour > 20 || (endHour === 20 && endDateTime.getMinutes() > 0)) {
-                document.getElementById('availability-status').innerHTML = '<span class="text-red-500">⚠️ เวลาทำการ 08:00 - 20:00 น.</span>';
-                document.getElementById('availability-status').classList.remove('hidden');
-                document.getElementById('save-booking-btn').disabled = true;
+                $.availabilityStatus.innerHTML = '<span class="text-red-500">⚠️ เวลาทำการ 08:00 - 20:00 น.</span>';
+                $.availabilityStatus.classList.remove('hidden');
+                $.saveBookingBtn.disabled = true;
                 return;
             }
             
             const durationHours = (endDateTime - startDateTime) / (1000 * 60 * 60);
             if (durationHours > 24) {
-                document.getElementById('availability-status').innerHTML = '<span class="text-red-500">⚠️ จองได้ครั้งละไม่เกิน 24 ชั่วโมง</span>';
-                document.getElementById('availability-status').classList.remove('hidden');
-                document.getElementById('save-booking-btn').disabled = true;
+                $.availabilityStatus.innerHTML = '<span class="text-red-500">⚠️ จองได้ครั้งละไม่เกิน 24 ชั่วโมง</span>';
+                $.availabilityStatus.classList.remove('hidden');
+                $.saveBookingBtn.disabled = true;
+                return;
+            }
+            
+            // ตรวจสอบความจุห้อง
+            const selectedRoom = state.rooms.find(r => r.roomId === roomId);
+            if (selectedRoom && attendees > selectedRoom.capacity) {
+                $.availabilityStatus.innerHTML = `<span class="text-red-500">⚠️ จำนวนผู้เข้าร่วม (${attendees}) เกินความจุห้อง (${selectedRoom.capacity} คน)</span>`;
+                $.availabilityStatus.classList.remove('hidden');
+                $.saveBookingBtn.disabled = true;
                 return;
             }
             
@@ -2448,9 +2608,9 @@
             
             if (result.success) {
                 if (result.data.available) {
-                    document.getElementById('availability-status').innerHTML = '<span class="text-green-500">✅ ห้องว่างในช่วงเวลาที่เลือก</span>';
-                    document.getElementById('availability-status').classList.remove('hidden');
-                    document.getElementById('save-booking-btn').disabled = false;
+                    $.availabilityStatus.innerHTML = '<span class="text-green-500">✅ ห้องว่างในช่วงเวลาที่เลือก</span>';
+                    $.availabilityStatus.classList.remove('hidden');
+                    $.saveBookingBtn.disabled = false;
                 } else {
                     let message = '❌ ห้องไม่ว่างในช่วงเวลาที่เลือก';
                     if (result.data.conflictingBookings && result.data.conflictingBookings.length > 0) {
@@ -2459,9 +2619,9 @@
                         ).join(', ');
                         message = `❌ มีการจองแล้วในช่วงเวลา: ${times}`;
                     }
-                    document.getElementById('availability-status').innerHTML = `<span class="text-red-500">${message}</span>`;
-                    document.getElementById('availability-status').classList.remove('hidden');
-                    document.getElementById('save-booking-btn').disabled = true;
+                    $.availabilityStatus.innerHTML = `<span class="text-red-500">${message}</span>`;
+                    $.availabilityStatus.classList.remove('hidden');
+                    $.saveBookingBtn.disabled = true;
                 }
             }
         }
@@ -2664,13 +2824,36 @@
             try {
                 const id = document.getElementById('edit-booking-id').value;
                 const roomId = document.getElementById('booking-room').value;
-                const startDate = document.getElementById('booking-date').value;
-                const endDate = document.getElementById('booking-end-date').value;
-                const start = document.getElementById('booking-start').value;
-                const end = document.getElementById('booking-end').value;
+                const startDate = $.bookingDate.value;
+                const endDate = $.bookingEndDate.value;
+                const start = $.bookingStart.value;
+                const end = $.bookingEnd.value;
+                const attendees = parseInt($.bookingAttendees.value) || 0;
+                
+                // ตรวจสอบจำนวนผู้เข้าร่วมอีกครั้ง
+                if (attendees < 1) {
+                    showToast('จำนวนผู้เข้าร่วมต้องมีอย่างน้อย 1 คน', 'error');
+                    setButtonLoading(btn, false);
+                    return;
+                }
                 
                 const startDateTime = new Date(`${startDate}T${start}:00`);
                 const endDateTime = new Date(`${endDate}T${end}:00`);
+                
+                // ตรวจสอบว่าวันที่เริ่มไม่เกินวันที่สิ้นสุด
+                if (startDate > endDate) {
+                    showToast('วันที่สิ้นสุดต้องไม่ก่อนวันที่เริ่ม', 'error');
+                    setButtonLoading(btn, false);
+                    return;
+                }
+                
+                // ตรวจสอบความจุห้อง
+                const selectedRoom = state.rooms.find(r => r.roomId === roomId);
+                if (selectedRoom && attendees > selectedRoom.capacity) {
+                    showToast(`จำนวนผู้เข้าร่วม (${attendees}) เกินความจุห้อง (${selectedRoom.capacity} คน)`, 'error');
+                    setButtonLoading(btn, false);
+                    return;
+                }
                 
                 const data = {
                     roomId,
@@ -2679,7 +2862,7 @@
                     meetingLink: document.getElementById('booking-meeting-link').value,
                     startTime: startDateTime.toISOString(),
                     endTime: endDateTime.toISOString(),
-                    attendees: document.getElementById('booking-attendees').value,
+                    attendees: attendees,
                     userName: state.user.displayName,
                     lineUserId: state.user.lineUserId
                 };
@@ -3640,11 +3823,16 @@
             });
         });
 
-        document.getElementById('booking-room')?.addEventListener('change', checkAvailability);
-        document.getElementById('booking-date')?.addEventListener('change', checkAvailability);
-        document.getElementById('booking-end-date')?.addEventListener('change', checkAvailability);
-        document.getElementById('booking-start')?.addEventListener('change', checkAvailability);
-        document.getElementById('booking-end')?.addEventListener('change', checkAvailability);
+        // เพิ่ม event listener สำหรับจำนวนผู้เข้าร่วม
+        $.bookingAttendees?.addEventListener('input', () => {
+            validateBookingForm();
+            checkAvailability();
+        });
+
+        document.getElementById('booking-room')?.addEventListener('change', () => {
+            validateBookingForm();
+            checkAvailability();
+        });
 
         // ========== INIT ==========
         if (document.readyState === 'loading') {
