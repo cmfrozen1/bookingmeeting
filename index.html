@@ -2794,7 +2794,7 @@
             };
         }
 
-        // ========== ส่ง Flex Message ไปยังแชท ==========
+        // ========== ส่ง Flex Message ไปยังแชทอัตโนมัติ ==========
         async function sendBookingToChat(bookingData) {
             try {
                 if (!liff.isInClient()) {
@@ -2805,7 +2805,7 @@
                 const flexMessage = createBookingFlexMessage(bookingData);
                 await liff.sendMessages([flexMessage]);
                 console.log('Flex message sent successfully');
-                showToast('ส่งข้อมูลการจองไปยังแชทแล้ว');
+                showToast('ส่งข้อมูลการจองไปยังแชทเรียบร้อย');
                 return true;
             } catch (error) {
                 console.error('Error sending flex message:', error);
@@ -2883,24 +2883,10 @@
                         loadMonthBookings(state.currentMonth.getFullYear(), state.currentMonth.getMonth())
                     ]);
                     
+                    // ส่งข้อความไปยังแชทอัตโนมัติเมื่อจองสำเร็จ
                     if (!id && result.data?.bookingData) {
                         setTimeout(async () => {
                             await sendBookingToChat(result.data.bookingData);
-                            
-                            if (liff.isInClient()) {
-                                const shareResult = await Swal.fire({
-                                    title: 'แชร์การจอง',
-                                    text: 'ต้องการแชร์ข้อมูลการจองนี้ไปยังแชทอื่นหรือไม่?',
-                                    icon: 'question',
-                                    showCancelButton: true,
-                                    confirmButtonText: 'แชร์ต่อ',
-                                    cancelButtonText: 'ไม่ต้องการ'
-                                });
-
-                                if (shareResult.isConfirmed) {
-                                    await shareBookingViaPicker(result.data.bookingData.bookingId);
-                                }
-                            }
                         }, 500);
                     }
                 } else {
