@@ -14,8 +14,11 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@300;400;500;600;700&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
     
-    <!-- LINE LIFF (โหลดก่อน เพราะจำเป็น) -->
-    <script src="https://static.line-scdn.net/liff/edge/2.1/sdk.js"></script>
+    <!-- LINE LIFF (โหลดแบบ async เพื่อไม่บล็อก render) -->
+    <link rel="preconnect" href="https://static.line-scdn.net">
+    <link rel="dns-prefetch" href="https://script.google.com">
+    <link rel="preconnect" href="https://script.google.com" crossorigin>
+    <script src="https://static.line-scdn.net/liff/edge/2.1/sdk.js" async></script>
     
     <!-- Font Awesome (โหลดแบบ async) -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" media="print" onload="this.media='all'">
@@ -1551,6 +1554,14 @@
     <!-- Scripts -->
     <script>
         // ========== CONFIG ==========
+        // Warm-up GAS endpoint ใน background เพื่อลด cold start latency
+        (function warmUpGAS() {
+            const url = 'https://script.google.com/macros/s/AKfycbwEkTSINEvnyBdapUWbJ8djVpdLt6rN7NlaXn5cKMow7RJtY3gI19-RSMyFHsWBxII-vA/exec';
+            const fd = new FormData();
+            fd.append('path', 'ping');
+            fetch(url, { method: 'POST', body: fd }).catch(() => {});
+        })();
+
         const CONFIG = {
             GAS_URL: 'https://script.google.com/macros/s/AKfycbwEkTSINEvnyBdapUWbJ8djVpdLt6rN7NlaXn5cKMow7RJtY3gI19-RSMyFHsWBxII-vA/exec',
             LIFF_ID: '2008904120-nqYHD5BT',
@@ -1732,8 +1743,22 @@
         }
 
         // ========== API CALL ==========
+        // Cache สำหรับ GET-like requests เพื่อไม่เรียกซ้ำในช่วงเวลาสั้น
+        const _gasCache = new Map();
+        const _GAS_CACHE_TTL = 8000; // 8 วินาที
+        const _GAS_READONLY_PATHS = new Set(['rooms', 'admin/stats', 'admin/settings/get', 'settings']);
+
         async function callGAS(path, data = {}) {
             try {
+                // ใช้ cache เฉพาะ read-only paths ที่ไม่มี data ส่งเพิ่มเติม
+                const isReadOnly = _GAS_READONLY_PATHS.has(path) && Object.keys(data).length === 0;
+                if (isReadOnly) {
+                    const cached = _gasCache.get(path);
+                    if (cached && Date.now() - cached.ts < _GAS_CACHE_TTL) {
+                        return cached.data;
+                    }
+                }
+
                 const formData = new FormData();
                 formData.append('path', path);
                 if (state.user?.lineUserId) formData.append('lineUserId', state.user.lineUserId);
@@ -1756,11 +1781,23 @@
                 clearTimeout(timeoutId);
                 
                 const text = await res.text();
-                return JSON.parse(text);
+                const parsed = JSON.parse(text);
+
+                // เก็บ cache เฉพาะเมื่อ success
+                if (isReadOnly && parsed.success) {
+                    _gasCache.set(path, { data: parsed, ts: Date.now() });
+                }
+
+                return parsed;
             } catch (error) {
                 console.error('API Error:', error);
                 return { success: false, message: 'connection error' };
             }
+        }
+
+        // ลบ cache เมื่อมีการเปลี่ยนแปลงข้อมูล
+        function invalidateCache(...paths) {
+            paths.forEach(p => _gasCache.delete(p));
         }
 
         // ========== IMAGE UPLOAD ==========
@@ -2005,6 +2042,23 @@
         };
 
         // ========== LIFF INIT ==========
+        // รอให้ LIFF SDK โหลดเสร็จก่อน (เพราะใช้ async)
+        function waitForLIFF(callback, maxWait = 3000) {
+            const start = Date.now();
+            const check = () => {
+                if (typeof liff !== 'undefined') {
+                    callback();
+                } else if (Date.now() - start < maxWait) {
+                    setTimeout(check, 50);
+                } else {
+                    console.error('LIFF SDK timeout');
+                    $.initLoading.classList.add('hide');
+                    showToast('ไม่สามารถโหลด LINE SDK ได้', 'error');
+                }
+            };
+            check();
+        }
+
         async function initLIFF() {
             try {
                 await liff.init({ liffId: CONFIG.LIFF_ID });
@@ -2013,16 +2067,22 @@
                     return;
                 }
 
-                const profile = await liff.getProfile();
-                const idToken = liff.getDecodedIDToken();
+                // ดึง profile และ idToken พร้อมกัน (ไม่ต้องรอทีละอัน)
+                const [profile, idToken] = await Promise.all([
+                    liff.getProfile(),
+                    Promise.resolve(liff.getDecodedIDToken())
+                ]);
 
-                // โหลดเฉพาะข้อมูล user profile ก่อน (จำเป็นที่สุด)
-                const result = await callGAS('user/profile', {
-                    lineUserId: profile.userId,
-                    displayName: profile.displayName,
-                    pictureUrl: profile.pictureUrl || '',
-                    email: idToken?.email || ''
-                });
+                // เรียก user/profile + rooms พร้อมกันในทีเดียว เพื่อลดจำนวน round-trip
+                const [result, roomsResult] = await Promise.all([
+                    callGAS('user/profile', {
+                        lineUserId: profile.userId,
+                        displayName: profile.displayName,
+                        pictureUrl: profile.pictureUrl || '',
+                        email: idToken?.email || ''
+                    }),
+                    callGAS('rooms')
+                ]);
 
                 if (result.success) {
                     state.user = result.data;
@@ -2049,16 +2109,29 @@
                         if ($.quickBookBtn) $.quickBookBtn.classList.remove('hidden');
                     }
 
+                    // อัปเดตห้องประชุมทันทีถ้าโหลดเสร็จแล้ว
+                    if (roomsResult.success) {
+                        state.rooms = roomsResult.data || [];
+                        renderRooms();
+                    }
+
                     // ซ่อน loading ทันทีที่ได้ user data (ไม่ต้องรอ data อื่น)
                     $.initLoading.classList.add('hide');
                     state.initialized = true;
 
-                    // โหลด settings แบบไม่ต้องรอ
+                    // โหลด settings + ปฏิทิน + สถิติ แบบ background (ไม่บล็อก UI)
                     loadSettings().catch(console.warn);
-                    
-                    // โหลดข้อมูลอื่นๆ แบบ parallel และค่อยๆ อัปเดต UI
-                    loadInitialData();
-                    
+                    loadMonthBookings(
+                        state.currentMonth.getFullYear(),
+                        state.currentMonth.getMonth()
+                    ).catch(console.warn);
+
+                    // โหลดสถิติและการจองของฉันแบบ deferred (ไม่รีบ)
+                    setTimeout(() => {
+                        loadTodayStats().catch(console.warn);
+                        loadMyBookings().catch(console.warn);
+                    }, 300);
+
                     // ถ้าเป็น manager ค่อยโหลด data เพิ่มเติม
                     if (state.isManager) {
                         loadManagerData();
@@ -2071,27 +2144,17 @@
             }
         }
 
-        // โหลดข้อมูลเริ่มต้นที่จำเป็น
+        // loadInitialData ยังคงไว้เพื่อใช้เมื่อ reload หรือ refresh ข้อมูลหลังจากเริ่มต้น
         async function loadInitialData() {
             try {
-                // โหลดห้องประชุมก่อน (จำเป็น)
-                const roomsPromise = loadRooms();
-                
-                // โหลดปฏิทินเดือนปัจจุบัน
-                const calendarPromise = loadMonthBookings(
-                    state.currentMonth.getFullYear(), 
-                    state.currentMonth.getMonth()
-                );
-                
-                // โหลดข้อมูลสถิติวันนี้แบบเบาๆ
-                const statsPromise = loadTodayStats();
-                
-                // รอให้ข้อมูลพื้นฐานโหลดเสร็จ (พร้อมกัน)
-                await Promise.all([roomsPromise, calendarPromise, statsPromise]);
-                
-                // หลังจากได้ข้อมูลพื้นฐานแล้ว ค่อยโหลดการจองของฉัน
+                // โหลดห้อง (ถ้ายังไม่มี) และสถิติพร้อมกัน
+                const promises = [];
+                if (state.rooms.length === 0) {
+                    promises.push(loadRooms());
+                }
+                promises.push(loadTodayStats());
+                await Promise.all(promises);
                 loadMyBookings().catch(console.warn);
-                
             } catch (error) {
                 console.error('Error loading initial data:', error);
             }
@@ -2657,7 +2720,7 @@
 
                 if (result.success) {
                     showToast(id ? 'แก้ไขการจองสำเร็จ' : 'จองห้องสำเร็จ');
-                    
+                    invalidateCache('rooms', 'admin/stats');
                     closeBookingCreateModal();
                     
                     await Promise.all([
@@ -2944,6 +3007,7 @@
 
                 if (apiResult.success) {
                     showToast('ยกเลิกการจองสำเร็จ');
+                    invalidateCache('rooms', 'admin/stats');
                     closeBookingDetailModal();
                     await Promise.all([
                         loadMyBookings(), 
@@ -2958,6 +3022,7 @@
         };
 
         // ========== ADMIN FUNCTIONS ==========
+        // รวม loadAdminStats + loadTodayStats เป็น  1 ครั้งเรียก API เดียว
         async function loadAdminStats() {
             try {
                 const result = await callGAS('admin/stats');
@@ -2966,6 +3031,10 @@
                     $.adminRooms.textContent = result.data.rooms || 0;
                     $.adminBookings.textContent = result.data.bookings || 0;
                     $.adminPending.textContent = result.data.pending || 0;
+                    // อัปเดต home stats ด้วยเลย (ไม่ต้องเรียกซ้ำ)
+                    $.statRooms.textContent = result.data.rooms || 0;
+                    $.statToday.textContent = result.data.today || 0;
+                    $.statPending.textContent = result.data.pending || 0;
                 }
             } catch (error) {
                 console.error('Load admin stats error:', error);
@@ -2979,6 +3048,9 @@
                     $.statRooms.textContent = result.data.rooms || 0;
                     $.statToday.textContent = result.data.today || 0;
                     $.statPending.textContent = result.data.pending || 0;
+                    // อัปเดต admin stats ด้วยถ้ามี element
+                    if ($.adminRooms) $.adminRooms.textContent = result.data.rooms || 0;
+                    if ($.adminPending) $.adminPending.textContent = result.data.pending || 0;
                 }
             } catch (error) {
                 console.error('Load stats error:', error);
@@ -3041,6 +3113,7 @@
             
             if (result.success) {
                 showToast('อนุมัติการจองสำเร็จ');
+                invalidateCache('admin/stats');
                 await Promise.all([
                     loadPendingBookings(), 
                     loadAdminStats(), 
@@ -3077,6 +3150,7 @@
                 
                 if (apiResult.success) {
                     showToast('ปฏิเสธการจองสำเร็จ');
+                    invalidateCache('admin/stats');
                     await Promise.all([
                         loadPendingBookings(), 
                         loadAdminStats(), 
@@ -3294,6 +3368,7 @@
 
                 if (result.success) {
                     showToast(id ? 'แก้ไขห้องสำเร็จ' : 'เพิ่มห้องสำเร็จ');
+                    invalidateCache('rooms', 'admin/stats');
                     closeRoomModal();
                     await loadRooms();
                     await loadRoomsManagement();
@@ -3354,6 +3429,7 @@
 
                 if (apiResult.success) {
                     showToast('ลบห้องสำเร็จ');
+                    invalidateCache('rooms', 'admin/stats');
                     closeModal();
                     await loadRooms();
                     await loadRoomsManagement();
@@ -3464,6 +3540,7 @@
             
             if (result.success) {
                 showToast('บันทึกสำเร็จ');
+                invalidateCache('admin/settings/get', 'settings');
                 Object.assign(state.settings, data);
                 updateAppName(appName);
             } else {
@@ -3614,10 +3691,19 @@
         document.getElementById('booking-end')?.addEventListener('change', checkAvailability);
 
         // ========== INIT ==========
+        // บังคับซ่อน loading ภายใน 3 วินาทีไม่ว่าจะเกิดอะไร
+        setTimeout(() => {
+            if ($.initLoading && !$.initLoading.classList.contains('hide')) {
+                $.initLoading.classList.add('hide');
+                console.warn('Loading timeout: forced hide after 3s');
+            }
+        }, 3000);
+
+        // ใช้ waitForLIFF เพราะ LIFF SDK โหลดแบบ async
         if (document.readyState === 'loading') {
-            document.addEventListener('DOMContentLoaded', initLIFF);
+            document.addEventListener('DOMContentLoaded', () => waitForLIFF(initLIFF));
         } else {
-            initLIFF();
+            waitForLIFF(initLIFF);
         }
     </script>
 </body>
