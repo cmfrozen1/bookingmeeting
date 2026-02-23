@@ -755,6 +755,11 @@
             font-weight: 600;
         }
         
+        .admin-tab-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        
         .upload-area {
             border: 2px dashed var(--border);
             border-radius: 12px;
@@ -1087,6 +1092,16 @@
             from { transform: translateY(0); opacity: 1; }
             to { transform: translateY(100%); opacity: 0; }
         }
+
+        .permission-badge {
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 10px;
+            font-weight: 500;
+            background: rgba(6,199,85,0.1);
+            color: var(--primary);
+            border: 1px solid rgba(6,199,85,0.2);
+        }
     </style>
 </head>
 <body>
@@ -1226,17 +1241,20 @@
             <div id="my-bookings-list" class="my-bookings-grid"></div>
         </div>
 
-        <!-- Tab: Admin -->
+        <!-- Tab: Admin - Manager can see but limited access -->
         <div id="tab-admin" class="tab-content">
             <div class="max-w-7xl mx-auto px-4">
                 <div class="flex justify-between items-center mb-4">
                     <h2 class="text-xl font-bold text-[#06c755]">จัดการระบบ</h2>
-                    <button id="refresh-admin" class="text-[#06c755] text-sm">
-                        <i class="fas fa-sync-alt mr-1"></i>รีเฟรช
-                    </button>
+                    <div class="flex items-center gap-2">
+                        <span id="user-role-badge" class="permission-badge hidden"></span>
+                        <button id="refresh-admin" class="text-[#06c755] text-sm">
+                            <i class="fas fa-sync-alt mr-1"></i>รีเฟรช
+                        </button>
+                    </div>
                 </div>
 
-                <!-- Admin Stats -->
+                <!-- Admin Stats - Both admin and manager can see -->
                 <div class="admin-section">
                     <h3 class="font-semibold mb-3">สถิติ</h3>
                     <div class="grid grid-cols-2 gap-3">
@@ -1259,24 +1277,26 @@
                     </div>
                 </div>
 
-                <!-- Admin Tabs -->
+                <!-- Admin Tabs - Dynamic based on role -->
                 <div class="flex border-b border-[#2a2e36] mb-4 overflow-x-auto">
                     <button class="admin-tab-btn flex-1 py-2 text-center active" data-admin-tab="pending">
                         รออนุมัติ <span id="pending-badge" class="ml-1 bg-yellow-500 text-white text-xs rounded-full px-1.5 py-0.5 hidden">0</span>
                     </button>
                     <button class="admin-tab-btn flex-1 py-2 text-center" data-admin-tab="bookings">การจองทั้งหมด</button>
                     <button class="admin-tab-btn flex-1 py-2 text-center" data-admin-tab="rooms">จัดการห้อง</button>
-                    <button class="admin-tab-btn flex-1 py-2 text-center" data-admin-tab="users">จัดการผู้ใช้</button>
-                    <button class="admin-tab-btn flex-1 py-2 text-center" data-admin-tab="settings">ตั้งค่า</button>
+                    <!-- Users tab - Only admin can see -->
+                    <button class="admin-tab-btn flex-1 py-2 text-center admin-only-users" data-admin-tab="users" style="display: none;">จัดการผู้ใช้</button>
+                    <!-- Settings tab - Only admin can see -->
+                    <button class="admin-tab-btn flex-1 py-2 text-center admin-only-settings" data-admin-tab="settings" style="display: none;">ตั้งค่า</button>
                 </div>
 
-                <!-- Admin: Pending -->
+                <!-- Admin: Pending - Both can see -->
                 <div id="admin-pending-tab" class="admin-tab">
                     <h3 class="font-semibold mb-3">รายการรออนุมัติ</h3>
                     <div id="pending-bookings-list" class="space-y-3"></div>
                 </div>
 
-                <!-- Admin: All Bookings -->
+                <!-- Admin: All Bookings - Both can see -->
                 <div id="admin-bookings-tab" class="admin-tab hidden">
                     <div class="search-box px-0 mb-4">
                         <i class="fas fa-search"></i>
@@ -1285,7 +1305,7 @@
                     <div id="all-bookings-list" class="space-y-3"></div>
                 </div>
 
-                <!-- Admin: Rooms -->
+                <!-- Admin: Rooms - Both can see (both can manage rooms) -->
                 <div id="admin-rooms-tab" class="admin-tab hidden">
                     <button class="btn-primary mb-4" onclick="showCreateRoomModal()">
                         <i class="fas fa-plus mr-2"></i>เพิ่มห้องใหม่
@@ -1293,7 +1313,7 @@
                     <div id="rooms-management-list" class="space-y-3"></div>
                 </div>
 
-                <!-- Admin: Users -->
+                <!-- Admin: Users - Only admin can see -->
                 <div id="admin-users-tab" class="admin-tab hidden">
                     <div class="search-box px-0 mb-4">
                         <i class="fas fa-search"></i>
@@ -1302,7 +1322,7 @@
                     <div id="users-list" class="space-y-2"></div>
                 </div>
 
-                <!-- Admin: Settings -->
+                <!-- Admin: Settings - Only admin can see -->
                 <div id="admin-settings-tab" class="admin-tab hidden">
                     <div class="admin-section">
                         <h3 class="font-semibold mb-3">ตั้งค่าระบบ</h3>
@@ -1511,7 +1531,7 @@
             </div>
         </div>
 
-        <!-- Role Modal -->
+        <!-- Role Modal (Admin Only) -->
         <div class="modal" id="role-modal">
             <div class="modal-content">
                 <div class="modal-header">
@@ -1537,6 +1557,28 @@
                 </div>
             </div>
         </div>
+
+        <!-- Delete User Confirmation Modal (Admin Only) -->
+        <div class="modal" id="delete-user-modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3 class="modal-title">ยืนยันการลบผู้ใช้</h3>
+                    <button class="modal-close" onclick="closeDeleteUserModal()">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <p id="delete-user-name" class="text-white mb-4"></p>
+                    <p class="text-sm text-gray-400">การลบผู้ใช้จะส่งผลต่อการจองที่เกี่ยวข้องทั้งหมด การดำเนินการนี้ไม่สามารถย้อนกลับได้</p>
+                </div>
+                <div class="modal-footer">
+                    <button onclick="confirmDeleteUser()" class="btn-danger flex-1">
+                        <i class="fas fa-trash mr-2"></i>ลบผู้ใช้
+                    </button>
+                    <button class="btn-outline flex-1" onclick="closeDeleteUserModal()">ยกเลิก</button>
+                </div>
+            </div>
+        </div>
     </div>
 
     <!-- Bottom Navigation -->
@@ -1549,7 +1591,7 @@
             <i class="fas fa-calendar-check"></i>
             <span>การจองของฉัน</span>
         </div>
-        <div class="nav-item hidden admin-only" data-tab="admin">
+        <div class="nav-item hidden manager-admin" data-tab="admin">
             <i class="fas fa-cog"></i>
             <span>จัดการ</span>
         </div>
@@ -1578,8 +1620,10 @@
             dateBookings: {},
             currentRoom: null,
             currentBooking: null,
-            isAdmin: (JSON.parse(localStorage.getItem('user_cache')) || {}).role === 'admin',
-            isManager: ['admin', 'manager'].includes((JSON.parse(localStorage.getItem('user_cache')) || {}).role),
+            currentUserToDelete: null,
+            role: (JSON.parse(localStorage.getItem('user_cache')) || {}).role || 'user',
+            isAdmin: false,
+            isManager: false,
             settings: JSON.parse(localStorage.getItem('settings_cache')) || { 
                 appName: 'Meeting Room',
                 requireApproval: 'true',
@@ -1588,6 +1632,19 @@
             initialized: false,
             flatpickrInstances: {}
         };
+
+        // Update role flags based on user role
+        function updateRoleFlags() {
+            state.isAdmin = state.role === 'admin';
+            state.isManager = state.isAdmin || state.role === 'manager';
+            console.log('Role updated:', { role: state.role, isAdmin: state.isAdmin, isManager: state.isManager });
+        }
+
+        // Call after setting user
+        if (state.user) {
+            state.role = state.user.role || 'user';
+            updateRoleFlags();
+        }
 
         // ========== DOM Cache ==========
         const $ = {
@@ -1621,7 +1678,9 @@
             modalAdminControls: document.getElementById('modal-admin-controls'),
             floatingBtn: document.getElementById('floating-book-btn'),
             quickBookBtn: document.getElementById('quick-book-btn'),
-            adminOnly: document.querySelectorAll('.admin-only'),
+            managerAdmin: document.querySelectorAll('.manager-admin'),
+            adminOnlyUsers: document.querySelectorAll('.admin-only-users'),
+            adminOnlySettings: document.querySelectorAll('.admin-only-settings'),
             refreshAdmin: document.getElementById('refresh-admin'),
             adminUsers: document.getElementById('admin-users'),
             adminRooms: document.getElementById('admin-rooms'),
@@ -1644,7 +1703,8 @@
             bookingEnd: document.getElementById('booking-end'),
             bookingAttendees: document.getElementById('booking-attendees'),
             saveBookingBtn: document.getElementById('save-booking-btn'),
-            availabilityStatus: document.getElementById('availability-status')
+            availabilityStatus: document.getElementById('availability-status'),
+            userRoleBadge: document.getElementById('user-role-badge')
         };
 
         // ========== UTILS ==========
@@ -1923,6 +1983,10 @@
                 statusColor = '#f59e0b'; // orange
                 statusEmoji = '⚙️';
                 statusText = 'อัปเดตการตั้งค่า';
+            } else if (action === 'user_deleted') {
+                statusColor = '#ef4444'; // red
+                statusEmoji = '🗑️';
+                statusText = 'ลบผู้ใช้';
             }
             
             const flexMessage = {
@@ -2391,6 +2455,8 @@
             try {
                 // Render from cache immediately for zero-load feel
                 if (state.user) {
+                    state.role = state.user.role || 'user';
+                    updateRoleFlags();
                     updateUserUI(state.user);
                     if (state.rooms.length > 0) {
                         renderRooms();
@@ -2420,6 +2486,8 @@
 
                 if (userResult.success) {
                     state.user = userResult.data;
+                    state.role = state.user.role || 'user';
+                    updateRoleFlags();
                     localStorage.setItem('user_cache', JSON.stringify(state.user));
                     updateUserUI(state.user);
                 }
@@ -2457,23 +2525,48 @@
         // Helper function to update user UI
         function updateUserUI(user) {
             if (!user) return;
-            state.isAdmin = user.role === 'admin';
-            state.isManager = state.isAdmin || user.role === 'manager';
             
             $.profileName.textContent = user.displayName || 'ผู้ใช้';
             $.profileEmail.textContent = user.email || '';
             $.profileAvatar.src = user.pictureUrl || 'https://via.placeholder.com/60';
-            $.profileRole.textContent = {
+            
+            const roleText = {
                 admin: '👑 ผู้ดูแลระบบ',
                 manager: '👥 ผู้จัดการ',
                 user: '👤 ผู้ใช้ทั่วไป'
             }[user.role] || '';
+            
+            $.profileRole.textContent = roleText;
 
-            $.adminOnly.forEach(el => {
-                if (state.isAdmin) el.classList.remove('hidden');
+            // Update role badge in admin tab
+            if ($.userRoleBadge) {
+                $.userRoleBadge.textContent = roleText;
+                if (state.isAdmin || state.isManager) {
+                    $.userRoleBadge.classList.remove('hidden');
+                } else {
+                    $.userRoleBadge.classList.add('hidden');
+                }
+            }
+
+            // Show/hide admin tab based on role (manager or admin can see)
+            $.managerAdmin.forEach(el => {
+                if (state.isManager) el.classList.remove('hidden');
                 else el.classList.add('hidden');
             });
 
+            // Show/hide users tab (only admin can see)
+            $.adminOnlyUsers.forEach(el => {
+                if (state.isAdmin) el.style.display = 'block';
+                else el.style.display = 'none';
+            });
+
+            // Show/hide settings tab (only admin can see)
+            $.adminOnlySettings.forEach(el => {
+                if (state.isAdmin) el.style.display = 'block';
+                else el.style.display = 'none';
+            });
+
+            // Show floating button for non-admin users
             if (!state.isAdmin) {
                 $.floatingBtn.classList.remove('hidden');
                 if ($.quickBookBtn) $.quickBookBtn.classList.remove('hidden');
@@ -2725,7 +2818,8 @@
 
                 $.modalBookBtn.onclick = () => showBookingModal(roomId);
 
-                if (state.isAdmin) {
+                // Show admin controls only for managers and admins
+                if (state.isManager) {
                     $.modalAdminControls.classList.remove('hidden');
                     $.modalEditBtn.disabled = false;
                     $.modalDeleteBtn.disabled = false;
@@ -3490,12 +3584,19 @@
                         <button class="text-[#06c755] text-xs" onclick="showRoleModal('${u.lineUserId}', '${u.displayName}', '${u.role}')">
                             <i class="fas fa-cog"></i>
                         </button>
+                        <button class="text-red-500 text-xs" onclick="showDeleteUserModal('${u.lineUserId}', '${u.displayName}')">
+                            <i class="fas fa-trash"></i>
+                        </button>
                     ` : ''}
                 </div>
             `).join('');
         }
 
         window.showRoleModal = function(userId, userName, currentRole) {
+            if (!state.isAdmin) {
+                showToast('เฉพาะผู้ดูแลระบบเท่านั้น', 'error');
+                return;
+            }
             document.getElementById('role-user-id').value = userId;
             document.getElementById('role-user-name').textContent = `จัดการสิทธิ์: ${userName}`;
             document.getElementById('user-role').value = currentRole;
@@ -3506,9 +3607,76 @@
             document.getElementById('role-modal').classList.remove('active');
         };
 
+        // ========== DELETE USER FUNCTION (ADMIN ONLY) ==========
+        window.showDeleteUserModal = function(userId, userName) {
+            if (!state.isAdmin) {
+                showToast('เฉพาะผู้ดูแลระบบเท่านั้น', 'error');
+                return;
+            }
+            state.currentUserToDelete = userId;
+            document.getElementById('delete-user-name').textContent = `คุณแน่ใจหรือไม่ว่าต้องการลบผู้ใช้: ${userName}`;
+            document.getElementById('delete-user-modal').classList.add('active');
+        };
+
+        window.closeDeleteUserModal = function() {
+            document.getElementById('delete-user-modal').classList.remove('active');
+            state.currentUserToDelete = null;
+        };
+
+        window.confirmDeleteUser = async function() {
+            if (!state.isAdmin || !state.currentUserToDelete) {
+                closeDeleteUserModal();
+                return;
+            }
+
+            const btn = document.querySelector('#delete-user-modal .btn-danger');
+            setButtonLoading(btn, true);
+
+            try {
+                const result = await callGAS('admin/user/delete', {
+                    targetUserId: state.currentUserToDelete,
+                    lineUserId: state.user.lineUserId
+                });
+
+                if (result.success) {
+                    showToast('ลบผู้ใช้สำเร็จ');
+                    
+                    // Send Flex Message for user deletion
+                    const deletedUser = state.users.find(u => u.lineUserId === state.currentUserToDelete) || {};
+                    await sendBookingToChat({
+                        title: 'ลบผู้ใช้ออกจากระบบ',
+                        roomName: 'การจัดการผู้ใช้',
+                        userName: state.user.displayName,
+                        startTime: new Date().toISOString(),
+                        endTime: new Date().toISOString(),
+                        description: 'ผู้ใช้ที่ถูกลบ: ' + (deletedUser.displayName || 'ไม่ระบุ') + '\nสิทธิ์เดิม: ' + (deletedUser.role || 'ไม่ระบุ'),
+                        action: 'user_deleted'
+                    });
+
+                    closeDeleteUserModal();
+                    await loadUsers();
+                    await loadAdminStats();
+                } else {
+                    showToast(result.message || 'ลบผู้ใช้ไม่สำเร็จ', 'error');
+                    closeDeleteUserModal();
+                }
+            } catch (error) {
+                console.error('Delete user error:', error);
+                showToast('เกิดข้อผิดพลาด', 'error');
+                closeDeleteUserModal();
+            } finally {
+                setButtonLoading(btn, false);
+            }
+        };
+
         window.saveUserRole = async function(e) {
             e.preventDefault();
             
+            if (!state.isAdmin) {
+                showToast('เฉพาะผู้ดูแลระบบเท่านั้น', 'error');
+                return;
+            }
+
             const userId = document.getElementById('role-user-id').value;
             const role = document.getElementById('user-role').value;
 
@@ -3546,8 +3714,8 @@
                     });
                     if (userResult.success) {
                         state.user = userResult.data;
-                        state.isAdmin = state.user.role === 'admin';
-                        state.isManager = state.isAdmin || state.user.role === 'manager';
+                        state.role = state.user.role || 'user';
+                        updateRoleFlags();
                         
                         $.profileRole.textContent = {
                             admin: '👑 ผู้ดูแลระบบ',
@@ -3555,9 +3723,19 @@
                             user: '👤 ผู้ใช้ทั่วไป'
                         }[state.user.role] || '';
                         
-                        $.adminOnly.forEach(el => {
-                            if (state.isAdmin) el.classList.remove('hidden');
+                        $.managerAdmin.forEach(el => {
+                            if (state.isManager) el.classList.remove('hidden');
                             else el.classList.add('hidden');
+                        });
+
+                        $.adminOnlyUsers.forEach(el => {
+                            if (state.isAdmin) el.style.display = 'block';
+                            else el.style.display = 'none';
+                        });
+
+                        $.adminOnlySettings.forEach(el => {
+                            if (state.isAdmin) el.style.display = 'block';
+                            else el.style.display = 'none';
                         });
                     }
                 }
@@ -3782,6 +3960,11 @@
 
         window.saveSettings = async function(e) {
             e.preventDefault();
+            
+            if (!state.isAdmin) {
+                showToast('เฉพาะผู้ดูแลระบบเท่านั้น', 'error');
+                return;
+            }
             
             const appName = document.getElementById('setting-app-name').value.trim() || 'Meeting Room';
             const requireApproval = $.settingRequireApproval ? $.settingRequireApproval.checked : true;
