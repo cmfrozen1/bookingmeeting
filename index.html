@@ -1926,6 +1926,526 @@
             }
         };
 
+        // ========== LINE MESSAGING FUNCTIONS ==========
+        
+        /**
+         * สร้าง Flex Message สำหรับการแจ้งเตือนสถานะการจอง
+         */
+        function createStatusChangeFlexMessage(booking, action, adminName = 'ผู้ดูแลระบบ') {
+            const startTime = new Date(booking.startTime);
+            const endTime = new Date(booking.endTime);
+            const dateStr = startTime.toLocaleDateString('th-TH', { 
+                weekday: 'long', 
+                year: 'numeric', 
+                month: 'long', 
+                day: 'numeric' 
+            });
+            const timeStr = startTime.toLocaleTimeString('th-TH', { 
+                hour: '2-digit', 
+                minute: '2-digit' 
+            }) + ' - ' + 
+            endTime.toLocaleTimeString('th-TH', { 
+                hour: '2-digit', 
+                minute: '2-digit' 
+            }) + ' น.';
+            
+            // กำหนดสีและข้อความตาม action
+            let headerColor, statusText, emoji, titleText;
+            
+            switch(action) {
+                case 'approve':
+                    headerColor = '#06c755';
+                    statusText = '✅ อนุมัติการจองแล้ว';
+                    emoji = '✅';
+                    titleText = 'การจองได้รับการอนุมัติ';
+                    break;
+                case 'reject':
+                    headerColor = '#ef4444';
+                    statusText = '❌ ปฏิเสธการจอง';
+                    emoji = '❌';
+                    titleText = 'การจองถูกปฏิเสธ';
+                    break;
+                case 'cancel':
+                    headerColor = '#f59e0b';
+                    statusText = '⚠️ ยกเลิกการจอง';
+                    emoji = '⚠️';
+                    titleText = 'การจองถูกยกเลิก';
+                    break;
+                case 'delete':
+                    headerColor = '#ef4444';
+                    statusText = '🗑️ ลบการจอง';
+                    emoji = '🗑️';
+                    titleText = 'การจองถูกลบ';
+                    break;
+                case 'update':
+                    headerColor = '#3b82f6';
+                    statusText = '✏️ แก้ไขการจอง';
+                    emoji = '✏️';
+                    titleText = 'มีการแก้ไขการจอง';
+                    break;
+                default:
+                    headerColor = '#06c755';
+                    statusText = '📅 อัปเดตการจอง';
+                    emoji = '📅';
+                    titleText = 'อัปเดตการจอง';
+            }
+
+            // ข้อความเหตุผล (ถ้ามี)
+            const reasonText = booking.rejectionReason ? `เหตุผล: ${booking.rejectionReason}` : '';
+
+            return {
+                type: 'flex',
+                altText: `${emoji} ${titleText}: ${booking.title}`,
+                contents: {
+                    type: 'bubble',
+                    header: {
+                        type: 'box',
+                        layout: 'vertical',
+                        contents: [
+                            {
+                                type: 'text',
+                                text: emoji + ' ' + titleText,
+                                weight: 'bold',
+                                size: 'xl',
+                                color: headerColor
+                            }
+                        ]
+                    },
+                    body: {
+                        type: 'box',
+                        layout: 'vertical',
+                        contents: [
+                            {
+                                type: 'text',
+                                text: booking.roomName,
+                                weight: 'bold',
+                                size: 'lg',
+                                wrap: true
+                            },
+                            {
+                                type: 'text',
+                                text: booking.title,
+                                size: 'md',
+                                color: '#666666',
+                                wrap: true,
+                                margin: 'md'
+                            },
+                            {
+                                type: 'separator',
+                                margin: 'lg'
+                            },
+                            {
+                                type: 'box',
+                                layout: 'vertical',
+                                margin: 'lg',
+                                contents: [
+                                    {
+                                        type: 'box',
+                                        layout: 'horizontal',
+                                        contents: [
+                                            {
+                                                type: 'text',
+                                                text: '📅 วันที่',
+                                                size: 'sm',
+                                                color: '#aaaaaa',
+                                                flex: 2
+                                            },
+                                            {
+                                                type: 'text',
+                                                text: dateStr,
+                                                size: 'sm',
+                                                flex: 5,
+                                                wrap: true
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        type: 'box',
+                                        layout: 'horizontal',
+                                        margin: 'md',
+                                        contents: [
+                                            {
+                                                type: 'text',
+                                                text: '⏰ เวลา',
+                                                size: 'sm',
+                                                color: '#aaaaaa',
+                                                flex: 2
+                                            },
+                                            {
+                                                type: 'text',
+                                                text: timeStr,
+                                                size: 'sm',
+                                                flex: 5
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        type: 'box',
+                                        layout: 'horizontal',
+                                        margin: 'md',
+                                        contents: [
+                                            {
+                                                type: 'text',
+                                                text: '👥 ผู้เข้าร่วม',
+                                                size: 'sm',
+                                                color: '#aaaaaa',
+                                                flex: 2
+                                            },
+                                            {
+                                                type: 'text',
+                                                text: booking.attendees + ' คน',
+                                                size: 'sm',
+                                                flex: 5
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        type: 'box',
+                                        layout: 'horizontal',
+                                        margin: 'md',
+                                        contents: [
+                                            {
+                                                type: 'text',
+                                                text: '📌 สถานะ',
+                                                size: 'sm',
+                                                color: '#aaaaaa',
+                                                flex: 2
+                                            },
+                                            {
+                                                type: 'text',
+                                                text: statusText,
+                                                size: 'sm',
+                                                color: headerColor,
+                                                flex: 5,
+                                                wrap: true
+                                            }
+                                        ]
+                                    }
+                                ]
+                            },
+                            {
+                                type: 'separator',
+                                margin: 'lg'
+                            },
+                            {
+                                type: 'text',
+                                text: '👤 ผู้จอง: ' + booking.userName,
+                                size: 'sm',
+                                color: '#888888',
+                                margin: 'lg'
+                            },
+                            {
+                                type: 'text',
+                                text: '👑 ดำเนินการโดย: ' + adminName,
+                                size: 'sm',
+                                color: '#888888',
+                                margin: 'md'
+                            }
+                        ]
+                    },
+                    footer: {
+                        type: 'box',
+                        layout: 'vertical',
+                        contents: [
+                            {
+                                type: 'button',
+                                action: {
+                                    type: 'uri',
+                                    label: 'ดูรายละเอียด',
+                                    uri: 'https://liff.line.me/' + CONFIG.LIFF_ID
+                                },
+                                style: 'primary',
+                                color: headerColor
+                            }
+                        ]
+                    }
+                }
+            };
+        }
+
+        /**
+         * สร้าง Flex Message สำหรับการแจ้งเตือนการลบห้อง
+         */
+        function createRoomDeleteFlexMessage(room, adminName) {
+            return {
+                type: 'flex',
+                altText: `🗑️ ลบห้องประชุม: ${room.name}`,
+                contents: {
+                    type: 'bubble',
+                    header: {
+                        type: 'box',
+                        layout: 'vertical',
+                        contents: [
+                            {
+                                type: 'text',
+                                text: '🗑️ ลบห้องประชุม',
+                                weight: 'bold',
+                                size: 'xl',
+                                color: '#ef4444'
+                            }
+                        ]
+                    },
+                    body: {
+                        type: 'box',
+                        layout: 'vertical',
+                        contents: [
+                            {
+                                type: 'text',
+                                text: room.name,
+                                weight: 'bold',
+                                size: 'lg',
+                                wrap: true
+                            },
+                            {
+                                type: 'separator',
+                                margin: 'lg'
+                            },
+                            {
+                                type: 'box',
+                                layout: 'vertical',
+                                margin: 'lg',
+                                contents: [
+                                    {
+                                        type: 'box',
+                                        layout: 'horizontal',
+                                        contents: [
+                                            {
+                                                type: 'text',
+                                                text: '📍 สถานที่',
+                                                size: 'sm',
+                                                color: '#aaaaaa',
+                                                flex: 2
+                                            },
+                                            {
+                                                type: 'text',
+                                                text: room.location || '-',
+                                                size: 'sm',
+                                                flex: 5,
+                                                wrap: true
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        type: 'box',
+                                        layout: 'horizontal',
+                                        margin: 'md',
+                                        contents: [
+                                            {
+                                                type: 'text',
+                                                text: '👥 ความจุ',
+                                                size: 'sm',
+                                                color: '#aaaaaa',
+                                                flex: 2
+                                            },
+                                            {
+                                                type: 'text',
+                                                text: room.capacity + ' คน',
+                                                size: 'sm',
+                                                flex: 5
+                                            }
+                                        ]
+                                    }
+                                ]
+                            },
+                            {
+                                type: 'separator',
+                                margin: 'lg'
+                            },
+                            {
+                                type: 'text',
+                                text: '🗑️ ห้องประชุมนี้ถูกลบออกจากระบบแล้ว',
+                                size: 'sm',
+                                color: '#ef4444',
+                                margin: 'lg',
+                                wrap: true
+                            },
+                            {
+                                type: 'text',
+                                text: '👑 ดำเนินการโดย: ' + adminName,
+                                size: 'sm',
+                                color: '#888888',
+                                margin: 'md'
+                            }
+                        ]
+                    }
+                }
+            };
+        }
+
+        /**
+         * สร้าง Flex Message สำหรับการแจ้งเตือนการสร้าง/แก้ไขห้อง
+         */
+        function createRoomUpdateFlexMessage(room, action, adminName) {
+            const isNew = action === 'create';
+            const emoji = isNew ? '🆕' : '✏️';
+            const titleText = isNew ? 'เพิ่มห้องประชุมใหม่' : 'แก้ไขห้องประชุม';
+            const headerColor = isNew ? '#06c755' : '#3b82f6';
+            
+            return {
+                type: 'flex',
+                altText: `${emoji} ${titleText}: ${room.name}`,
+                contents: {
+                    type: 'bubble',
+                    header: {
+                        type: 'box',
+                        layout: 'vertical',
+                        contents: [
+                            {
+                                type: 'text',
+                                text: emoji + ' ' + titleText,
+                                weight: 'bold',
+                                size: 'xl',
+                                color: headerColor
+                            }
+                        ]
+                    },
+                    body: {
+                        type: 'box',
+                        layout: 'vertical',
+                        contents: [
+                            {
+                                type: 'text',
+                                text: room.name,
+                                weight: 'bold',
+                                size: 'lg',
+                                wrap: true
+                            },
+                            {
+                                type: 'separator',
+                                margin: 'lg'
+                            },
+                            {
+                                type: 'box',
+                                layout: 'vertical',
+                                margin: 'lg',
+                                contents: [
+                                    {
+                                        type: 'box',
+                                        layout: 'horizontal',
+                                        contents: [
+                                            {
+                                                type: 'text',
+                                                text: '📍 สถานที่',
+                                                size: 'sm',
+                                                color: '#aaaaaa',
+                                                flex: 2
+                                            },
+                                            {
+                                                type: 'text',
+                                                text: room.location || '-',
+                                                size: 'sm',
+                                                flex: 5,
+                                                wrap: true
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        type: 'box',
+                                        layout: 'horizontal',
+                                        margin: 'md',
+                                        contents: [
+                                            {
+                                                type: 'text',
+                                                text: '👥 ความจุ',
+                                                size: 'sm',
+                                                color: '#aaaaaa',
+                                                flex: 2
+                                            },
+                                            {
+                                                type: 'text',
+                                                text: room.capacity + ' คน',
+                                                size: 'sm',
+                                                flex: 5
+                                            }
+                                        ]
+                                    }
+                                ]
+                            },
+                            {
+                                type: 'separator',
+                                margin: 'lg'
+                            },
+                            {
+                                type: 'text',
+                                text: '👑 ดำเนินการโดย: ' + adminName,
+                                size: 'sm',
+                                color: '#888888',
+                                margin: 'lg'
+                            }
+                        ]
+                    }
+                }
+            };
+        }
+
+        /**
+         * ส่ง Flex Message ไปยังแชท (ใช้ได้ทั้งใน LIFF และ LINE OA)
+         */
+        async function sendFlexMessage(flexMessage) {
+            try {
+                if (!liff.isInClient()) {
+                    console.log('Not in LINE client, cannot send message');
+                    return false;
+                }
+
+                await liff.sendMessages([flexMessage]);
+                console.log('Flex message sent successfully');
+                return true;
+            } catch (error) {
+                console.error('Error sending flex message:', error);
+                return false;
+            }
+        }
+
+        /**
+         * แจ้งเตือนการเปลี่ยนแปลงสถานะการจอง
+         */
+        async function notifyBookingStatusChange(booking, action, adminName = null) {
+            try {
+                // ถ้าไม่มีการระบุชื่อผู้ดำเนินการ ให้ใช้ชื่อผู้ใช้ปัจจุบัน
+                const actorName = adminName || (state.user?.displayName || 'ผู้ดูแลระบบ');
+                
+                const flexMessage = createStatusChangeFlexMessage(booking, action, actorName);
+                
+                // ส่งข้อความไปยังกลุ่มหรือผู้ใช้
+                if (liff.isInClient()) {
+                    await liff.sendMessages([flexMessage]);
+                    console.log(`Booking ${action} notification sent`);
+                }
+                
+                return true;
+            } catch (error) {
+                console.error('Error sending booking status notification:', error);
+                return false;
+            }
+        }
+
+        /**
+         * แจ้งเตือนการเปลี่ยนแปลงห้องประชุม
+         */
+        async function notifyRoomChange(room, action, adminName = null) {
+            try {
+                const actorName = adminName || (state.user?.displayName || 'ผู้ดูแลระบบ');
+                
+                let flexMessage;
+                if (action === 'delete') {
+                    flexMessage = createRoomDeleteFlexMessage(room, actorName);
+                } else {
+                    flexMessage = createRoomUpdateFlexMessage(room, action, actorName);
+                }
+                
+                if (liff.isInClient()) {
+                    await liff.sendMessages([flexMessage]);
+                    console.log(`Room ${action} notification sent`);
+                }
+                
+                return true;
+            } catch (error) {
+                console.error('Error sending room change notification:', error);
+                return false;
+            }
+        }
+
         // ========== CALENDAR FUNCTIONS ==========
         async function loadMonthBookings(year, month) {
             try {
@@ -2889,6 +3409,13 @@
                             await sendBookingToChat(result.data.bookingData);
                         }, 500);
                     }
+                    
+                    // ถ้าเป็นการแก้ไข ส่งแจ้งเตือนด้วย
+                    if (id && result.data?.bookingData) {
+                        setTimeout(async () => {
+                            await notifyBookingStatusChange(result.data.bookingData, 'update', state.user?.displayName);
+                        }, 500);
+                    }
                 } else {
                     showToast(result.message || 'เกิดข้อผิดพลาด', 'error');
                 }
@@ -3147,11 +3674,20 @@
                 if (apiResult.success) {
                     showToast('ยกเลิกการจองสำเร็จ');
                     closeBookingDetailModal();
+                    
+                    // ดึงข้อมูลการจองล่าสุดเพื่อส่งแจ้งเตือน
+                    const bookingResult = await callGAS('booking', { bookingId });
+                    if (bookingResult.success) {
+                        await notifyBookingStatusChange(bookingResult.data, 'cancel', state.user?.displayName);
+                    }
+                    
                     await Promise.all([
                         loadMyBookings(), 
                         loadRooms(), 
                         loadTodayStats(),
-                        loadMonthBookings(state.currentMonth.getFullYear(), state.currentMonth.getMonth())
+                        loadMonthBookings(state.currentMonth.getFullYear(), state.currentMonth.getMonth()),
+                        loadPendingBookings(),
+                        loadAllBookings()
                     ]);
                 } else {
                     showToast(apiResult.message || 'ยกเลิกไม่สำเร็จ', 'error');
@@ -3243,6 +3779,13 @@
             
             if (result.success) {
                 showToast('อนุมัติการจองสำเร็จ');
+                
+                // ดึงข้อมูลการจองล่าสุดเพื่อส่งแจ้งเตือน
+                const bookingResult = await callGAS('booking', { bookingId });
+                if (bookingResult.success) {
+                    await notifyBookingStatusChange(bookingResult.data, 'approve', state.user?.displayName);
+                }
+                
                 await Promise.all([
                     loadPendingBookings(), 
                     loadAdminStats(), 
@@ -3279,6 +3822,14 @@
                 
                 if (apiResult.success) {
                     showToast('ปฏิเสธการจองสำเร็จ');
+                    
+                    // ดึงข้อมูลการจองล่าสุดเพื่อส่งแจ้งเตือน
+                    const bookingResult = await callGAS('booking', { bookingId });
+                    if (bookingResult.success) {
+                        bookingResult.data.rejectionReason = result.value;
+                        await notifyBookingStatusChange(bookingResult.data, 'reject', state.user?.displayName);
+                    }
+                    
                     await Promise.all([
                         loadPendingBookings(), 
                         loadAdminStats(), 
@@ -3496,6 +4047,16 @@
 
                 if (result.success) {
                     showToast(id ? 'แก้ไขห้องสำเร็จ' : 'เพิ่มห้องสำเร็จ');
+                    
+                    // ส่งแจ้งเตือนการเปลี่ยนแปลงห้อง
+                    if (result.data?.room) {
+                        await notifyRoomChange(
+                            result.data.room, 
+                            id ? 'update' : 'create', 
+                            state.user?.displayName
+                        );
+                    }
+                    
                     closeRoomModal();
                     await loadRooms();
                     await loadRoomsManagement();
@@ -3549,6 +4110,9 @@
                 const deleteBtn = $.modalDeleteBtn;
                 setButtonLoading(deleteBtn, true);
 
+                // เก็บข้อมูลห้องไว้ก่อนลบเพื่อใช้ส่งแจ้งเตือน
+                const roomToDelete = { ...state.currentRoom };
+
                 const apiResult = await callGAS('room/delete', { 
                     roomId: state.currentRoom.roomId,
                     lineUserId: state.user.lineUserId
@@ -3556,6 +4120,10 @@
 
                 if (apiResult.success) {
                     showToast('ลบห้องสำเร็จ');
+                    
+                    // ส่งแจ้งเตือนการลบห้อง
+                    await notifyRoomChange(roomToDelete, 'delete', state.user?.displayName);
+                    
                     closeModal();
                     await loadRooms();
                     await loadRoomsManagement();
