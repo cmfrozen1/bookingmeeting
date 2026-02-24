@@ -14,30 +14,30 @@
     <link rel="preconnect" href="https://cdnjs.cloudflare.com">
     <link rel="preconnect" href="https://script.google.com">
     
-    <!-- Tailwind CSS - Production Ready (โหลดก่อน) -->
+    <!-- Tailwind CSS - Production Ready -->
     <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet" media="print" onload="this.media='all'">
     
-    <!-- Fonts (โหลดแบบ async) -->
+    <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@300;400;500;600;700&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
     
-    <!-- LINE LIFF (โหลดก่อน เพราะจำเป็น) -->
+    <!-- LINE LIFF -->
     <script src="https://static.line-scdn.net/liff/edge/2.1/sdk.js"></script>
     
-    <!-- Font Awesome (โหลดแบบ async) -->
+    <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" media="print" onload="this.media='all'">
     
-    <!-- SweetAlert2 (โหลดแบบ defer) -->
+    <!-- SweetAlert2 -->
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11" defer></script>
     
-    <!-- Flatpickr (โหลดแบบ async) -->
+    <!-- Flatpickr -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css" media="print" onload="this.media='all'">
     <script src="https://cdn.jsdelivr.net/npm/flatpickr" defer></script>
     <script src="https://npmcdn.com/flatpickr/dist/l10n/th.js" defer></script>
     
     <style>
-        /* Critical CSS - โหลดก่อนทันที */
+        /* Critical CSS */
         * {
             font-family: 'IBM Plex Sans Thai', sans-serif;
             margin: 0;
@@ -803,7 +803,7 @@
             100% { background-position: -200% 0; }
         }
         
-        /* ===== ปฏิทิน ===== */
+        /* Calendar */
         .calendar-container {
             background: var(--bg-card);
             border-radius: 24px;
@@ -914,26 +914,6 @@
             background: var(--warning);
         }
         
-        .booking-indicator {
-            display: flex;
-            gap: 2px;
-            justify-content: center;
-            margin-top: 2px;
-        }
-        
-        .booking-dot {
-            width: 4px;
-            height: 4px;
-            border-radius: 2px;
-            background: var(--primary);
-        }
-        
-        .booking-dot.multiple {
-            width: 6px;
-            height: 6px;
-            background: var(--warning);
-        }
-        
         .date-bookings-list {
             margin-top: 20px;
             max-height: 300px;
@@ -1028,26 +1008,6 @@
             color: var(--text-secondary);
         }
 
-        .loading-overlay {
-            position: absolute;
-            inset: 0;
-            background: rgba(0,0,0,0.7);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            z-index: 10;
-            border-radius: inherit;
-        }
-        
-        .loading-spinner-small {
-            width: 30px;
-            height: 30px;
-            border: 3px solid var(--border);
-            border-top-color: var(--primary);
-            border-radius: 50%;
-            animation: spin 0.6s linear infinite;
-        }
-
         .room-image img {
             width: 100%;
             height: 100%;
@@ -1083,7 +1043,7 @@
             gap: 8px;
         }
         
-        /* Animation keyframes */
+        /* Animation */
         @keyframes slideUp {
             from { transform: translateY(100%); opacity: 0; }
             to { transform: translateY(0); opacity: 1; }
@@ -1101,6 +1061,32 @@
             background: rgba(6,199,85,0.1);
             color: var(--primary);
             border: 1px solid rgba(6,199,85,0.2);
+        }
+
+        /* LINE Button Style */
+        .line-button {
+            background: #06c755;
+            color: white;
+            border: none;
+            border-radius: 12px;
+            padding: 10px 16px;
+            font-size: 14px;
+            font-weight: 500;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .line-button:hover {
+            background: #05b34a;
+            transform: translateY(-2px);
+        }
+        
+        .line-button i {
+            font-size: 16px;
         }
     </style>
 </head>
@@ -1128,7 +1114,7 @@
 
     <!-- Main Content -->
     <div class="min-h-screen">
-        <!-- Tab: Home (ห้องประชุม) -->
+        <!-- Tab: Home -->
         <div id="tab-home" class="tab-content active">
             <!-- Profile Header -->
             <div class="profile-header" id="profile-header">
@@ -1195,9 +1181,7 @@
                     <div>ส</div>
                 </div>
                 
-                <div class="calendar-days" id="calendar-days">
-                    <!-- Skeleton for calendar -->
-                </div>
+                <div class="calendar-days" id="calendar-days"></div>
                 
                 <!-- Selected Date Bookings -->
                 <div id="selected-date-bookings" class="date-bookings-list hidden">
@@ -1241,7 +1225,7 @@
             <div id="my-bookings-list" class="my-bookings-grid"></div>
         </div>
 
-        <!-- Tab: Admin - Manager can see but limited access -->
+        <!-- Tab: Admin -->
         <div id="tab-admin" class="tab-content">
             <div class="max-w-7xl mx-auto px-4">
                 <div class="flex justify-between items-center mb-4">
@@ -1254,7 +1238,7 @@
                     </div>
                 </div>
 
-                <!-- Admin Stats - Both admin and manager can see -->
+                <!-- Admin Stats -->
                 <div class="admin-section">
                     <h3 class="font-semibold mb-3">สถิติ</h3>
                     <div class="grid grid-cols-2 gap-3">
@@ -1277,26 +1261,24 @@
                     </div>
                 </div>
 
-                <!-- Admin Tabs - Dynamic based on role -->
+                <!-- Admin Tabs -->
                 <div class="flex border-b border-[#2a2e36] mb-4 overflow-x-auto">
                     <button class="admin-tab-btn flex-1 py-2 text-center active" data-admin-tab="pending">
                         รออนุมัติ <span id="pending-badge" class="ml-1 bg-yellow-500 text-white text-xs rounded-full px-1.5 py-0.5 hidden">0</span>
                     </button>
                     <button class="admin-tab-btn flex-1 py-2 text-center" data-admin-tab="bookings">การจองทั้งหมด</button>
                     <button class="admin-tab-btn flex-1 py-2 text-center" data-admin-tab="rooms">จัดการห้อง</button>
-                    <!-- Users tab - Only admin can see -->
                     <button class="admin-tab-btn flex-1 py-2 text-center admin-only-users" data-admin-tab="users" style="display: none;">จัดการผู้ใช้</button>
-                    <!-- Settings tab - Only admin can see -->
                     <button class="admin-tab-btn flex-1 py-2 text-center admin-only-settings" data-admin-tab="settings" style="display: none;">ตั้งค่า</button>
                 </div>
 
-                <!-- Admin: Pending - Both can see -->
+                <!-- Admin: Pending -->
                 <div id="admin-pending-tab" class="admin-tab">
                     <h3 class="font-semibold mb-3">รายการรออนุมัติ</h3>
                     <div id="pending-bookings-list" class="space-y-3"></div>
                 </div>
 
-                <!-- Admin: All Bookings - Both can see -->
+                <!-- Admin: All Bookings -->
                 <div id="admin-bookings-tab" class="admin-tab hidden">
                     <div class="search-box px-0 mb-4">
                         <i class="fas fa-search"></i>
@@ -1305,7 +1287,7 @@
                     <div id="all-bookings-list" class="space-y-3"></div>
                 </div>
 
-                <!-- Admin: Rooms - Both can see (both can manage rooms) -->
+                <!-- Admin: Rooms -->
                 <div id="admin-rooms-tab" class="admin-tab hidden">
                     <button class="btn-primary mb-4" onclick="showCreateRoomModal()">
                         <i class="fas fa-plus mr-2"></i>เพิ่มห้องใหม่
@@ -1313,7 +1295,7 @@
                     <div id="rooms-management-list" class="space-y-3"></div>
                 </div>
 
-                <!-- Admin: Users - Only admin can see -->
+                <!-- Admin: Users -->
                 <div id="admin-users-tab" class="admin-tab hidden">
                     <div class="search-box px-0 mb-4">
                         <i class="fas fa-search"></i>
@@ -1322,7 +1304,7 @@
                     <div id="users-list" class="space-y-2"></div>
                 </div>
 
-                <!-- Admin: Settings - Only admin can see -->
+                <!-- Admin: Settings -->
                 <div id="admin-settings-tab" class="admin-tab hidden">
                     <div class="admin-section">
                         <h3 class="font-semibold mb-3">ตั้งค่าระบบ</h3>
@@ -1349,7 +1331,7 @@
                         </form>
                     </div>
                     
-                    <!-- Database Reset (Admin Only) -->
+                    <!-- Database Reset -->
                     <div class="admin-section border-red-500/30">
                         <h3 class="font-semibold mb-3 text-red-500">เครื่องมือสำหรับผู้ดูแล</h3>
                         <button onclick="resetDatabase()" class="btn-danger w-full">
@@ -1415,7 +1397,7 @@
             </div>
         </div>
 
-        <!-- Create/Edit Booking Modal (มีวันที่สิ้นสุด) -->
+        <!-- Create/Edit Booking Modal -->
         <div class="modal" id="booking-create-modal">
             <div class="modal-content">
                 <div class="modal-header">
@@ -1531,7 +1513,7 @@
             </div>
         </div>
 
-        <!-- Role Modal (Admin Only) -->
+        <!-- Role Modal -->
         <div class="modal" id="role-modal">
             <div class="modal-content">
                 <div class="modal-header">
@@ -1558,7 +1540,7 @@
             </div>
         </div>
 
-        <!-- Delete User Confirmation Modal (Admin Only) -->
+        <!-- Delete User Confirmation Modal -->
         <div class="modal" id="delete-user-modal">
             <div class="modal-content">
                 <div class="modal-header">
@@ -1820,7 +1802,6 @@
                     dateFormat: 'Y-m-d',
                     minDate: 'today',
                     onChange: function(selectedDates, dateStr) {
-                        // อัพเดทวันที่สิ้นสุดให้มีค่าเริ่มต้นเป็นวันเดียวกัน
                         if ($.bookingEndDate && !$.bookingEndDate.value) {
                             $.bookingEndDate.value = dateStr;
                         }
@@ -1888,7 +1869,6 @@
             const end = $.bookingEnd?.value;
             const attendees = parseInt($.bookingAttendees?.value) || 0;
 
-            // ตรวจสอบจำนวนผู้เข้าร่วม (ต้องมีอย่างน้อย 1 คน)
             if (!attendees || attendees < 1) {
                 if ($.availabilityStatus) {
                     $.availabilityStatus.innerHTML = '<span class="text-red-500">⚠️ จำนวนผู้เข้าร่วมต้องมีอย่างน้อย 1 คน</span>';
@@ -1903,7 +1883,6 @@
                 return false;
             }
 
-            // ตรวจสอบวันที่เริ่ม <= วันที่สิ้นสุด
             if (date && endDate && date > endDate) {
                 if ($.availabilityStatus) {
                     $.availabilityStatus.innerHTML = '<span class="text-red-500">⚠️ วันที่สิ้นสุดต้องไม่ก่อนวันที่เริ่ม</span>';
@@ -1949,13 +1928,24 @@
             }
         }
 
-
         // ========== FLEX MESSAGE FUNCTIONS ==========
         function createBookingFlexMessage(bookingData) {
-            const { title, roomName, userName, startTime, endTime, status, reason, attendees, description, action } = bookingData;
+            const { 
+                title, 
+                roomName, 
+                userName, 
+                startTime, 
+                endTime, 
+                status, 
+                reason, 
+                attendees, 
+                description, 
+                meetingLink,
+                action 
+            } = bookingData;
             
             // Define color based on status/action
-            let statusColor = '#f7c50f'; // Yello for Success
+            let statusColor = '#f7c50f'; // Yellow for pending/success
             let statusEmoji = '📝';
             let statusText = 'ส่งข้อมูลการจองสำเร็จ';
             
@@ -2128,9 +2118,29 @@
                                 ]
                             }
                         ]
+                    },
+                    footer: {
+                        type: 'box',
+                        layout: 'vertical',
+                        spacing: 'sm',
+                        contents: []
                     }
                 }
             };
+            
+            // Add meeting link button if exists
+            if (meetingLink) {
+                flexMessage.contents.footer.contents.push({
+                    type: 'button',
+                    action: {
+                        type: 'uri',
+                        label: '🔗 เข้าร่วมประชุม',
+                        uri: meetingLink
+                    },
+                    style: 'primary',
+                    color: '#06c755'
+                });
+            }
             
             // Add reason if rejected
             if (action === 'rejected' && reason) {
@@ -2453,7 +2463,7 @@
         // ========== LIFF INIT ==========
         async function initLIFF() {
             try {
-                // Render from cache immediately for zero-load feel
+                // Render from cache immediately
                 if (state.user) {
                     state.role = state.user.role || 'user';
                     updateRoleFlags();
@@ -2473,7 +2483,7 @@
                 const profile = await liff.getProfile();
                 const idToken = liff.getDecodedIDToken();
 
-                // Fetch critical data in parallel (not sequential)
+                // Fetch critical data in parallel
                 const [userResult, roomsResult] = await Promise.all([
                     callGAS('user/profile', {
                         lineUserId: profile.userId,
@@ -2498,14 +2508,14 @@
                     renderRooms();
                 }
 
-                // Hide loading as soon as we have fresh critical data
+                // Hide loading
                 $.initLoading.classList.add('hide');
                 state.initialized = true;
 
                 // Initialize Flatpickr
                 initFlatpickr();
 
-                // Load non-critical data in background
+                // Load non-critical data
                 loadSettings().then(s => {
                     if(s.success) localStorage.setItem('settings_cache', JSON.stringify(state.settings));
                 }).catch(console.warn);
@@ -2522,7 +2532,6 @@
             }
         }
 
-        // Helper function to update user UI
         function updateUserUI(user) {
             if (!user) return;
             
@@ -2538,7 +2547,6 @@
             
             $.profileRole.textContent = roleText;
 
-            // Update role badge in admin tab
             if ($.userRoleBadge) {
                 $.userRoleBadge.textContent = roleText;
                 if (state.isAdmin || state.isManager) {
@@ -2548,50 +2556,38 @@
                 }
             }
 
-            // Show/hide admin tab based on role (manager or admin can see)
             $.managerAdmin.forEach(el => {
                 if (state.isManager) el.classList.remove('hidden');
                 else el.classList.add('hidden');
             });
 
-            // Show/hide users tab (only admin can see)
             $.adminOnlyUsers.forEach(el => {
                 if (state.isAdmin) el.style.display = 'block';
                 else el.style.display = 'none';
             });
 
-            // Show/hide settings tab (only admin can see)
             $.adminOnlySettings.forEach(el => {
                 if (state.isAdmin) el.style.display = 'block';
                 else el.style.display = 'none';
             });
 
-            // Show floating button for non-admin users
             if (!state.isAdmin) {
                 $.floatingBtn.classList.remove('hidden');
                 if ($.quickBookBtn) $.quickBookBtn.classList.remove('hidden');
             }
         }
 
-        // โหลดข้อมูลเริ่มต้นที่จำเป็น
         async function loadInitialData() {
             try {
-                // โหลดห้องประชุมก่อน (จำเป็น)
                 const roomsPromise = loadRooms();
-                
-                // โหลดปฏิทินเดือนปัจจุบัน
                 const calendarPromise = loadMonthBookings(
                     state.currentMonth.getFullYear(), 
                     state.currentMonth.getMonth()
                 );
-                
-                // โหลดข้อมูลสถิติวันนี้แบบเบาๆ
                 const statsPromise = loadTodayStats();
                 
-                // รอให้ข้อมูลพื้นฐานโหลดเสร็จ (พร้อมกัน)
                 await Promise.all([roomsPromise, calendarPromise, statsPromise]);
                 
-                // หลังจากได้ข้อมูลพื้นฐานแล้ว ค่อยโหลดการจองของฉัน
                 loadMyBookings().catch(console.warn);
                 
             } catch (error) {
@@ -2599,9 +2595,7 @@
             }
         }
 
-        // โหลดข้อมูลสำหรับ manager/admin แบบ lazy
         function loadManagerData() {
-            // หน่วงเวลาเล็กน้อย เพื่อไม่ให้แย่ง bandwidth กับข้อมูลหลัก
             setTimeout(() => {
                 Promise.all([
                     loadUsers().catch(console.warn),
@@ -2635,7 +2629,6 @@
             );
 
             if (!filtered.length && state.rooms.length === 0) {
-                // ถ้ายังไม่มีข้อมูล ให้แสดง skeleton
                 return;
             }
 
@@ -2818,7 +2811,6 @@
 
                 $.modalBookBtn.onclick = () => showBookingModal(roomId);
 
-                // Show admin controls only for managers and admins
                 if (state.isManager) {
                     $.modalAdminControls.classList.remove('hidden');
                     $.modalEditBtn.disabled = false;
@@ -2862,7 +2854,6 @@
             const endTime = new Date(nextHour);
             endTime.setHours(nextHour.getHours() + 1, 0, 0, 0);
             
-            // รีเซ็ต flatpickr values
             if (state.flatpickrInstances.bookingDate) {
                 state.flatpickrInstances.bookingDate.setDate(formatDateForInput(nextHour), true);
             }
@@ -2876,7 +2867,6 @@
                 state.flatpickrInstances.bookingEnd.setDate(endTime.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' }), true);
             }
             
-            // ตรวจสอบความถูกต้องหลังจากตั้งค่า
             setTimeout(() => {
                 validateBookingForm();
             }, 100);
@@ -2898,7 +2888,6 @@
             
             if (!roomId || !startDate || !endDate || !start || !end) return;
             
-            // ตรวจสอบจำนวนผู้เข้าร่วม
             if (attendees < 1) {
                 $.availabilityStatus.innerHTML = '<span class="text-red-500">⚠️ จำนวนผู้เข้าร่วมต้องมีอย่างน้อย 1 คน</span>';
                 $.availabilityStatus.classList.remove('hidden');
@@ -2916,7 +2905,6 @@
                 return;
             }
             
-            // ตรวจสอบว่าวันที่เริ่มไม่เกินวันที่สิ้นสุด
             if (startDate > endDate) {
                 $.availabilityStatus.innerHTML = '<span class="text-red-500">⚠️ วันที่สิ้นสุดต้องไม่ก่อนวันที่เริ่ม</span>';
                 $.availabilityStatus.classList.remove('hidden');
@@ -2941,7 +2929,6 @@
                 return;
             }
             
-            // ตรวจสอบความจุห้อง
             const selectedRoom = state.rooms.find(r => r.roomId === roomId);
             if (selectedRoom && attendees > selectedRoom.capacity) {
                 $.availabilityStatus.innerHTML = `<span class="text-red-500">⚠️ จำนวนผู้เข้าร่วม (${attendees}) เกินความจุห้อง (${selectedRoom.capacity} คน)</span>`;
@@ -2976,10 +2963,6 @@
             }
         }
 
-        // ========== สร้าง Flex Message สำหรับส่งไปแชท ==========
-
-        // ========== ส่ง Flex Message ไปยังแชทอัตโนมัติ ==========
-
         window.saveBooking = async function(e) {
             e.preventDefault();
             
@@ -2997,7 +2980,6 @@
                 const end = $.bookingEnd.value;
                 const attendees = parseInt($.bookingAttendees.value) || 0;
                 
-                // ตรวจสอบจำนวนผู้เข้าร่วมอีกครั้ง
                 if (attendees < 1) {
                     showToast('จำนวนผู้เข้าร่วมต้องมีอย่างน้อย 1 คน', 'error');
                     setButtonLoading(btn, false);
@@ -3007,14 +2989,12 @@
                 const startDateTime = new Date(`${startDate}T${start}:00`);
                 const endDateTime = new Date(`${endDate}T${end}:00`);
                 
-                // ตรวจสอบว่าวันที่เริ่มไม่เกินวันที่สิ้นสุด
                 if (startDate > endDate) {
                     showToast('วันที่สิ้นสุดต้องไม่ก่อนวันที่เริ่ม', 'error');
                     setButtonLoading(btn, false);
                     return;
                 }
                 
-                // ตรวจสอบความจุห้อง
                 const selectedRoom = state.rooms.find(r => r.roomId === roomId);
                 if (selectedRoom && attendees > selectedRoom.capacity) {
                     showToast(`จำนวนผู้เข้าร่วม (${attendees}) เกินความจุห้อง (${selectedRoom.capacity} คน)`, 'error');
@@ -3050,7 +3030,6 @@
                         loadMonthBookings(state.currentMonth.getFullYear(), state.currentMonth.getMonth())
                     ]);
                     
-                    // ส่งข้อความไปยังแชทอัตโนมัติเมื่อจองสำเร็จ
                     if (!id && result.data?.bookingData) {
                         setTimeout(async () => {
                             await sendBookingToChat(result.data.bookingData);
@@ -3067,7 +3046,7 @@
             }
         };
 
-        // ========== SHARE BOOKING VIA SHARE TARGET PICKER ==========
+        // ========== SHARE BOOKING ==========
         window.shareBookingViaPicker = async function(bookingId) {
             try {
                 if (!liff.isInClient()) {
@@ -3313,7 +3292,6 @@
 
                 if (apiResult.success) {
                     showToast('ยกเลิกการจองสำเร็จ');
-                    // Send Flex Message to LINE chat
                     const booking = state.currentBooking || {};
                     await sendBookingToChat({
                         title: booking.title,
@@ -3323,6 +3301,7 @@
                         endTime: booking.endTime,
                         attendees: booking.attendees,
                         description: booking.description,
+                        meetingLink: booking.meetingLink,
                         action: 'cancelled'
                     });
                     closeBookingDetailModal();
@@ -3422,7 +3401,6 @@
             
             if (result.success) {
                 showToast('อนุมัติการจองสำเร็จ');
-                // Send Flex Message to LINE chat
                 const booking = state.pendingBookings.find(b => b.bookingId === bookingId) || {};
                 await sendBookingToChat({
                     title: booking.title,
@@ -3432,6 +3410,7 @@
                     endTime: booking.endTime,
                     attendees: booking.attendees,
                     description: booking.description,
+                    meetingLink: booking.meetingLink,
                     action: 'approved'
                 });
                 await Promise.all([
@@ -3470,7 +3449,6 @@
                 
                 if (apiResult.success) {
                     showToast('ปฏิเสธการจองสำเร็จ');
-                    // Send Flex Message to LINE chat
                     const booking = state.pendingBookings.find(b => b.bookingId === bookingId) || {};
                     await sendBookingToChat({
                         title: booking.title,
@@ -3480,6 +3458,7 @@
                         endTime: booking.endTime,
                         attendees: booking.attendees,
                         description: booking.description,
+                        meetingLink: booking.meetingLink,
                         reason: result.value || 'ไม่ระบุเหตุผล',
                         action: 'rejected'
                     });
@@ -3607,7 +3586,6 @@
             document.getElementById('role-modal').classList.remove('active');
         };
 
-        // ========== DELETE USER FUNCTION (ADMIN ONLY) ==========
         window.showDeleteUserModal = function(userId, userName) {
             if (!state.isAdmin) {
                 showToast('เฉพาะผู้ดูแลระบบเท่านั้น', 'error');
@@ -3641,7 +3619,6 @@
                 if (result.success) {
                     showToast('ลบผู้ใช้สำเร็จ');
                     
-                    // Send Flex Message for user deletion
                     const deletedUser = state.users.find(u => u.lineUserId === state.currentUserToDelete) || {};
                     await sendBookingToChat({
                         title: 'ลบผู้ใช้ออกจากระบบ',
@@ -3692,7 +3669,6 @@
             if (result.success) {
                 showToast('อัปเดตสิทธิ์สำเร็จ');
                 
-                // Send Flex Message for role update
                 const targetUser = state.users.find(u => u.lineUserId === userId) || {};
                 const roleNames = { admin: 'ผู้ดูแลระบบ', manager: 'ผู้จัดการ', user: 'ผู้ใช้ทั่วไป' };
                 await sendBookingToChat({
@@ -3858,7 +3834,6 @@
 
                 if (apiResult.success) {
                     showToast('ลบห้องสำเร็จ');
-                    // Send Flex Message to LINE chat
                     const room = state.currentRoom || {};
                     await sendBookingToChat({
                         title: 'ห้องประชุม: ' + (room.name || 'ไม่ระบุ'),
@@ -3985,7 +3960,6 @@
             if (result.success) {
                 showToast('บันทึกสำเร็จ');
                 
-                // Send Flex Message for settings update
                 await sendBookingToChat({
                     title: 'อัปเดตการตั้งค่าระบบ',
                     roomName: 'การตั้งค่า',
@@ -4139,7 +4113,6 @@
             });
         });
 
-        // เพิ่ม event listener สำหรับจำนวนผู้เข้าร่วม
         $.bookingAttendees?.addEventListener('input', () => {
             validateBookingForm();
             checkAvailability();
