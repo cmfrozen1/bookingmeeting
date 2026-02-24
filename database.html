@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Firebase CRUD - ทุกตาราง</title>
+    <title>Firebase CRUD - แสดงรูป Avatar</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
@@ -26,15 +26,11 @@
 
         <!-- Collection Tabs -->
         <div class="mb-4 border-b border-gray-200 overflow-x-auto">
-            <ul class="flex flex-nowrap -mb-px text-sm font-medium text-center" id="collectionTabs">
-                <!-- Tabs will be dynamically added here -->
-            </ul>
+            <ul class="flex flex-nowrap -mb-px text-sm font-medium text-center" id="collectionTabs"></ul>
         </div>
 
         <!-- Table Container -->
-        <div id="tableContainer" class="space-y-6">
-            <!-- Tables will be dynamically created here -->
-        </div>
+        <div id="tableContainer" class="space-y-6"></div>
 
         <!-- Add/Edit Modal -->
         <div id="modal" class="fixed inset-0 bg-gray-600 bg-opacity-50 hidden overflow-y-auto h-full w-full z-50">
@@ -49,10 +45,19 @@
                 <form id="dataForm" onsubmit="saveData(event)">
                     <input type="hidden" id="modalCollection">
                     <input type="hidden" id="modalKey">
-                    <input type="hidden" id="modalId">
                     
-                    <div id="modalFields" class="space-y-4 max-h-96 overflow-y-auto">
-                        <!-- Dynamic fields will be added here -->
+                    <div id="modalFields" class="space-y-4 max-h-96 overflow-y-auto"></div>
+                    
+                    <!-- Avatar Preview -->
+                    <div id="avatarPreviewContainer" class="mb-4 hidden">
+                        <label class="block text-gray-700 text-sm font-bold mb-2">ตัวอย่างรูปภาพ</label>
+                        <div class="flex items-center space-x-4">
+                            <img id="avatarPreview" src="" class="h-16 w-16 rounded-full object-cover border-2 border-gray-300" onerror="this.onerror=null; this.src='https://ui-avatars.com/api/?name=Error&background=ff4444&color=fff';">
+                            <div>
+                                <p id="avatarStatus" class="text-sm text-gray-600"></p>
+                                <button type="button" onclick="testImageUrl()" class="text-xs text-blue-600 hover:text-blue-800 mt-1">ทดสอบลิงค์</button>
+                            </div>
+                        </div>
                     </div>
                     
                     <div class="flex gap-2 justify-end mt-6">
@@ -69,12 +74,28 @@
                 <div class="text-center">
                     <i class="fas fa-exclamation-triangle text-yellow-500 text-4xl mb-4"></i>
                     <h3 class="text-lg font-bold mb-4">ยืนยันการลบข้อมูล</h3>
-                    <p class="mb-4 text-gray-600" id="deleteMessage">คุณต้องการลบข้อมูลนี้ใช่หรือไม่?</p>
+                    <p class="mb-4 text-gray-600" id="deleteMessage"></p>
                 </div>
                 <div class="flex gap-2 justify-end">
                     <button onclick="closeDeleteModal()" class="px-4 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400">ยกเลิก</button>
                     <button onclick="confirmDelete()" class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700">ยืนยันการลบ</button>
                 </div>
+            </div>
+        </div>
+
+        <!-- Image Preview Modal -->
+        <div id="imageModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 hidden overflow-y-auto h-full w-full z-50">
+            <div class="relative top-20 mx-auto p-5 border w-auto max-w-2xl shadow-lg rounded-lg bg-white">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-lg font-bold">รูปภาพขนาดใหญ่</h3>
+                    <button onclick="closeImageModal()" class="text-gray-600 hover:text-gray-900">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div class="flex justify-center">
+                    <img id="largeImage" src="" class="max-w-full max-h-[70vh] object-contain" onerror="this.onerror=null; this.src='https://ui-avatars.com/api/?name=Error&background=ff4444&color=fff';">
+                </div>
+                <p id="imageUrl" class="text-sm text-gray-500 mt-4 break-all"></p>
             </div>
         </div>
 
@@ -110,6 +131,7 @@
         let allData = {};
         let collections = [];
         let currentDelete = { collection: null, key: null };
+        let currentImageUrl = '';
 
         // Load all data on page load
         document.addEventListener('DOMContentLoaded', function() {
@@ -213,22 +235,21 @@
                 `;
             }
             
-            // Get all possible fields from all records
+            // Get all possible fields
             const allFields = new Set();
             keys.forEach(key => {
                 Object.keys(data[key] || {}).forEach(field => allFields.add(field));
             });
             
-            // Add key/id field
             const fields = ['key', ...Array.from(allFields)];
             
-            // Generate table headers
+            // Generate headers
             const headers = fields.map(field => {
                 let displayName = field;
                 if (field === 'key') displayName = 'ID/Key';
-                else if (field === 'name') displayName = 'ชื่อ';
+                else if (field === 'name' || field === 'displayName') displayName = 'ชื่อ';
                 else if (field === 'email') displayName = 'อีเมล';
-                else if (field === 'photoURL' || field === 'avatarUrl') displayName = 'รูป';
+                else if (isAvatarField(field)) displayName = 'รูปภาพ';
                 else if (field === 'role') displayName = 'บทบาท';
                 else if (field === 'status') displayName = 'สถานะ';
                 else if (field === 'department') displayName = 'แผนก';
@@ -238,7 +259,7 @@
                 return `<th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">${displayName}</th>`;
             }).join('');
             
-            // Generate table rows
+            // Generate rows
             const rows = keys.map(key => {
                 const item = data[key];
                 const rowFields = fields.map(field => {
@@ -248,16 +269,24 @@
                     
                     const value = item[field];
                     
-                    // Handle special field types
-                    if ((field === 'photoURL' || field === 'avatarUrl') && value) {
+                    // Handle avatar/image fields
+                    if (isAvatarField(field) && value) {
                         return `
                             <td class="px-6 py-4 whitespace-nowrap">
-                                <img src="${value}" class="h-8 w-8 rounded-full object-cover" 
-                                    onerror="this.src='https://ui-avatars.com/api/?name=${encodeURIComponent(item.name || item.displayName || 'User')}'">
+                                <div class="relative group">
+                                    <img src="${value}" 
+                                        class="h-10 w-10 rounded-full object-cover cursor-pointer border-2 border-gray-200 hover:border-blue-500 transition-all"
+                                        onclick="showLargeImage('${value}', '${item.name || item.displayName || 'Avatar'}')"
+                                        onerror="this.onerror=null; this.src='https://ui-avatars.com/api/?name=${encodeURIComponent(item.name || item.displayName || '?')}&background=random&color=fff&bold=true';">
+                                    <div class="absolute bottom-0 right-0 bg-blue-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer" onclick="event.stopPropagation(); showLargeImage('${value}', '${item.name || item.displayName || 'Avatar'}')">
+                                        <i class="fas fa-search-plus text-xs"></i>
+                                    </div>
+                                </div>
                             </td>
                         `;
                     }
                     
+                    // Handle status
                     if (field === 'status') {
                         const statusClass = value === 'active' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800';
                         return `
@@ -267,6 +296,7 @@
                         `;
                     }
                     
+                    // Handle role
                     if (field === 'role') {
                         const roleClass = value === 'admin' ? 'bg-purple-100 text-purple-800' : 'bg-gray-100 text-gray-800';
                         return `
@@ -276,6 +306,7 @@
                         `;
                     }
                     
+                    // Handle dates
                     if (field === 'createdAt' || field === 'updatedAt') {
                         const date = value ? new Date(value).toLocaleString('th-TH') : '-';
                         return `<td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${date}</td>`;
@@ -289,10 +320,10 @@
                     <tr class="hover:bg-gray-50">
                         ${rowFields}
                         <td class="px-6 py-4 whitespace-nowrap">
-                            <button onclick="openEditModal('${collection}', '${key}')" class="text-blue-600 hover:text-blue-900 mr-3">
+                            <button onclick="openEditModal('${collection}', '${key}')" class="text-blue-600 hover:text-blue-900 mr-3" title="แก้ไข">
                                 <i class="fas fa-edit"></i>
                             </button>
-                            <button onclick="openDeleteModal('${collection}', '${key}')" class="text-red-600 hover:text-red-900">
+                            <button onclick="openDeleteModal('${collection}', '${key}')" class="text-red-600 hover:text-red-900" title="ลบ">
                                 <i class="fas fa-trash"></i>
                             </button>
                         </td>
@@ -327,19 +358,33 @@
             `;
         }
 
+        // Helper function to check if field is an avatar/image field
+        function isAvatarField(field) {
+            const avatarFields = ['avatar', 'avatarUrl', 'photo', 'photoURL', 'photoUrl', 'picture', 'image', 'profileImage', 'profilePic', 'imageUrl'];
+            return avatarFields.some(af => field.toLowerCase().includes(af.toLowerCase()));
+        }
+
+        function showLargeImage(url, title) {
+            currentImageUrl = url;
+            document.getElementById('largeImage').src = url;
+            document.getElementById('imageUrl').textContent = url;
+            document.getElementById('imageModal').classList.remove('hidden');
+        }
+
+        function closeImageModal() {
+            document.getElementById('imageModal').classList.add('hidden');
+        }
+
         function showCollection(collection) {
-            // Hide all tables
             document.querySelectorAll('.collection-table').forEach(el => {
                 el.classList.add('hidden');
             });
             
-            // Show selected table
             const selectedTable = document.getElementById(`table-${collection}`);
             if (selectedTable) {
                 selectedTable.classList.remove('hidden');
             }
             
-            // Update tab styles
             collections.forEach(c => {
                 const tab = document.getElementById(`tab-${c}`);
                 if (tab) {
@@ -358,7 +403,6 @@
             document.getElementById('modalTitle').textContent = 'เพิ่มข้อมูลใหม่';
             document.getElementById('modalCollection').value = collection || (collections.length > 0 ? collections[0] : '');
             document.getElementById('modalKey').value = '';
-            document.getElementById('modalId').value = '';
             
             generateModalFields();
             document.getElementById('modal').classList.remove('hidden');
@@ -371,7 +415,6 @@
             document.getElementById('modalTitle').textContent = `แก้ไขข้อมูลใน ${collection}`;
             document.getElementById('modalCollection').value = collection;
             document.getElementById('modalKey').value = key;
-            document.getElementById('modalId').value = key;
             
             generateModalFields(item);
             document.getElementById('modal').classList.remove('hidden');
@@ -382,7 +425,6 @@
             const collection = document.getElementById('modalCollection').value;
             const isEdit = Object.keys(existingData).length > 0;
             
-            // Get fields from existing data or create default fields
             let fields = [];
             if (isEdit) {
                 fields = Object.keys(existingData);
@@ -397,49 +439,33 @@
             
             let html = '';
             
-            // Add Key field for edit mode
-            if (isEdit) {
-                html += `
-                    <div class="mb-4">
-                        <label class="block text-gray-700 text-sm font-bold mb-2">Key/ID</label>
-                        <input type="text" value="${document.getElementById('modalKey').value}" readonly class="w-full px-3 py-2 border rounded-lg bg-gray-100 text-gray-600">
-                    </div>
-                `;
-            }
-            
-            // Generate input fields
             fields.forEach(field => {
                 const value = existingData[field] || '';
                 let inputType = 'text';
+                
+                if (field.includes('email')) inputType = 'email';
+                else if (isAvatarField(field)) inputType = 'url';
+                else if (field.includes('date')) inputType = 'datetime-local';
+                
                 let inputHtml = '';
                 
-                // Determine input type based on field name or value
-                if (field.includes('email')) {
-                    inputType = 'email';
-                } else if (field.includes('url') || field.includes('photo') || field.includes('avatar')) {
-                    inputType = 'url';
-                } else if (field.includes('date') || field.includes('time')) {
-                    inputType = 'datetime-local';
-                }
-                
-                // Special handling for certain fields
                 if (field === 'status') {
                     inputHtml = `
-                        <select name="${field}" class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white">
+                        <select name="${field}" class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white" onchange="checkAvatarField(this)">
                             <option value="active" ${value === 'active' ? 'selected' : ''}>Active</option>
                             <option value="inactive" ${value === 'inactive' ? 'selected' : ''}>Inactive</option>
                         </select>
                     `;
                 } else if (field === 'role') {
                     inputHtml = `
-                        <select name="${field}" class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white">
+                        <select name="${field}" class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white" onchange="checkAvatarField(this)">
                             <option value="user" ${value === 'user' ? 'selected' : ''}>User</option>
                             <option value="admin" ${value === 'admin' ? 'selected' : ''}>Admin</option>
                         </select>
                     `;
                 } else if (field === 'department') {
                     inputHtml = `
-                        <select name="${field}" class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white">
+                        <select name="${field}" class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white" onchange="checkAvatarField(this)">
                             <option value="">เลือกแผนก</option>
                             <option value="IT" ${value === 'IT' ? 'selected' : ''}>IT</option>
                             <option value="HR" ${value === 'HR' ? 'selected' : ''}>HR</option>
@@ -449,15 +475,17 @@
                     `;
                 } else {
                     inputHtml = `
-                        <input type="${inputType}" name="${field}" value="${value}" 
-                            class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <input type="${inputType}" 
+                            name="${field}" 
+                            value="${value}" 
+                            class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            onchange="checkAvatarField(this)"
+                            onkeyup="checkAvatarField(this)">
                     `;
                 }
                 
-                // Display name
                 let displayName = field;
-                if (field === 'avatarUrl') displayName = 'รูปภาพ URL';
-                else if (field === 'photoURL') displayName = 'รูปภาพ URL';
+                if (isAvatarField(field)) displayName = 'รูปภาพ URL';
                 else if (field === 'createdAt') displayName = 'วันที่สร้าง';
                 else if (field === 'updatedAt') displayName = 'วันที่อัปเดต';
                 else displayName = field.charAt(0).toUpperCase() + field.slice(1);
@@ -466,11 +494,19 @@
                     <div class="mb-4">
                         <label class="block text-gray-700 text-sm font-bold mb-2">${displayName}</label>
                         ${inputHtml}
+                        ${isAvatarField(field) ? `
+                            <div class="mt-1 flex items-center">
+                                <span class="text-xs text-gray-500">🔗 ลิงค์รูปภาพ</span>
+                                <button type="button" onclick="testSpecificUrl('${field}')" class="ml-2 text-xs text-blue-600 hover:text-blue-800">
+                                    ทดสอบ
+                                </button>
+                            </div>
+                        ` : ''}
                     </div>
                 `;
             });
             
-            // Add JSON field for advanced users
+            // Add JSON field
             html += `
                 <div class="mb-4 border-t pt-4">
                     <label class="block text-gray-700 text-sm font-bold mb-2">หรือป้อนข้อมูลแบบ JSON</label>
@@ -480,6 +516,62 @@
             `;
             
             container.innerHTML = html;
+            
+            // Show avatar preview if there are avatar fields
+            const avatarField = fields.find(f => isAvatarField(f));
+            if (avatarField && existingData[avatarField]) {
+                showAvatarPreview(existingData[avatarField]);
+            }
+        }
+
+        function checkAvatarField(element) {
+            if (isAvatarField(element.name)) {
+                showAvatarPreview(element.value);
+            }
+        }
+
+        function showAvatarPreview(url) {
+            if (!url) {
+                document.getElementById('avatarPreviewContainer').classList.add('hidden');
+                return;
+            }
+            
+            const preview = document.getElementById('avatarPreview');
+            const status = document.getElementById('avatarStatus');
+            
+            preview.src = url;
+            status.textContent = 'กำลังทดสอบลิงค์...';
+            document.getElementById('avatarPreviewContainer').classList.remove('hidden');
+            
+            // Test if image loads
+            const img = new Image();
+            img.onload = function() {
+                status.innerHTML = '<span class="text-green-600">✅ รูปภาพใช้งานได้</span>';
+            };
+            img.onerror = function() {
+                status.innerHTML = '<span class="text-red-600">❌ ไม่สามารถโหลดรูปภาพได้</span>';
+                preview.src = 'https://ui-avatars.com/api/?name=Error&background=ff4444&color=fff';
+            };
+            img.src = url;
+        }
+
+        function testSpecificUrl(fieldName) {
+            const input = document.querySelector(`[name="${fieldName}"]`);
+            if (input && input.value) {
+                showAvatarPreview(input.value);
+            } else {
+                showToast('กรุณาป้อนลิงค์รูปภาพก่อน', 'warning');
+            }
+        }
+
+        function testImageUrl() {
+            const avatarInputs = document.querySelectorAll('input[type="url"]');
+            for (let input of avatarInputs) {
+                if (isAvatarField(input.name) && input.value) {
+                    showAvatarPreview(input.value);
+                    break;
+                }
+            }
         }
 
         function saveData(event) {
@@ -491,7 +583,6 @@
             
             let data = {};
             
-            // Try to parse JSON if provided
             if (jsonInput.trim()) {
                 try {
                     data = JSON.parse(jsonInput);
@@ -500,7 +591,6 @@
                     return;
                 }
             } else {
-                // Collect form data
                 const formData = new FormData(event.target);
                 for (let [field, value] of formData.entries()) {
                     if (field !== 'jsonInput') {
@@ -509,7 +599,6 @@
                 }
             }
             
-            // Add timestamps
             const now = new Date().toISOString();
             if (key) {
                 data.updatedAt = now;
@@ -521,7 +610,6 @@
             const ref = database.ref(collection);
             
             if (key) {
-                // Update
                 ref.child(key).update(data)
                     .then(() => {
                         closeModal();
@@ -532,7 +620,6 @@
                         showToast('เกิดข้อผิดพลาด: ' + error.message, 'error');
                     });
             } else {
-                // Create
                 ref.push(data)
                     .then(() => {
                         closeModal();
@@ -573,6 +660,7 @@
 
         function closeModal() {
             document.getElementById('modal').classList.add('hidden');
+            document.getElementById('avatarPreviewContainer').classList.add('hidden');
         }
 
         function refreshAllData() {
@@ -602,12 +690,16 @@
         window.onclick = function(event) {
             const modal = document.getElementById('modal');
             const deleteModal = document.getElementById('deleteModal');
+            const imageModal = document.getElementById('imageModal');
             
             if (event.target === modal) {
                 closeModal();
             }
             if (event.target === deleteModal) {
                 closeDeleteModal();
+            }
+            if (event.target === imageModal) {
+                closeImageModal();
             }
         }
     </script>
