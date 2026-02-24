@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ระบบแสดงข้อมูล Firebase - แยกตามตาราง</title>
+    <title>Firebase CRUD - ทุกตาราง</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
@@ -12,108 +12,75 @@
 <body class="bg-gray-100 p-6">
     <div class="max-w-7xl mx-auto">
         <!-- Header -->
-        <div class="mb-8 flex justify-between items-center">
-            <h1 class="text-3xl font-bold text-gray-800">ระบบแสดงข้อมูล Firebase</h1>
-            <button onclick="loadAllData()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center gap-2">
-                <i class="fas fa-sync-alt"></i> โหลดข้อมูล
-            </button>
+        <div class="mb-8 flex flex-wrap gap-4 justify-between items-center">
+            <h1 class="text-3xl font-bold text-gray-800">Firebase CRUD Manager</h1>
+            <div class="flex gap-2">
+                <button onclick="refreshAllData()" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg flex items-center gap-2">
+                    <i class="fas fa-sync-alt"></i> รีเฟรชทั้งหมด
+                </button>
+                <button onclick="openAddModal()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center gap-2">
+                    <i class="fas fa-plus"></i> เพิ่มข้อมูล
+                </button>
+            </div>
         </div>
 
-        <!-- Tabs -->
-        <div class="mb-4 border-b border-gray-200">
-            <ul class="flex flex-wrap -mb-px text-sm font-medium text-center" id="tabs">
-                <li class="mr-2">
-                    <button onclick="showTab('settings')" class="inline-block p-4 border-b-2 border-transparent rounded-t-lg hover:text-gray-600 hover:border-gray-300" id="tab-settings">Settings</button>
-                </li>
-                <li class="mr-2">
-                    <button onclick="showTab('users-big')" class="inline-block p-4 border-b-2 border-transparent rounded-t-lg hover:text-gray-600 hover:border-gray-300" id="tab-users-big">Users (ตัวใหญ่)</button>
-                </li>
-                <li class="mr-2">
-                    <button onclick="showTab('users-small')" class="inline-block p-4 border-b-2 border-transparent rounded-t-lg hover:text-gray-600 hover:border-gray-300" id="tab-users-small">users (ตัวเล็ก)</button>
-                </li>
-                <li class="mr-2">
-                    <button onclick="showTab('raw')" class="inline-block p-4 border-b-2 border-transparent rounded-t-lg hover:text-gray-600 hover:border-gray-300" id="tab-raw">ข้อมูลดิบ</button>
-                </li>
+        <!-- Collection Tabs -->
+        <div class="mb-4 border-b border-gray-200 overflow-x-auto">
+            <ul class="flex flex-nowrap -mb-px text-sm font-medium text-center" id="collectionTabs">
+                <!-- Tabs will be dynamically added here -->
             </ul>
         </div>
 
-        <!-- Settings Tab -->
-        <div id="settings-tab" class="tab-content hidden">
-            <div class="bg-white rounded-lg shadow overflow-hidden">
-                <div class="bg-blue-50 px-6 py-3 border-b">
-                    <h2 class="font-bold text-blue-800">Settings Configuration</h2>
+        <!-- Table Container -->
+        <div id="tableContainer" class="space-y-6">
+            <!-- Tables will be dynamically created here -->
+        </div>
+
+        <!-- Add/Edit Modal -->
+        <div id="modal" class="fixed inset-0 bg-gray-600 bg-opacity-50 hidden overflow-y-auto h-full w-full z-50">
+            <div class="relative top-20 mx-auto p-5 border w-[32rem] shadow-lg rounded-lg bg-white">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-lg font-bold" id="modalTitle">เพิ่มข้อมูล</h3>
+                    <button onclick="closeModal()" class="text-gray-600 hover:text-gray-900">
+                        <i class="fas fa-times"></i>
+                    </button>
                 </div>
-                <div class="p-6" id="settings-content">
-                    กำลังโหลด...
+                
+                <form id="dataForm" onsubmit="saveData(event)">
+                    <input type="hidden" id="modalCollection">
+                    <input type="hidden" id="modalKey">
+                    <input type="hidden" id="modalId">
+                    
+                    <div id="modalFields" class="space-y-4 max-h-96 overflow-y-auto">
+                        <!-- Dynamic fields will be added here -->
+                    </div>
+                    
+                    <div class="flex gap-2 justify-end mt-6">
+                        <button type="button" onclick="closeModal()" class="px-4 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400">ยกเลิก</button>
+                        <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">บันทึก</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Delete Confirmation Modal -->
+        <div id="deleteModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 hidden overflow-y-auto h-full w-full z-50">
+            <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-lg bg-white">
+                <div class="text-center">
+                    <i class="fas fa-exclamation-triangle text-yellow-500 text-4xl mb-4"></i>
+                    <h3 class="text-lg font-bold mb-4">ยืนยันการลบข้อมูล</h3>
+                    <p class="mb-4 text-gray-600" id="deleteMessage">คุณต้องการลบข้อมูลนี้ใช่หรือไม่?</p>
+                </div>
+                <div class="flex gap-2 justify-end">
+                    <button onclick="closeDeleteModal()" class="px-4 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400">ยกเลิก</button>
+                    <button onclick="confirmDelete()" class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700">ยืนยันการลบ</button>
                 </div>
             </div>
         </div>
 
-        <!-- Users Big Tab (Uxxxxx format) -->
-        <div id="users-big-tab" class="tab-content hidden">
-            <div class="bg-white rounded-lg shadow overflow-hidden">
-                <div class="bg-green-50 px-6 py-3 border-b flex justify-between items-center">
-                    <h2 class="font-bold text-green-800">Users (ตัวใหญ่) - รายชื่อผู้ใช้</h2>
-                    <span id="users-big-count" class="bg-green-200 text-green-800 px-3 py-1 rounded-full text-sm">0 รายการ</span>
-                </div>
-                <div class="overflow-x-auto">
-                    <table class="min-w-full divide-y divide-gray-200">
-                        <thead class="bg-gray-50">
-                            <tr>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">UID</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">อีเมล</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">ชื่อ</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">รูปภาพ</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">บทบาท</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">สร้างเมื่อ</th>
-                            </tr>
-                        </thead>
-                        <tbody id="users-big-table" class="bg-white divide-y divide-gray-200">
-                            <tr><td colspan="6" class="px-6 py-4 text-center">กำลังโหลด...</td></tr>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
-
-        <!-- Users Small Tab (-Oxxxx format) -->
-        <div id="users-small-tab" class="tab-content hidden">
-            <div class="bg-white rounded-lg shadow overflow-hidden">
-                <div class="bg-purple-50 px-6 py-3 border-b flex justify-between items-center">
-                    <h2 class="font-bold text-purple-800">users (ตัวเล็ก) - รายชื่อผู้ใช้</h2>
-                    <span id="users-small-count" class="bg-purple-200 text-purple-800 px-3 py-1 rounded-full text-sm">0 รายการ</span>
-                </div>
-                <div class="overflow-x-auto">
-                    <table class="min-w-full divide-y divide-gray-200">
-                        <thead class="bg-gray-50">
-                            <tr>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">ID</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">ชื่อ-นามสกุล</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">อีเมล</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">แผนก</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">สถานะ</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Avatar</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">สร้างเมื่อ</th>
-                            </tr>
-                        </thead>
-                        <tbody id="users-small-table" class="bg-white divide-y divide-gray-200">
-                            <tr><td colspan="7" class="px-6 py-4 text-center">กำลังโหลด...</td></tr>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
-
-        <!-- Raw Data Tab -->
-        <div id="raw-tab" class="tab-content hidden">
-            <div class="bg-white rounded-lg shadow overflow-hidden">
-                <div class="bg-gray-50 px-6 py-3 border-b">
-                    <h2 class="font-bold text-gray-700">ข้อมูลดิบจาก Firebase (JSON)</h2>
-                </div>
-                <div class="p-4 bg-gray-50 font-mono text-sm overflow-auto max-h-96" id="raw-content">
-                    <pre class="text-gray-600">กำลังโหลด...</pre>
-                </div>
-            </div>
+        <!-- Toast Notification -->
+        <div id="toast" class="fixed bottom-4 right-4 px-6 py-3 rounded-lg shadow-lg hidden transition-all duration-500 z-50">
+            <span id="toastMessage"></span>
         </div>
     </div>
 
@@ -132,226 +99,516 @@
         // Initialize Firebase
         try {
             firebase.initializeApp(firebaseConfig);
-            console.log("✅ Firebase initialized successfully");
+            console.log("✅ Firebase initialized");
         } catch (error) {
-            console.error("❌ Error initializing Firebase:", error);
+            console.error("❌ Firebase init error:", error);
         }
 
         const database = firebase.database();
+        
+        // State
+        let allData = {};
+        let collections = [];
+        let currentDelete = { collection: null, key: null };
 
-        // Load data when page loads
+        // Load all data on page load
         document.addEventListener('DOMContentLoaded', function() {
             loadAllData();
-            showTab('users-big'); // แสดง Users (ตัวใหญ่) ก่อน
         });
 
         function loadAllData() {
-            console.log("🔄 Loading all data from Firebase...");
+            showToast("กำลังโหลดข้อมูล...", "info");
             
-            const rootRef = database.ref();
-            
-            rootRef.once('value', (snapshot) => {
-                const data = snapshot.val();
-                console.log("📦 Data loaded:", data);
+            database.ref().once('value', (snapshot) => {
+                allData = snapshot.val() || {};
+                collections = Object.keys(allData);
                 
-                if (data) {
-                    // แสดง Settings
-                    displaySettings(data.Settings);
-                    
-                    // แสดง Users (ตัวใหญ่)
-                    if (data.Users) {
-                        displayUsersBig(data.Users);
-                    } else {
-                        document.getElementById('users-big-table').innerHTML = '<tr><td colspan="6" class="px-6 py-4 text-center text-gray-500">ไม่พบข้อมูลใน Users</td></tr>';
-                        document.getElementById('users-big-count').textContent = '0 รายการ';
-                    }
-                    
-                    // แสดง users (ตัวเล็ก)
-                    if (data.users) {
-                        displayUsersSmall(data.users);
-                    } else {
-                        document.getElementById('users-small-table').innerHTML = '<tr><td colspan="7" class="px-6 py-4 text-center text-gray-500">ไม่พบข้อมูลใน users</td></tr>';
-                        document.getElementById('users-small-count').textContent = '0 รายการ';
-                    }
-                    
-                    // แสดงข้อมูลดิบ
-                    displayRawData(data);
-                } else {
-                    showNoData();
-                }
+                console.log("📦 All collections:", collections);
+                console.log("📊 Data:", allData);
                 
+                renderTabs();
+                renderAllTables();
+                
+                showToast("โหลดข้อมูลสำเร็จ", "success");
             }, (error) => {
                 console.error("❌ Error:", error);
-                showError(error.message);
+                showToast("เกิดข้อผิดพลาด: " + error.message, "error");
             });
         }
 
-        function displaySettings(settings) {
-            const content = document.getElementById('settings-content');
+        function renderTabs() {
+            const tabsContainer = document.getElementById('collectionTabs');
             
-            if (!settings) {
-                content.innerHTML = '<p class="text-gray-500 text-center py-4">ไม่พบข้อมูล Settings</p>';
+            if (collections.length === 0) {
+                tabsContainer.innerHTML = '<li class="text-gray-500 p-4">ไม่มีคอลเลกชันในฐานข้อมูล</li>';
                 return;
             }
             
-            let html = '<div class="grid grid-cols-1 md:grid-cols-2 gap-4">';
+            let tabsHtml = '';
+            collections.forEach((collection, index) => {
+                const count = allData[collection] ? Object.keys(allData[collection]).length : 0;
+                tabsHtml += `
+                    <li class="mr-2">
+                        <button onclick="showCollection('${collection}')" 
+                            class="inline-block p-4 border-b-2 ${index === 0 ? 'border-blue-600 text-blue-600' : 'border-transparent hover:text-gray-600 hover:border-gray-300'}"
+                            id="tab-${collection}">
+                            ${collection} <span class="ml-1 text-xs bg-gray-200 px-2 py-0.5 rounded-full">${count}</span>
+                        </button>
+                    </li>
+                `;
+            });
             
-            Object.keys(settings).forEach(key => {
-                const value = settings[key];
+            tabsContainer.innerHTML = tabsHtml;
+        }
+
+        function renderAllTables() {
+            const container = document.getElementById('tableContainer');
+            
+            if (collections.length === 0) {
+                container.innerHTML = `
+                    <div class="bg-white rounded-lg shadow p-8 text-center">
+                        <i class="fas fa-database text-4xl text-gray-400 mb-4"></i>
+                        <p class="text-gray-500">ไม่พบข้อมูลในฐานข้อมูล</p>
+                        <button onclick="openAddModal()" class="mt-4 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600">
+                            <i class="fas fa-plus mr-2"></i>เพิ่มข้อมูลแรก
+                        </button>
+                    </div>
+                `;
+                return;
+            }
+            
+            let html = '';
+            collections.forEach(collection => {
+                html += createTableForCollection(collection);
+            });
+            
+            container.innerHTML = html;
+            
+            // Show first collection by default
+            if (collections.length > 0) {
+                showCollection(collections[0]);
+            }
+        }
+
+        function createTableForCollection(collection) {
+            const data = allData[collection] || {};
+            const keys = Object.keys(data);
+            
+            if (keys.length === 0) {
+                return `
+                    <div id="table-${collection}" class="collection-table hidden mb-6">
+                        <div class="bg-white rounded-lg shadow overflow-hidden">
+                            <div class="bg-gray-50 px-6 py-3 border-b flex justify-between items-center">
+                                <h2 class="font-bold text-gray-800 text-lg">${collection}</h2>
+                                <button onclick="openAddModal('${collection}')" class="text-blue-600 hover:text-blue-800">
+                                    <i class="fas fa-plus mr-1"></i>เพิ่มข้อมูล
+                                </button>
+                            </div>
+                            <div class="p-8 text-center text-gray-500">
+                                <i class="fas fa-inbox text-3xl mb-2"></i>
+                                <p>ไม่มีข้อมูลในคอลเลกชัน ${collection}</p>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }
+            
+            // Get all possible fields from all records
+            const allFields = new Set();
+            keys.forEach(key => {
+                Object.keys(data[key] || {}).forEach(field => allFields.add(field));
+            });
+            
+            // Add key/id field
+            const fields = ['key', ...Array.from(allFields)];
+            
+            // Generate table headers
+            const headers = fields.map(field => {
+                let displayName = field;
+                if (field === 'key') displayName = 'ID/Key';
+                else if (field === 'name') displayName = 'ชื่อ';
+                else if (field === 'email') displayName = 'อีเมล';
+                else if (field === 'photoURL' || field === 'avatarUrl') displayName = 'รูป';
+                else if (field === 'role') displayName = 'บทบาท';
+                else if (field === 'status') displayName = 'สถานะ';
+                else if (field === 'department') displayName = 'แผนก';
+                else if (field === 'createdAt') displayName = 'สร้างเมื่อ';
+                else if (field === 'updatedAt') displayName = 'อัปเดตล่าสุด';
+                
+                return `<th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">${displayName}</th>`;
+            }).join('');
+            
+            // Generate table rows
+            const rows = keys.map(key => {
+                const item = data[key];
+                const rowFields = fields.map(field => {
+                    if (field === 'key') {
+                        return `<td class="px-6 py-4 whitespace-nowrap font-mono text-xs">${key.substring(0, 8)}...</td>`;
+                    }
+                    
+                    const value = item[field];
+                    
+                    // Handle special field types
+                    if ((field === 'photoURL' || field === 'avatarUrl') && value) {
+                        return `
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <img src="${value}" class="h-8 w-8 rounded-full object-cover" 
+                                    onerror="this.src='https://ui-avatars.com/api/?name=${encodeURIComponent(item.name || item.displayName || 'User')}'">
+                            </td>
+                        `;
+                    }
+                    
+                    if (field === 'status') {
+                        const statusClass = value === 'active' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800';
+                        return `
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <span class="px-2 py-1 text-xs rounded-full ${statusClass}">${value || 'inactive'}</span>
+                            </td>
+                        `;
+                    }
+                    
+                    if (field === 'role') {
+                        const roleClass = value === 'admin' ? 'bg-purple-100 text-purple-800' : 'bg-gray-100 text-gray-800';
+                        return `
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <span class="px-2 py-1 text-xs rounded-full ${roleClass}">${value || 'user'}</span>
+                            </td>
+                        `;
+                    }
+                    
+                    if (field === 'createdAt' || field === 'updatedAt') {
+                        const date = value ? new Date(value).toLocaleString('th-TH') : '-';
+                        return `<td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${date}</td>`;
+                    }
+                    
+                    // Default display
+                    return `<td class="px-6 py-4 whitespace-nowrap">${value || '-'}</td>`;
+                }).join('');
+                
+                return `
+                    <tr class="hover:bg-gray-50">
+                        ${rowFields}
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <button onclick="openEditModal('${collection}', '${key}')" class="text-blue-600 hover:text-blue-900 mr-3">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            <button onclick="openDeleteModal('${collection}', '${key}')" class="text-red-600 hover:text-red-900">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+            
+            return `
+                <div id="table-${collection}" class="collection-table hidden mb-6">
+                    <div class="bg-white rounded-lg shadow overflow-hidden">
+                        <div class="bg-gray-50 px-6 py-3 border-b flex justify-between items-center">
+                            <h2 class="font-bold text-gray-800 text-lg">${collection} <span class="ml-2 text-sm font-normal text-gray-500">(${keys.length} รายการ)</span></h2>
+                            <button onclick="openAddModal('${collection}')" class="text-blue-600 hover:text-blue-800">
+                                <i class="fas fa-plus mr-1"></i>เพิ่มข้อมูล
+                            </button>
+                        </div>
+                        <div class="overflow-x-auto">
+                            <table class="min-w-full divide-y divide-gray-200">
+                                <thead class="bg-gray-50">
+                                    <tr>
+                                        ${headers}
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">จัดการ</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="bg-white divide-y divide-gray-200">
+                                    ${rows}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function showCollection(collection) {
+            // Hide all tables
+            document.querySelectorAll('.collection-table').forEach(el => {
+                el.classList.add('hidden');
+            });
+            
+            // Show selected table
+            const selectedTable = document.getElementById(`table-${collection}`);
+            if (selectedTable) {
+                selectedTable.classList.remove('hidden');
+            }
+            
+            // Update tab styles
+            collections.forEach(c => {
+                const tab = document.getElementById(`tab-${c}`);
+                if (tab) {
+                    if (c === collection) {
+                        tab.classList.add('border-blue-600', 'text-blue-600');
+                        tab.classList.remove('border-transparent', 'text-gray-500');
+                    } else {
+                        tab.classList.remove('border-blue-600', 'text-blue-600');
+                        tab.classList.add('border-transparent', 'text-gray-500');
+                    }
+                }
+            });
+        }
+
+        function openAddModal(collection = null) {
+            document.getElementById('modalTitle').textContent = 'เพิ่มข้อมูลใหม่';
+            document.getElementById('modalCollection').value = collection || (collections.length > 0 ? collections[0] : '');
+            document.getElementById('modalKey').value = '';
+            document.getElementById('modalId').value = '';
+            
+            generateModalFields();
+            document.getElementById('modal').classList.remove('hidden');
+        }
+
+        function openEditModal(collection, key) {
+            const item = allData[collection]?.[key];
+            if (!item) return;
+            
+            document.getElementById('modalTitle').textContent = `แก้ไขข้อมูลใน ${collection}`;
+            document.getElementById('modalCollection').value = collection;
+            document.getElementById('modalKey').value = key;
+            document.getElementById('modalId').value = key;
+            
+            generateModalFields(item);
+            document.getElementById('modal').classList.remove('hidden');
+        }
+
+        function generateModalFields(existingData = {}) {
+            const container = document.getElementById('modalFields');
+            const collection = document.getElementById('modalCollection').value;
+            const isEdit = Object.keys(existingData).length > 0;
+            
+            // Get fields from existing data or create default fields
+            let fields = [];
+            if (isEdit) {
+                fields = Object.keys(existingData);
+            } else {
+                // Default fields for new records
+                if (collection === 'Users' || collection === 'users') {
+                    fields = ['name', 'email', 'department', 'status', 'role', 'avatarUrl'];
+                } else {
+                    fields = ['name', 'value', 'description'];
+                }
+            }
+            
+            let html = '';
+            
+            // Add Key field for edit mode
+            if (isEdit) {
                 html += `
-                    <div class="border rounded-lg p-4">
-                        <h3 class="font-bold text-gray-700 mb-2">${key}</h3>
-                        <pre class="bg-gray-50 p-2 rounded text-sm">${JSON.stringify(value, null, 2)}</pre>
+                    <div class="mb-4">
+                        <label class="block text-gray-700 text-sm font-bold mb-2">Key/ID</label>
+                        <input type="text" value="${document.getElementById('modalKey').value}" readonly class="w-full px-3 py-2 border rounded-lg bg-gray-100 text-gray-600">
+                    </div>
+                `;
+            }
+            
+            // Generate input fields
+            fields.forEach(field => {
+                const value = existingData[field] || '';
+                let inputType = 'text';
+                let inputHtml = '';
+                
+                // Determine input type based on field name or value
+                if (field.includes('email')) {
+                    inputType = 'email';
+                } else if (field.includes('url') || field.includes('photo') || field.includes('avatar')) {
+                    inputType = 'url';
+                } else if (field.includes('date') || field.includes('time')) {
+                    inputType = 'datetime-local';
+                }
+                
+                // Special handling for certain fields
+                if (field === 'status') {
+                    inputHtml = `
+                        <select name="${field}" class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white">
+                            <option value="active" ${value === 'active' ? 'selected' : ''}>Active</option>
+                            <option value="inactive" ${value === 'inactive' ? 'selected' : ''}>Inactive</option>
+                        </select>
+                    `;
+                } else if (field === 'role') {
+                    inputHtml = `
+                        <select name="${field}" class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white">
+                            <option value="user" ${value === 'user' ? 'selected' : ''}>User</option>
+                            <option value="admin" ${value === 'admin' ? 'selected' : ''}>Admin</option>
+                        </select>
+                    `;
+                } else if (field === 'department') {
+                    inputHtml = `
+                        <select name="${field}" class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white">
+                            <option value="">เลือกแผนก</option>
+                            <option value="IT" ${value === 'IT' ? 'selected' : ''}>IT</option>
+                            <option value="HR" ${value === 'HR' ? 'selected' : ''}>HR</option>
+                            <option value="Sales" ${value === 'Sales' ? 'selected' : ''}>Sales</option>
+                            <option value="Marketing" ${value === 'Marketing' ? 'selected' : ''}>Marketing</option>
+                        </select>
+                    `;
+                } else {
+                    inputHtml = `
+                        <input type="${inputType}" name="${field}" value="${value}" 
+                            class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    `;
+                }
+                
+                // Display name
+                let displayName = field;
+                if (field === 'avatarUrl') displayName = 'รูปภาพ URL';
+                else if (field === 'photoURL') displayName = 'รูปภาพ URL';
+                else if (field === 'createdAt') displayName = 'วันที่สร้าง';
+                else if (field === 'updatedAt') displayName = 'วันที่อัปเดต';
+                else displayName = field.charAt(0).toUpperCase() + field.slice(1);
+                
+                html += `
+                    <div class="mb-4">
+                        <label class="block text-gray-700 text-sm font-bold mb-2">${displayName}</label>
+                        ${inputHtml}
                     </div>
                 `;
             });
             
-            html += '</div>';
-            content.innerHTML = html;
+            // Add JSON field for advanced users
+            html += `
+                <div class="mb-4 border-t pt-4">
+                    <label class="block text-gray-700 text-sm font-bold mb-2">หรือป้อนข้อมูลแบบ JSON</label>
+                    <textarea id="jsonInput" rows="4" class="w-full px-3 py-2 border rounded-lg font-mono text-sm" 
+                        placeholder='{"field": "value"}'></textarea>
+                </div>
+            `;
+            
+            container.innerHTML = html;
         }
 
-        function displayUsersBig(users) {
-            const tbody = document.getElementById('users-big-table');
-            const count = Object.keys(users).length;
+        function saveData(event) {
+            event.preventDefault();
             
-            document.getElementById('users-big-count').textContent = `${count} รายการ`;
+            const collection = document.getElementById('modalCollection').value;
+            const key = document.getElementById('modalKey').value;
+            const jsonInput = document.getElementById('jsonInput').value;
             
-            if (count === 0) {
-                tbody.innerHTML = '<tr><td colspan="6" class="px-6 py-4 text-center text-gray-500">ไม่มีข้อมูล</td></tr>';
-                return;
+            let data = {};
+            
+            // Try to parse JSON if provided
+            if (jsonInput.trim()) {
+                try {
+                    data = JSON.parse(jsonInput);
+                } catch (e) {
+                    showToast('รูปแบบ JSON ไม่ถูกต้อง', 'error');
+                    return;
+                }
+            } else {
+                // Collect form data
+                const formData = new FormData(event.target);
+                for (let [field, value] of formData.entries()) {
+                    if (field !== 'jsonInput') {
+                        data[field] = value;
+                    }
+                }
             }
             
-            let html = '';
-            Object.keys(users).forEach(uid => {
-                const user = users[uid];
-                const created = user.createdAt ? new Date(user.createdAt).toLocaleString('th-TH') : '-';
-                
-                html += `
-                    <tr class="hover:bg-gray-50">
-                        <td class="px-6 py-4 whitespace-nowrap font-mono text-xs">${uid}</td>
-                        <td class="px-6 py-4 whitespace-nowrap">${user.email || '-'}</td>
-                        <td class="px-6 py-4 whitespace-nowrap">${user.displayName || user.name || '-'}</td>
-                        <td class="px-6 py-4 whitespace-nowrap">
-                            ${user.photoURL ? 
-                                `<img src="${user.photoURL}" class="h-8 w-8 rounded-full object-cover" onerror="this.src='https://ui-avatars.com/api/?name=${encodeURIComponent(user.displayName || 'User')}'">` : 
-                                '<span class="text-gray-400">ไม่มีรูป</span>'
-                            }
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap">
-                            <span class="px-2 py-1 text-xs rounded-full ${user.role === 'admin' ? 'bg-purple-100 text-purple-800' : 'bg-gray-100 text-gray-800'}">
-                                ${user.role || 'user'}
-                            </span>
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${created}</td>
-                    </tr>
-                `;
-            });
-            
-            tbody.innerHTML = html;
-        }
-
-        function displayUsersSmall(users) {
-            const tbody = document.getElementById('users-small-table');
-            const count = Object.keys(users).length;
-            
-            document.getElementById('users-small-count').textContent = `${count} รายการ`;
-            
-            if (count === 0) {
-                tbody.innerHTML = '<tr><td colspan="7" class="px-6 py-4 text-center text-gray-500">ไม่มีข้อมูล</td></tr>';
-                return;
+            // Add timestamps
+            const now = new Date().toISOString();
+            if (key) {
+                data.updatedAt = now;
+            } else {
+                data.createdAt = now;
+                data.updatedAt = now;
             }
             
-            let html = '';
-            Object.keys(users).forEach(id => {
-                const user = users[id];
-                const created = user.createdAt ? new Date(user.createdAt).toLocaleString('th-TH') : '-';
-                
-                html += `
-                    <tr class="hover:bg-gray-50">
-                        <td class="px-6 py-4 whitespace-nowrap font-mono text-xs">${id.substring(0, 8)}...</td>
-                        <td class="px-6 py-4 whitespace-nowrap font-medium">${user.name || '-'}</td>
-                        <td class="px-6 py-4 whitespace-nowrap">${user.email || '-'}</td>
-                        <td class="px-6 py-4 whitespace-nowrap">
-                            <span class="px-2 py-1 bg-blue-100 text-blue-800 rounded-full text-xs">
-                                ${user.department || '-'}
-                            </span>
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap">
-                            <span class="px-2 py-1 text-xs rounded-full ${user.status === 'active' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}">
-                                ${user.status || 'inactive'}
-                            </span>
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap">
-                            ${user.avatarUrl ? 
-                                `<img src="${user.avatarUrl}" class="h-8 w-8 rounded-full object-cover" onerror="this.src='https://ui-avatars.com/api/?name=${encodeURIComponent(user.name || 'User')}'">` : 
-                                '<span class="text-gray-400">ไม่มีรูป</span>'
-                            }
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${created}</td>
-                    </tr>
-                `;
-            });
+            const ref = database.ref(collection);
             
-            tbody.innerHTML = html;
-        }
-
-        function displayRawData(data) {
-            const content = document.getElementById('raw-content');
-            content.innerHTML = `<pre class="text-gray-700">${JSON.stringify(data, null, 2)}</pre>`;
-        }
-
-        function showNoData() {
-            const tables = ['users-big-table', 'users-small-table'];
-            tables.forEach(id => {
-                document.getElementById(id).innerHTML = '<tr><td colspan="7" class="px-6 py-4 text-center text-gray-500">ไม่พบข้อมูลในฐานข้อมูล</td></tr>';
-            });
-            document.getElementById('settings-content').innerHTML = '<p class="text-gray-500 text-center py-4">ไม่พบข้อมูล Settings</p>';
-            document.getElementById('raw-content').innerHTML = '<pre class="text-gray-500">ไม่พบข้อมูลในฐานข้อมูล</pre>';
-        }
-
-        function showError(message) {
-            const tables = ['users-big-table', 'users-small-table'];
-            tables.forEach(id => {
-                document.getElementById(id).innerHTML = `<tr><td colspan="7" class="px-6 py-4 text-center text-red-500">เกิดข้อผิดพลาด: ${message}</td></tr>`;
-            });
-            document.getElementById('settings-content').innerHTML = `<p class="text-red-500 text-center py-4">เกิดข้อผิดพลาด: ${message}</p>`;
-            document.getElementById('raw-content').innerHTML = `<pre class="text-red-500">Error: ${message}</pre>`;
-        }
-
-        function showTab(tabName) {
-            // ซ่อนทุก tab
-            document.querySelectorAll('.tab-content').forEach(el => {
-                el.classList.add('hidden');
-            });
-            
-            // เปลี่ยนสถานะปุ่ม tab
-            document.querySelectorAll('#tabs button').forEach(btn => {
-                btn.classList.remove('border-blue-600', 'text-blue-600');
-                btn.classList.add('border-transparent', 'text-gray-500');
-            });
-            
-            // แสดง tab ที่เลือก
-            let tabId;
-            switch(tabName) {
-                case 'settings':
-                    tabId = 'settings-tab';
-                    document.getElementById('tab-settings').classList.add('border-blue-600', 'text-blue-600');
-                    break;
-                case 'users-big':
-                    tabId = 'users-big-tab';
-                    document.getElementById('tab-users-big').classList.add('border-blue-600', 'text-blue-600');
-                    break;
-                case 'users-small':
-                    tabId = 'users-small-tab';
-                    document.getElementById('tab-users-small').classList.add('border-blue-600', 'text-blue-600');
-                    break;
-                case 'raw':
-                    tabId = 'raw-tab';
-                    document.getElementById('tab-raw').classList.add('border-blue-600', 'text-blue-600');
-                    break;
+            if (key) {
+                // Update
+                ref.child(key).update(data)
+                    .then(() => {
+                        closeModal();
+                        showToast('อัปเดตข้อมูลสำเร็จ');
+                        loadAllData();
+                    })
+                    .catch(error => {
+                        showToast('เกิดข้อผิดพลาด: ' + error.message, 'error');
+                    });
+            } else {
+                // Create
+                ref.push(data)
+                    .then(() => {
+                        closeModal();
+                        showToast('เพิ่มข้อมูลสำเร็จ');
+                        loadAllData();
+                    })
+                    .catch(error => {
+                        showToast('เกิดข้อผิดพลาด: ' + error.message, 'error');
+                    });
             }
+        }
+
+        function openDeleteModal(collection, key) {
+            currentDelete = { collection, key };
+            document.getElementById('deleteMessage').textContent = `ต้องการลบข้อมูลนี้จากคอลเลกชัน ${collection}?`;
+            document.getElementById('deleteModal').classList.remove('hidden');
+        }
+
+        function closeDeleteModal() {
+            currentDelete = { collection: null, key: null };
+            document.getElementById('deleteModal').classList.add('hidden');
+        }
+
+        function confirmDelete() {
+            if (!currentDelete.collection || !currentDelete.key) return;
             
-            document.getElementById(tabId).classList.remove('hidden');
+            database.ref(`${currentDelete.collection}/${currentDelete.key}`).remove()
+                .then(() => {
+                    closeDeleteModal();
+                    showToast('ลบข้อมูลสำเร็จ');
+                    loadAllData();
+                })
+                .catch(error => {
+                    showToast('เกิดข้อผิดพลาด: ' + error.message, 'error');
+                    closeDeleteModal();
+                });
+        }
+
+        function closeModal() {
+            document.getElementById('modal').classList.add('hidden');
+        }
+
+        function refreshAllData() {
+            loadAllData();
+        }
+
+        function showToast(message, type = 'success') {
+            const toast = document.getElementById('toast');
+            const toastMessage = document.getElementById('toastMessage');
+            
+            toastMessage.textContent = message;
+            
+            let bgColor = 'bg-green-500';
+            if (type === 'error') bgColor = 'bg-red-500';
+            if (type === 'info') bgColor = 'bg-blue-500';
+            if (type === 'warning') bgColor = 'bg-yellow-500';
+            
+            toast.className = `fixed bottom-4 right-4 ${bgColor} text-white px-6 py-3 rounded-lg shadow-lg`;
+            toast.classList.remove('hidden');
+            
+            setTimeout(() => {
+                toast.classList.add('hidden');
+            }, 3000);
+        }
+
+        // Close modals when clicking outside
+        window.onclick = function(event) {
+            const modal = document.getElementById('modal');
+            const deleteModal = document.getElementById('deleteModal');
+            
+            if (event.target === modal) {
+                closeModal();
+            }
+            if (event.target === deleteModal) {
+                closeDeleteModal();
+            }
         }
     </script>
 </body>
