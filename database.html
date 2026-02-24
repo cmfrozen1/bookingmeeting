@@ -13,10 +13,13 @@
     <div class="max-w-7xl mx-auto">
         <!-- Header -->
         <div class="mb-8 flex flex-wrap gap-4 justify-between items-center">
-            <h1 class="text-3xl font-bold text-gray-800">ระบบจัดการข้อมูล Firebase</h1>
+            <h1 class="text-3xl font-bold text-gray-800">ระบบจัดการข้อมูลผู้ใช้ (Users)</h1>
             <div class="flex gap-2">
-                <button onclick="addSampleData()" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition duration-200">
-                    <i class="fas fa-database"></i> เพิ่มข้อมูลตัวอย่าง
+                <button onclick="switchCollection('Users')" class="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition duration-200">
+                    <i class="fas fa-users"></i> Users (ตัวใหญ่)
+                </button>
+                <button onclick="switchCollection('users')" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition duration-200">
+                    <i class="fas fa-user"></i> users (ตัวเล็ก)
                 </button>
                 <button onclick="openModal()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition duration-200">
                     <i class="fas fa-plus"></i> เพิ่มข้อมูล
@@ -24,18 +27,33 @@
             </div>
         </div>
 
+        <!-- Current Collection Indicator -->
+        <div id="collectionIndicator" class="mb-4 p-3 bg-blue-100 text-blue-800 rounded-lg">
+            <i class="fas fa-database mr-2"></i>กำลังแสดงข้อมูลจาก: <strong id="currentCollection">users</strong>
+        </div>
+
         <!-- Connection Status -->
         <div id="connectionStatus" class="mb-4 p-3 rounded-lg hidden"></div>
+
+        <!-- Database Structure Viewer -->
+        <div class="mb-4 p-4 bg-yellow-50 rounded-lg border border-yellow-200">
+            <h3 class="font-bold text-yellow-800 mb-2 flex items-center">
+                <i class="fas fa-sitemap mr-2"></i>โครงสร้างฐานข้อมูลที่พบ:
+            </h3>
+            <div id="dbStructure" class="text-sm text-gray-600 font-mono">
+                กำลังโหลดโครงสร้าง...
+            </div>
+        </div>
 
         <!-- Search and Filter -->
         <div class="mb-6 flex flex-wrap gap-4">
             <div class="flex-1 min-w-[200px]">
-                <input type="text" id="searchInput" placeholder="ค้นหาชื่อ, อีเมล, แผนก..." class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                <input type="text" id="searchInput" placeholder="ค้นหาชื่อ, อีเมล..." class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
             </div>
             <select id="filterSelect" class="px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white">
                 <option value="all">ทั้งหมด</option>
-                <option value="active">Active</option>
-                <option value="inactive">Inactive</option>
+                <option value="admin">Admin</option>
+                <option value="user">User</option>
             </select>
             <button onclick="loadData()" class="px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 flex items-center gap-2">
                 <i class="fas fa-sync-alt"></i> โหลดใหม่
@@ -48,10 +66,10 @@
                 <thead class="bg-gray-50">
                     <tr>
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">รูป</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ชื่อ-นามสกุล</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">UID</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ชื่อ</th>
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">อีเมล</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">แผนก</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">สถานะ</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">บทบาท</th>
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">จัดการ</th>
                     </tr>
                 </thead>
@@ -68,7 +86,7 @@
         <div id="modal" class="fixed inset-0 bg-gray-600 bg-opacity-50 hidden overflow-y-auto h-full w-full z-50">
             <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-lg bg-white">
                 <div class="flex justify-between items-center mb-4">
-                    <h3 class="text-lg font-bold" id="modalTitle">เพิ่มข้อมูลใหม่</h3>
+                    <h3 class="text-lg font-bold" id="modalTitle">เพิ่มข้อมูลผู้ใช้</h3>
                     <button onclick="closeModal()" class="text-gray-600 hover:text-gray-900">
                         <i class="fas fa-times"></i>
                     </button>
@@ -76,38 +94,33 @@
                 
                 <form id="dataForm" onsubmit="saveData(event)">
                     <input type="hidden" id="dataId">
+                    <input type="hidden" id="dataKey">
                     
                     <div class="mb-4">
-                        <label class="block text-gray-700 text-sm font-bold mb-2">ชื่อ-นามสกุล <span class="text-red-500">*</span></label>
+                        <label class="block text-gray-700 text-sm font-bold mb-2">UID (ถ้ามี)</label>
+                        <input type="text" id="uid" class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="เช่น U4e9df252048d7102aa6cf2bd7abd9bdd">
+                    </div>
+                    
+                    <div class="mb-4">
+                        <label class="block text-gray-700 text-sm font-bold mb-2">ชื่อ-นามสกุล</label>
                         <input type="text" id="name" required class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
                     </div>
                     
                     <div class="mb-4">
-                        <label class="block text-gray-700 text-sm font-bold mb-2">อีเมล <span class="text-red-500">*</span></label>
+                        <label class="block text-gray-700 text-sm font-bold mb-2">อีเมล</label>
                         <input type="email" id="email" required class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
                     </div>
                     
                     <div class="mb-4">
-                        <label class="block text-gray-700 text-sm font-bold mb-2">แผนก <span class="text-red-500">*</span></label>
-                        <select id="department" required class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white">
-                            <option value="">เลือกแผนก</option>
-                            <option value="IT">IT</option>
-                            <option value="HR">HR</option>
-                            <option value="Sales">Sales</option>
-                            <option value="Marketing">Marketing</option>
-                        </select>
+                        <label class="block text-gray-700 text-sm font-bold mb-2">รูปโปรไฟล์ URL</label>
+                        <input type="url" id="photoURL" placeholder="https://example.com/photo.jpg" class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
                     </div>
                     
                     <div class="mb-4">
-                        <label class="block text-gray-700 text-sm font-bold mb-2">URL รูปภาพ</label>
-                        <input type="url" id="avatarUrl" placeholder="https://example.com/image.jpg" class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
-                    </div>
-                    
-                    <div class="mb-4">
-                        <label class="block text-gray-700 text-sm font-bold mb-2">สถานะ</label>
-                        <select id="status" class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white">
-                            <option value="active">Active</option>
-                            <option value="inactive">Inactive</option>
+                        <label class="block text-gray-700 text-sm font-bold mb-2">บทบาท</label>
+                        <select id="role" class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white">
+                            <option value="user">User</option>
+                            <option value="admin">Admin</option>
                         </select>
                     </div>
                     
@@ -153,30 +166,63 @@
         try {
             firebase.initializeApp(firebaseConfig);
             console.log("✅ Firebase initialized successfully");
-            console.log("Database URL:", firebaseConfig.databaseURL);
         } catch (error) {
             console.error("❌ Error initializing Firebase:", error);
         }
 
         const database = firebase.database();
-        const dataRef = database.ref('users');
-
-        // State
+        let currentCollection = 'users'; // เริ่มต้นที่ users (ตัวเล็ก)
         let currentData = [];
         let deleteId = null;
+        let deleteKey = null;
 
         // Check Firebase Connection
         const connectedRef = database.ref('.info/connected');
         connectedRef.on('value', (snap) => {
             if (snap.val() === true) {
-                console.log("✅ Connected to Firebase");
                 showConnectionStatus("success", "✅ เชื่อมต่อ Firebase สำเร็จ");
+                exploreDatabase();
                 loadData();
             } else {
-                console.log("❌ Disconnected from Firebase");
                 showConnectionStatus("error", "❌ ไม่สามารถเชื่อมต่อ Firebase ได้");
             }
         });
+
+        // Explore database structure
+        function exploreDatabase() {
+            database.ref().once('value', (snapshot) => {
+                const data = snapshot.val();
+                const structure = document.getElementById('dbStructure');
+                
+                if (data) {
+                    const keys = Object.keys(data);
+                    let html = '<div class="space-y-1">';
+                    keys.forEach(key => {
+                        const itemCount = data[key] ? Object.keys(data[key]).length : 0;
+                        html += `<div class="flex items-center gap-2">
+                            <i class="fas fa-folder-open text-yellow-500"></i>
+                            <span class="font-mono">${key}</span>
+                            <span class="text-xs bg-gray-200 px-2 py-0.5 rounded">${itemCount} รายการ</span>
+                            ${key === 'Users' || key === 'users' ? 
+                                '<span class="text-xs bg-green-200 text-green-800 px-2 py-0.5 rounded">มีข้อมูลผู้ใช้</span>' : 
+                                ''}
+                        </div>`;
+                    });
+                    html += '</div>';
+                    structure.innerHTML = html;
+                } else {
+                    structure.innerHTML = '<span class="text-gray-500">ไม่พบข้อมูลในฐานข้อมูล</span>';
+                }
+            });
+        }
+
+        // Switch between Users and users collection
+        function switchCollection(collection) {
+            currentCollection = collection;
+            document.getElementById('currentCollection').textContent = collection;
+            showToast(`สลับไปยังคอลเลกชัน: ${collection}`);
+            loadData();
+        }
 
         // Show connection status
         function showConnectionStatus(type, message) {
@@ -199,49 +245,63 @@
             }
         }
 
-        // Load data from Firebase
+        // Load data from current collection
         function loadData() {
-            console.log("🔄 Loading data from Firebase...");
+            console.log(`🔄 Loading data from ${currentCollection}...`);
             
-            // Show loading state
+            const collectionRef = database.ref(currentCollection);
+            
             document.getElementById('tableBody').innerHTML = `
                 <tr>
                     <td colspan="6" class="px-6 py-8 text-center">
                         <i class="fas fa-circle-notch fa-spin text-3xl text-blue-500 mb-2"></i>
-                        <p class="text-gray-500">กำลังโหลดข้อมูล...</p>
+                        <p class="text-gray-500">กำลังโหลดข้อมูลจาก ${currentCollection}...</p>
                     </td>
                 </tr>
             `;
             
-            dataRef.once('value', (snapshot) => {
+            collectionRef.once('value', (snapshot) => {
                 const data = snapshot.val();
-                console.log("📦 Data received:", data);
+                console.log(`📦 Data from ${currentCollection}:`, data);
                 
                 currentData = [];
                 
                 if (data) {
-                    // Convert object to array
-                    currentData = Object.keys(data).map(key => ({
-                        id: key,
-                        ...data[key]
-                    }));
-                    console.log(`✅ Loaded ${currentData.length} records`);
+                    // Handle different data structures
+                    if (currentCollection === 'Users') {
+                        // Users (ตัวใหญ่) มีโครงสร้างเป็น Uxxxxx: { ... }
+                        currentData = Object.keys(data).map(key => ({
+                            id: key,
+                            key: key,
+                            uid: key, // ใช้ key เป็น uid
+                            ...data[key]
+                        }));
+                    } else {
+                        // users (ตัวเล็ก) มีโครงสร้างเป็น -Oxxxx: { ... }
+                        currentData = Object.keys(data).map(key => ({
+                            id: key,
+                            key: key,
+                            ...data[key]
+                        }));
+                    }
+                    console.log(`✅ Loaded ${currentData.length} records from ${currentCollection}`);
                 } else {
-                    console.log("ℹ️ No data found in Firebase");
+                    console.log(`ℹ️ No data found in ${currentCollection}`);
                 }
                 
                 renderTable();
                 updateDataCount();
                 
             }, (error) => {
-                console.error("❌ Error loading data:", error);
-                showToast("เกิดข้อผิดพลาดในการโหลดข้อมูล: " + error.message, "error");
+                console.error(`❌ Error loading from ${currentCollection}:`, error);
+                showToast(`เกิดข้อผิดพลาด: ${error.message}`, "error");
                 
                 document.getElementById('tableBody').innerHTML = `
                     <tr>
                         <td colspan="6" class="px-6 py-8 text-center text-red-500">
                             <i class="fas fa-exclamation-circle text-3xl mb-2"></i>
-                            <p>ไม่สามารถโหลดข้อมูลได้: ${error.message}</p>
+                            <p>ไม่สามารถโหลดข้อมูลจาก ${currentCollection} ได้</p>
+                            <p class="text-sm mt-2">${error.message}</p>
                             <button onclick="loadData()" class="mt-2 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600">
                                 ลองอีกครั้ง
                             </button>
@@ -263,13 +323,17 @@
                 filteredData = filteredData.filter(item => 
                     (item.name && item.name.toLowerCase().includes(searchTerm)) ||
                     (item.email && item.email.toLowerCase().includes(searchTerm)) ||
-                    (item.department && item.department.toLowerCase().includes(searchTerm))
+                    (item.uid && item.uid.toLowerCase().includes(searchTerm)) ||
+                    (item.displayName && item.displayName.toLowerCase().includes(searchTerm))
                 );
             }
             
-            // Apply status filter
+            // Apply role filter
             if (filterValue !== 'all') {
-                filteredData = filteredData.filter(item => item.status === filterValue);
+                filteredData = filteredData.filter(item => 
+                    (item.role === filterValue) || 
+                    (item.role === filterValue)
+                );
             }
             
             const tbody = document.getElementById('tableBody');
@@ -280,16 +344,11 @@
                         <tr>
                             <td colspan="6" class="px-6 py-8 text-center">
                                 <i class="fas fa-database text-4xl text-gray-400 mb-2"></i>
-                                <p class="text-gray-500 mb-2">ไม่พบข้อมูลใน Firebase</p>
-                                <p class="text-sm text-gray-400 mb-4">คุณสามารถเพิ่มข้อมูลตัวอย่างหรือเพิ่มข้อมูลด้วยตนเอง</p>
-                                <div class="flex gap-2 justify-center">
-                                    <button onclick="addSampleData()" class="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600">
-                                        <i class="fas fa-database mr-2"></i>เพิ่มข้อมูลตัวอย่าง
-                                    </button>
-                                    <button onclick="openModal()" class="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600">
-                                        <i class="fas fa-plus mr-2"></i>เพิ่มข้อมูลเอง
-                                    </button>
-                                </div>
+                                <p class="text-gray-500 mb-2">ไม่พบข้อมูลในคอลเลกชัน ${currentCollection}</p>
+                                <p class="text-sm text-gray-400 mb-4">คุณสามารถเพิ่มข้อมูลใหม่ได้</p>
+                                <button onclick="openModal()" class="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600">
+                                    <i class="fas fa-plus mr-2"></i>เพิ่มข้อมูล
+                                </button>
                             </td>
                         </tr>
                     `;
@@ -306,98 +365,57 @@
                 return;
             }
             
-            tbody.innerHTML = filteredData.map(item => `
+            tbody.innerHTML = filteredData.map(item => {
+                // Handle different field names
+                const displayName = item.name || item.displayName || 'ไม่ระบุชื่อ';
+                const email = item.email || 'ไม่มีอีเมล';
+                const photoURL = item.photoURL || item.avatarUrl || item.photoUrl;
+                const role = item.role || 'user';
+                const uid = item.uid || item.key || 'ไม่มี UID';
+                
+                return `
                 <tr class="hover:bg-gray-50">
                     <td class="px-6 py-4 whitespace-nowrap">
-                        ${item.avatarUrl ? 
-                            `<img src="${item.avatarUrl}" alt="avatar" class="h-10 w-10 rounded-full object-cover" 
-                                onerror="this.src='https://ui-avatars.com/api/?name=${encodeURIComponent(item.name || 'User')}&background=0D9488&color=fff&bold=true';">` : 
-                            `<div class="h-10 w-10 rounded-full bg-gradient-to-r from-teal-400 to-blue-500 flex items-center justify-center text-white font-bold">
-                                ${item.name ? item.name.charAt(0).toUpperCase() : 'U'}
+                        ${photoURL ? 
+                            `<img src="${photoURL}" alt="avatar" class="h-10 w-10 rounded-full object-cover" 
+                                onerror="this.src='https://ui-avatars.com/api/?name=${encodeURIComponent(displayName)}&background=random';">` : 
+                            `<div class="h-10 w-10 rounded-full bg-gradient-to-r from-purple-400 to-pink-500 flex items-center justify-center text-white font-bold">
+                                ${displayName.charAt(0).toUpperCase()}
                             </div>`
                         }
                     </td>
-                    <td class="px-6 py-4 whitespace-nowrap font-medium">${item.name || '-'}</td>
-                    <td class="px-6 py-4 whitespace-nowrap">${item.email || '-'}</td>
+                    <td class="px-6 py-4 whitespace-nowrap font-mono text-xs">${uid.substring(0, 15)}...</td>
+                    <td class="px-6 py-4 whitespace-nowrap font-medium">${displayName}</td>
+                    <td class="px-6 py-4 whitespace-nowrap">${email}</td>
                     <td class="px-6 py-4 whitespace-nowrap">
-                        <span class="px-2 py-1 bg-blue-100 text-blue-800 rounded-full text-xs">
-                            ${item.department || '-'}
-                        </span>
-                    </td>
-                    <td class="px-6 py-4 whitespace-nowrap">
-                        <span class="px-2 py-1 text-xs rounded-full ${item.status === 'active' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}">
-                            ${item.status === 'active' ? 'Active' : 'Inactive'}
+                        <span class="px-2 py-1 text-xs rounded-full ${role === 'admin' ? 'bg-purple-100 text-purple-800' : 'bg-gray-100 text-gray-800'}">
+                            ${role}
                         </span>
                     </td>
                     <td class="px-6 py-4 whitespace-nowrap">
                         <button onclick="editData('${item.id}')" class="text-blue-600 hover:text-blue-900 mr-3">
                             <i class="fas fa-edit"></i>
                         </button>
-                        <button onclick="openDeleteModal('${item.id}')" class="text-red-600 hover:text-red-900">
+                        <button onclick="openDeleteModal('${item.id}', '${item.key || ''}')" class="text-red-600 hover:text-red-900">
                             <i class="fas fa-trash"></i>
                         </button>
                     </td>
                 </tr>
-            `).join('');
+            `}).join('');
         }
 
         // Update data count
         function updateDataCount() {
             const count = currentData.length;
-            document.getElementById('dataCount').innerHTML = `พบข้อมูลทั้งหมด <strong>${count}</strong> รายการ`;
-        }
-
-        // Add sample data
-        function addSampleData() {
-            const sampleData = [
-                {
-                    name: "สมชาย ใจดี",
-                    email: "somchai@example.com",
-                    department: "IT",
-                    status: "active",
-                    avatarUrl: "https://ui-avatars.com/api/?name=สมชาย+ใจดี&background=0D9488&color=fff&bold=true",
-                    createdAt: new Date().toISOString()
-                },
-                {
-                    name: "สาวิกา รักเรียน",
-                    email: "sawika@example.com",
-                    department: "HR",
-                    status: "active",
-                    avatarUrl: "https://ui-avatars.com/api/?name=สาวิกา+รักเรียน&background=FF6B6B&color=fff&bold=true",
-                    createdAt: new Date().toISOString()
-                },
-                {
-                    name: "ประชา พัฒนา",
-                    email: "prachya@example.com",
-                    department: "Sales",
-                    status: "inactive",
-                    avatarUrl: "https://ui-avatars.com/api/?name=ประชา+พัฒนา&background=4ECDC4&color=fff&bold=true",
-                    createdAt: new Date().toISOString()
-                }
-            ];
-
-            let count = 0;
-            sampleData.forEach(data => {
-                dataRef.push(data)
-                    .then(() => {
-                        count++;
-                        if (count === sampleData.length) {
-                            showToast(`เพิ่มข้อมูลตัวอย่าง ${count} รายการเรียบร้อย`);
-                            loadData();
-                        }
-                    })
-                    .catch(error => {
-                        console.error("Error adding sample:", error);
-                        showToast("เกิดข้อผิดพลาดในการเพิ่มข้อมูลตัวอย่าง", "error");
-                    });
-            });
+            document.getElementById('dataCount').innerHTML = `คอลเลกชัน ${currentCollection} มีข้อมูลทั้งหมด <strong>${count}</strong> รายการ`;
         }
 
         // Modal functions
         function openModal() {
-            document.getElementById('modalTitle').textContent = 'เพิ่มข้อมูล';
+            document.getElementById('modalTitle').textContent = `เพิ่มข้อมูลใน ${currentCollection}`;
             document.getElementById('dataForm').reset();
             document.getElementById('dataId').value = '';
+            document.getElementById('dataKey').value = '';
             document.getElementById('modal').classList.remove('hidden');
         }
 
@@ -410,18 +428,27 @@
             event.preventDefault();
             
             const id = document.getElementById('dataId').value;
+            const uid = document.getElementById('uid').value;
+            const dataKey = document.getElementById('dataKey').value;
+            
             const data = {
                 name: document.getElementById('name').value,
                 email: document.getElementById('email').value,
-                department: document.getElementById('department').value,
-                avatarUrl: document.getElementById('avatarUrl').value || null,
-                status: document.getElementById('status').value,
+                photoURL: document.getElementById('photoURL').value || null,
+                role: document.getElementById('role').value,
                 updatedAt: new Date().toISOString()
             };
             
+            // Add uid if provided
+            if (uid) {
+                data.uid = uid;
+            }
+            
+            const collectionRef = database.ref(currentCollection);
+            
             if (id) {
-                // Update
-                dataRef.child(id).update(data)
+                // Update existing
+                collectionRef.child(id).update(data)
                     .then(() => {
                         closeModal();
                         showToast('อัปเดตข้อมูลสำเร็จ');
@@ -429,21 +456,37 @@
                     })
                     .catch(error => {
                         console.error("Error updating:", error);
-                        showToast('เกิดข้อผิดพลาดในการอัปเดต', 'error');
+                        showToast('เกิดข้อผิดพลาด: ' + error.message, 'error');
                     });
             } else {
-                // Create
+                // Create new
                 data.createdAt = new Date().toISOString();
-                dataRef.push(data)
-                    .then(() => {
-                        closeModal();
-                        showToast('เพิ่มข้อมูลสำเร็จ');
-                        loadData();
-                    })
-                    .catch(error => {
-                        console.error("Error saving:", error);
-                        showToast('เกิดข้อผิดพลาดในการบันทึก', 'error');
-                    });
+                
+                // ถ้ามี uid และเป็นคอลเลกชัน Users ให้ใช้ uid เป็น key
+                if (currentCollection === 'Users' && uid) {
+                    collectionRef.child(uid).set(data)
+                        .then(() => {
+                            closeModal();
+                            showToast('เพิ่มข้อมูลสำเร็จ');
+                            loadData();
+                        })
+                        .catch(error => {
+                            console.error("Error saving:", error);
+                            showToast('เกิดข้อผิดพลาด: ' + error.message, 'error');
+                        });
+                } else {
+                    // ใช้ push สำหรับ users (ตัวเล็ก)
+                    collectionRef.push(data)
+                        .then(() => {
+                            closeModal();
+                            showToast('เพิ่มข้อมูลสำเร็จ');
+                            loadData();
+                        })
+                        .catch(error => {
+                            console.error("Error saving:", error);
+                            showToast('เกิดข้อผิดพลาด: ' + error.message, 'error');
+                        });
+                }
             }
         }
 
@@ -451,31 +494,35 @@
         function editData(id) {
             const item = currentData.find(d => d.id === id);
             if (item) {
-                document.getElementById('modalTitle').textContent = 'แก้ไขข้อมูล';
+                document.getElementById('modalTitle').textContent = `แก้ไขข้อมูลใน ${currentCollection}`;
                 document.getElementById('dataId').value = item.id;
-                document.getElementById('name').value = item.name || '';
+                document.getElementById('dataKey').value = item.key || '';
+                document.getElementById('uid').value = item.uid || '';
+                document.getElementById('name').value = item.name || item.displayName || '';
                 document.getElementById('email').value = item.email || '';
-                document.getElementById('department').value = item.department || '';
-                document.getElementById('avatarUrl').value = item.avatarUrl || '';
-                document.getElementById('status').value = item.status || 'active';
+                document.getElementById('photoURL').value = item.photoURL || item.avatarUrl || '';
+                document.getElementById('role').value = item.role || 'user';
                 document.getElementById('modal').classList.remove('hidden');
             }
         }
 
         // Delete functions
-        function openDeleteModal(id) {
+        function openDeleteModal(id, key) {
             deleteId = id;
+            deleteKey = key;
             document.getElementById('deleteModal').classList.remove('hidden');
         }
 
         function closeDeleteModal() {
             deleteId = null;
+            deleteKey = null;
             document.getElementById('deleteModal').classList.add('hidden');
         }
 
         function confirmDelete() {
             if (deleteId) {
-                dataRef.child(deleteId).remove()
+                const collectionRef = database.ref(currentCollection);
+                collectionRef.child(deleteId).remove()
                     .then(() => {
                         closeDeleteModal();
                         showToast('ลบข้อมูลสำเร็จ');
@@ -483,7 +530,7 @@
                     })
                     .catch(error => {
                         console.error("Error deleting:", error);
-                        showToast('เกิดข้อผิดพลาดในการลบ', 'error');
+                        showToast('เกิดข้อผิดพลาด: ' + error.message, 'error');
                         closeDeleteModal();
                     });
             }
@@ -503,7 +550,7 @@
             }, 3000);
         }
 
-        // Event listeners for search and filter
+        // Event listeners
         document.getElementById('searchInput').addEventListener('input', renderTable);
         document.getElementById('filterSelect').addEventListener('change', renderTable);
 
@@ -519,11 +566,6 @@
                 closeDeleteModal();
             }
         }
-
-        // Initial load
-        document.addEventListener('DOMContentLoaded', function() {
-            console.log("📱 Page loaded, checking Firebase connection...");
-        });
     </script>
 </body>
 </html>
