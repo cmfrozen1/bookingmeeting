@@ -1785,6 +1785,7 @@
         }
 
         // ========== EMAIL FETCH FUNCTIONS ==========
+        // ========== EMAIL FETCH FUNCTIONS ==========
         async function fetchEmailWithAccessToken() {
             try {
                 const accessToken = liff.getAccessToken();
@@ -1810,6 +1811,7 @@
                         });
 
                         if (updateResult.success) {
+                            console.log('Email updated successfully in database:', userInfo.email);
                             return userInfo.email;
                         }
                     }
@@ -1819,6 +1821,60 @@
                 console.error('Error fetching email with token:', error);
                 return null;
             }
+        }
+
+        async function fetchEmailFromIdToken() {
+            try {
+                const idToken = liff.getIDToken();
+                if (!idToken) return null;
+
+                const tokenPayload = parseJwt(idToken);
+                if (tokenPayload.email) {
+                    const updateResult = await callGAS('user/update-email', {
+                        lineUserId: state.user.lineUserId,
+                        email: tokenPayload.email
+                    });
+
+                    if (updateResult.success) {
+                        console.log('Email updated successfully from ID token:', tokenPayload.email);
+                        return tokenPayload.email;
+                    }
+                }
+                return null;
+            } catch (error) {
+                console.error('Error fetching email from ID token:', error);
+                return null;
+            }
+        }
+
+        async function tryFetchEmail() {
+            if (!state.user) return null;
+            if (state.user.email && state.user.email !== '') return state.user.email;
+
+            console.log('Attempting to fetch email...');
+
+            // Try ID Token first
+            let email = await fetchEmailFromIdToken();
+            if (email) {
+                state.user.email = email;
+                localStorage.setItem('user_cache', JSON.stringify(state.user));
+                updateUserUI(state.user);
+                showToast('ดึงอีเมลจาก LINE สำเร็จ');
+                return email;
+            }
+
+            // Try Access Token
+            email = await fetchEmailWithAccessToken();
+            if (email) {
+                state.user.email = email;
+                localStorage.setItem('user_cache', JSON.stringify(state.user));
+                updateUserUI(state.user);
+                showToast('ดึงอีเมลจาก LINE สำเร็จ');
+                return email;
+            }
+
+            console.log('Could not fetch email');
+            return null;
         }
 
         // ========== FLATPICKR INIT ==========
@@ -2480,6 +2536,7 @@
         };
 
         // ========== LIFF INIT ==========
+        // ========== LIFF INIT ==========
         async function initLIFF() {
             try {
                 if (state.user) {
@@ -2502,26 +2559,29 @@
                 if (!liff.isLoggedIn()) {
                     liff.login({ 
                         scope: 'openid email profile',
-                        prompt: 'consent' // ขอ consent ทันทีเพื่อให้ได้ email
+                        prompt: 'consent'
                     });
                     return;
                 }
 
-                const idToken = liff.getIDToken();
-                const tokenPayload = idToken ? parseJwt(idToken) : {};
                 const profile = await liff.getProfile();
                 
-                console.log('Token payload:', tokenPayload);
-                console.log('Email from token:', tokenPayload.email);
-
-                // ดึงข้อมูลผู้ใช้และอัปเดตอีเมล
+                // ดึงข้อมูลผู้ใช้
                 const userData = {
                     lineUserId: profile.userId,
                     displayName: profile.displayName,
                     pictureUrl: profile.pictureUrl || '',
-                    email: tokenPayload.email || '',
+                    email: '',
                     source: 'miniapp'
                 };
+
+                // ลองดึงอีเมลจาก ID Token ก่อน
+                const idToken = liff.getIDToken();
+                const tokenPayload = idToken ? parseJwt(idToken) : {};
+                if (tokenPayload.email) {
+                    userData.email = tokenPayload.email;
+                    console.log('Email from ID Token:', tokenPayload.email);
+                }
 
                 const [userResult, roomsResult] = await Promise.all([
                     callGAS('user/profile', userData),
@@ -2537,19 +2597,8 @@
                     
                     // ถ้ายังไม่มีอีเมล ให้พยายามดึงอีกครั้ง
                     if (!state.user.email || state.user.email === '') {
-                        console.log('No email found, attempting to fetch with access token...');
-                        
-                        const email = await fetchEmailWithAccessToken();
-                        if (email) {
-                            console.log('Email fetched successfully:', email);
-                            state.user.email = email;
-                            localStorage.setItem('user_cache', JSON.stringify(state.user));
-                            updateUserUI(state.user);
-                            showToast('ดึงอีเมลจาก LINE สำเร็จ');
-                        } else {
-                            console.log('Could not fetch email, will retry later');
-                            // ไม่แสดงป๊อปอัปขอสิทธิ์ แต่จะลองใหม่ในครั้งถัดไป
-                        }
+                        console.log('No email found, attempting to fetch...');
+                        await tryFetchEmail();
                     }
                 }
 
@@ -2578,6 +2627,7 @@
                 $.initLoading.classList.add('hide');
                 if (!state.user) showToast('ไม่สามารถเชื่อมต่อ LINE ได้', 'error');
             }
+        }
         }
 
         function updateUserUI(user) {
@@ -4190,4 +4240,3 @@
         }
     </script>
 </body>
-</html>
