@@ -6,38 +6,34 @@
     <title id="page-title">Meeting Room · LINE</title>
     <link rel="shortcut icon" href="https://cdn-icons-png.flaticon.com/512/1040/1040244.png">
     
-    <!-- Preconnect to speed up DNS/TCP/TLS -->
+    <!-- Preconnect -->
     <link rel="preconnect" href="https://static.line-scdn.net">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="preconnect" href="https://cdn.jsdelivr.net">
     <link rel="preconnect" href="https://cdnjs.cloudflare.com">
-    <link rel="preconnect" href="https://script.google.com">
     
-    <!-- Tailwind CSS - Production Ready (โหลดก่อน) -->
-    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet" media="print" onload="this.media='all'">
+    <!-- Tailwind CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
     
-    <!-- Fonts (โหลดแบบ async) -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@300;400;500;600;700&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
+    <!-- Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     
-    <!-- LINE LIFF (โหลดก่อน เพราะจำเป็น) -->
+    <!-- LINE LIFF -->
     <script src="https://static.line-scdn.net/liff/edge/2.1/sdk.js"></script>
     
-    <!-- Font Awesome (โหลดแบบ async) -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" media="print" onload="this.media='all'">
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
-    <!-- SweetAlert2 (โหลดแบบ defer) -->
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11" defer></script>
+    <!-- SweetAlert2 -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     
-    <!-- Flatpickr (โหลดแบบ async) -->
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css" media="print" onload="this.media='all'">
-    <script src="https://cdn.jsdelivr.net/npm/flatpickr" defer></script>
-    <script src="https://npmcdn.com/flatpickr/dist/l10n/th.js" defer></script>
+    <!-- Flatpickr -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+    <script src="https://npmcdn.com/flatpickr/dist/l10n/th.js"></script>
     
     <style>
-        /* Critical CSS - โหลดก่อนทันที */
         * {
             font-family: 'IBM Plex Sans Thai', sans-serif;
             margin: 0;
@@ -128,6 +124,7 @@
             color: var(--text-secondary);
             font-size: 12px;
             cursor: pointer;
+            transition: all 0.2s;
         }
         
         .nav-item.active {
@@ -755,6 +752,11 @@
             font-weight: 600;
         }
         
+        .admin-tab-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        
         .upload-area {
             border: 2px dashed var(--border);
             border-radius: 12px;
@@ -798,7 +800,6 @@
             100% { background-position: -200% 0; }
         }
         
-        /* ===== ปฏิทิน ===== */
         .calendar-container {
             background: var(--bg-card);
             border-radius: 24px;
@@ -909,26 +910,6 @@
             background: var(--warning);
         }
         
-        .booking-indicator {
-            display: flex;
-            gap: 2px;
-            justify-content: center;
-            margin-top: 2px;
-        }
-        
-        .booking-dot {
-            width: 4px;
-            height: 4px;
-            border-radius: 2px;
-            background: var(--primary);
-        }
-        
-        .booking-dot.multiple {
-            width: 6px;
-            height: 6px;
-            background: var(--warning);
-        }
-        
         .date-bookings-list {
             margin-top: 20px;
             max-height: 300px;
@@ -1023,26 +1004,6 @@
             color: var(--text-secondary);
         }
 
-        .loading-overlay {
-            position: absolute;
-            inset: 0;
-            background: rgba(0,0,0,0.7);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            z-index: 10;
-            border-radius: inherit;
-        }
-        
-        .loading-spinner-small {
-            width: 30px;
-            height: 30px;
-            border: 3px solid var(--border);
-            border-top-color: var(--primary);
-            border-radius: 50%;
-            animation: spin 0.6s linear infinite;
-        }
-
         .room-image img {
             width: 100%;
             height: 100%;
@@ -1078,7 +1039,6 @@
             gap: 8px;
         }
         
-        /* Animation keyframes */
         @keyframes slideUp {
             from { transform: translateY(100%); opacity: 0; }
             to { transform: translateY(0); opacity: 1; }
@@ -1086,6 +1046,41 @@
         @keyframes slideDown {
             from { transform: translateY(0); opacity: 1; }
             to { transform: translateY(100%); opacity: 0; }
+        }
+
+        .permission-badge {
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 10px;
+            font-weight: 500;
+            background: rgba(6,199,85,0.1);
+            color: var(--primary);
+            border: 1px solid rgba(6,199,85,0.2);
+        }
+
+        .line-button {
+            background: #06c755;
+            color: white;
+            border: none;
+            border-radius: 12px;
+            padding: 10px 16px;
+            font-size: 14px;
+            font-weight: 500;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .line-button:hover {
+            background: #05b34a;
+            transform: translateY(-2px);
+        }
+        
+        .line-button i {
+            font-size: 16px;
         }
     </style>
 </head>
@@ -1113,7 +1108,7 @@
 
     <!-- Main Content -->
     <div class="min-h-screen">
-        <!-- Tab: Home (ห้องประชุม) -->
+        <!-- Tab: Home -->
         <div id="tab-home" class="tab-content active">
             <!-- Profile Header -->
             <div class="profile-header" id="profile-header">
@@ -1180,11 +1175,8 @@
                     <div>ส</div>
                 </div>
                 
-                <div class="calendar-days" id="calendar-days">
-                    <!-- Skeleton for calendar -->
-                </div>
+                <div class="calendar-days" id="calendar-days"></div>
                 
-                <!-- Selected Date Bookings -->
                 <div id="selected-date-bookings" class="date-bookings-list hidden">
                     <h3 class="text-sm font-semibold mb-2" id="selected-date-title"></h3>
                     <div id="selected-date-bookings-list"></div>
@@ -1214,7 +1206,6 @@
                 </button>
             </div>
             
-            <!-- Filter tabs -->
             <div class="flex gap-2 overflow-x-auto px-4 mb-4">
                 <button class="filter-btn active" data-booking-filter="all">ทั้งหมด</button>
                 <button class="filter-btn" data-booking-filter="confirmed">อนุมัติแล้ว</button>
@@ -1231,12 +1222,14 @@
             <div class="max-w-7xl mx-auto px-4">
                 <div class="flex justify-between items-center mb-4">
                     <h2 class="text-xl font-bold text-[#06c755]">จัดการระบบ</h2>
-                    <button id="refresh-admin" class="text-[#06c755] text-sm">
-                        <i class="fas fa-sync-alt mr-1"></i>รีเฟรช
-                    </button>
+                    <div class="flex items-center gap-2">
+                        <span id="user-role-badge" class="permission-badge hidden"></span>
+                        <button id="refresh-admin" class="text-[#06c755] text-sm">
+                            <i class="fas fa-sync-alt mr-1"></i>รีเฟรช
+                        </button>
+                    </div>
                 </div>
 
-                <!-- Admin Stats -->
                 <div class="admin-section">
                     <h3 class="font-semibold mb-3">สถิติ</h3>
                     <div class="grid grid-cols-2 gap-3">
@@ -1259,24 +1252,21 @@
                     </div>
                 </div>
 
-                <!-- Admin Tabs -->
                 <div class="flex border-b border-[#2a2e36] mb-4 overflow-x-auto">
                     <button class="admin-tab-btn flex-1 py-2 text-center active" data-admin-tab="pending">
                         รออนุมัติ <span id="pending-badge" class="ml-1 bg-yellow-500 text-white text-xs rounded-full px-1.5 py-0.5 hidden">0</span>
                     </button>
                     <button class="admin-tab-btn flex-1 py-2 text-center" data-admin-tab="bookings">การจองทั้งหมด</button>
                     <button class="admin-tab-btn flex-1 py-2 text-center" data-admin-tab="rooms">จัดการห้อง</button>
-                    <button class="admin-tab-btn flex-1 py-2 text-center" data-admin-tab="users">จัดการผู้ใช้</button>
-                    <button class="admin-tab-btn flex-1 py-2 text-center" data-admin-tab="settings">ตั้งค่า</button>
+                    <button class="admin-tab-btn flex-1 py-2 text-center admin-only-users" data-admin-tab="users" style="display: none;">จัดการผู้ใช้</button>
+                    <button class="admin-tab-btn flex-1 py-2 text-center admin-only-settings" data-admin-tab="settings" style="display: none;">ตั้งค่า</button>
                 </div>
 
-                <!-- Admin: Pending -->
                 <div id="admin-pending-tab" class="admin-tab">
                     <h3 class="font-semibold mb-3">รายการรออนุมัติ</h3>
                     <div id="pending-bookings-list" class="space-y-3"></div>
                 </div>
 
-                <!-- Admin: All Bookings -->
                 <div id="admin-bookings-tab" class="admin-tab hidden">
                     <div class="search-box px-0 mb-4">
                         <i class="fas fa-search"></i>
@@ -1285,7 +1275,6 @@
                     <div id="all-bookings-list" class="space-y-3"></div>
                 </div>
 
-                <!-- Admin: Rooms -->
                 <div id="admin-rooms-tab" class="admin-tab hidden">
                     <button class="btn-primary mb-4" onclick="showCreateRoomModal()">
                         <i class="fas fa-plus mr-2"></i>เพิ่มห้องใหม่
@@ -1293,7 +1282,6 @@
                     <div id="rooms-management-list" class="space-y-3"></div>
                 </div>
 
-                <!-- Admin: Users -->
                 <div id="admin-users-tab" class="admin-tab hidden">
                     <div class="search-box px-0 mb-4">
                         <i class="fas fa-search"></i>
@@ -1302,7 +1290,6 @@
                     <div id="users-list" class="space-y-2"></div>
                 </div>
 
-                <!-- Admin: Settings -->
                 <div id="admin-settings-tab" class="admin-tab hidden">
                     <div class="admin-section">
                         <h3 class="font-semibold mb-3">ตั้งค่าระบบ</h3>
@@ -1329,7 +1316,6 @@
                         </form>
                     </div>
                     
-                    <!-- Database Reset (Admin Only) -->
                     <div class="admin-section border-red-500/30">
                         <h3 class="font-semibold mb-3 text-red-500">เครื่องมือสำหรับผู้ดูแล</h3>
                         <button onclick="resetDatabase()" class="btn-danger w-full">
@@ -1395,7 +1381,7 @@
             </div>
         </div>
 
-        <!-- Create/Edit Booking Modal (มีวันที่สิ้นสุด) -->
+        <!-- Create/Edit Booking Modal -->
         <div class="modal" id="booking-create-modal">
             <div class="modal-content">
                 <div class="modal-header">
@@ -1413,7 +1399,6 @@
                         <input type="text" id="booking-title" placeholder="หัวข้อการประชุม" class="input-field" required maxlength="100">
                         <textarea id="booking-description" placeholder="รายละเอียด (เช่น วัตถุประสงค์, จำนวนผู้เข้าร่วม)" class="input-field" rows="3" maxlength="500"></textarea>
                         
-                        <!-- ลิงค์ประชุม -->
                         <input type="text" id="booking-meeting-link" placeholder="ลิงค์ประชุม (Zoom, Teams, etc.)" class="input-field">
                         
                         <div class="grid grid-cols-2 gap-2">
@@ -1537,6 +1522,28 @@
                 </div>
             </div>
         </div>
+
+        <!-- Delete User Confirmation Modal -->
+        <div class="modal" id="delete-user-modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3 class="modal-title">ยืนยันการลบผู้ใช้</h3>
+                    <button class="modal-close" onclick="closeDeleteUserModal()">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <p id="delete-user-name" class="text-white mb-4"></p>
+                    <p class="text-sm text-gray-400">การลบผู้ใช้จะส่งผลต่อการจองที่เกี่ยวข้องทั้งหมด การดำเนินการนี้ไม่สามารถย้อนกลับได้</p>
+                </div>
+                <div class="modal-footer">
+                    <button onclick="confirmDeleteUser()" class="btn-danger flex-1">
+                        <i class="fas fa-trash mr-2"></i>ลบผู้ใช้
+                    </button>
+                    <button class="btn-outline flex-1" onclick="closeDeleteUserModal()">ยกเลิก</button>
+                </div>
+            </div>
+        </div>
     </div>
 
     <!-- Bottom Navigation -->
@@ -1549,13 +1556,12 @@
             <i class="fas fa-calendar-check"></i>
             <span>การจองของฉัน</span>
         </div>
-        <div class="nav-item hidden admin-only" data-tab="admin">
+        <div class="nav-item hidden manager-admin" data-tab="admin">
             <i class="fas fa-cog"></i>
             <span>จัดการ</span>
         </div>
     </div>
 
-    <!-- Scripts -->
     <script>
         // ========== CONFIG ==========
         const CONFIG = {
@@ -1578,16 +1584,30 @@
             dateBookings: {},
             currentRoom: null,
             currentBooking: null,
-            isAdmin: (JSON.parse(localStorage.getItem('user_cache')) || {}).role === 'admin',
-            isManager: ['admin', 'manager'].includes((JSON.parse(localStorage.getItem('user_cache')) || {}).role),
+            currentUserToDelete: null,
+            role: (JSON.parse(localStorage.getItem('user_cache')) || {}).role || 'user',
+            isAdmin: false,
+            isManager: false,
             settings: JSON.parse(localStorage.getItem('settings_cache')) || { 
                 appName: 'Meeting Room',
                 requireApproval: 'true',
                 reminderMinutes: '30'
             },
             initialized: false,
-            flatpickrInstances: {}
+            flatpickrInstances: {},
+            emailFetchAttempted: false
         };
+
+        function updateRoleFlags() {
+            state.isAdmin = state.role === 'admin';
+            state.isManager = state.isAdmin || state.role === 'manager';
+            console.log('Role updated:', { role: state.role, isAdmin: state.isAdmin, isManager: state.isManager });
+        }
+
+        if (state.user) {
+            state.role = state.user.role || 'user';
+            updateRoleFlags();
+        }
 
         // ========== DOM Cache ==========
         const $ = {
@@ -1621,7 +1641,9 @@
             modalAdminControls: document.getElementById('modal-admin-controls'),
             floatingBtn: document.getElementById('floating-book-btn'),
             quickBookBtn: document.getElementById('quick-book-btn'),
-            adminOnly: document.querySelectorAll('.admin-only'),
+            managerAdmin: document.querySelectorAll('.manager-admin'),
+            adminOnlyUsers: document.querySelectorAll('.admin-only-users'),
+            adminOnlySettings: document.querySelectorAll('.admin-only-settings'),
             refreshAdmin: document.getElementById('refresh-admin'),
             adminUsers: document.getElementById('admin-users'),
             adminRooms: document.getElementById('admin-rooms'),
@@ -1644,7 +1666,8 @@
             bookingEnd: document.getElementById('booking-end'),
             bookingAttendees: document.getElementById('booking-attendees'),
             saveBookingBtn: document.getElementById('save-booking-btn'),
-            availabilityStatus: document.getElementById('availability-status')
+            availabilityStatus: document.getElementById('availability-status'),
+            userRoleBadge: document.getElementById('user-role-badge')
         };
 
         // ========== UTILS ==========
@@ -1746,31 +1769,133 @@
             $.navbarAppName.textContent = name;
         }
 
-        // ========== FLATPICKR INITIALIZATION ==========
+        // ========== JWT PARSER ==========
+        function parseJwt(token) {
+            try {
+                const base64Url = token.split('.')[1];
+                const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+                const jsonPayload = decodeURIComponent(atob(base64).split('').map(function(c) {
+                    return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+                }).join(''));
+                return JSON.parse(jsonPayload);
+            } catch(e) {
+                console.error('Error parsing JWT:', e);
+                return {};
+            }
+        }
+
+        // ========== EMAIL FETCH FUNCTIONS ==========
+        // ========== EMAIL FETCH FUNCTIONS ==========
+        async function fetchEmailWithAccessToken() {
+            try {
+                const accessToken = liff.getAccessToken();
+                if (!accessToken) {
+                    console.log('No access token available');
+                    return null;
+                }
+
+                const response = await fetch('https://api.line.me/oauth2/v2.1/userinfo', {
+                    headers: {
+                        'Authorization': `Bearer ${accessToken}`
+                    }
+                });
+
+                if (response.ok) {
+                    const userInfo = await response.json();
+                    console.log('User info from LINE API:', userInfo);
+                    
+                    if (userInfo.email) {
+                        const updateResult = await callGAS('user/update-email', {
+                            lineUserId: state.user.lineUserId,
+                            email: userInfo.email
+                        });
+
+                        if (updateResult.success) {
+                            console.log('Email updated successfully in database:', userInfo.email);
+                            return userInfo.email;
+                        }
+                    }
+                }
+                return null;
+            } catch (error) {
+                console.error('Error fetching email with token:', error);
+                return null;
+            }
+        }
+
+        async function fetchEmailFromIdToken() {
+            try {
+                const idToken = liff.getIDToken();
+                if (!idToken) return null;
+
+                const tokenPayload = parseJwt(idToken);
+                if (tokenPayload.email) {
+                    const updateResult = await callGAS('user/update-email', {
+                        lineUserId: state.user.lineUserId,
+                        email: tokenPayload.email
+                    });
+
+                    if (updateResult.success) {
+                        console.log('Email updated successfully from ID token:', tokenPayload.email);
+                        return tokenPayload.email;
+                    }
+                }
+                return null;
+            } catch (error) {
+                console.error('Error fetching email from ID token:', error);
+                return null;
+            }
+        }
+
+        async function tryFetchEmail() {
+            if (!state.user) return null;
+            if (state.user.email && state.user.email !== '') return state.user.email;
+
+            console.log('Attempting to fetch email...');
+
+            // Try ID Token first
+            let email = await fetchEmailFromIdToken();
+            if (email) {
+                state.user.email = email;
+                localStorage.setItem('user_cache', JSON.stringify(state.user));
+                updateUserUI(state.user);
+                showToast('ดึงอีเมลจาก LINE สำเร็จ');
+                return email;
+            }
+
+            // Try Access Token
+            email = await fetchEmailWithAccessToken();
+            if (email) {
+                state.user.email = email;
+                localStorage.setItem('user_cache', JSON.stringify(state.user));
+                updateUserUI(state.user);
+                showToast('ดึงอีเมลจาก LINE สำเร็จ');
+                return email;
+            }
+
+            console.log('Could not fetch email');
+            return null;
+        }
+
+        // ========== FLATPICKR INIT ==========
         function initFlatpickr() {
             if (typeof flatpickr === 'undefined') {
                 setTimeout(initFlatpickr, 100);
                 return;
             }
 
-            // วันที่เริ่ม
             if ($.bookingDate && !state.flatpickrInstances.bookingDate) {
                 state.flatpickrInstances.bookingDate = flatpickr($.bookingDate, {
                     locale: 'th',
                     dateFormat: 'Y-m-d',
                     minDate: 'today',
-                    onChange: function(selectedDates, dateStr) {
-                        // อัพเดทวันที่สิ้นสุดให้มีค่าเริ่มต้นเป็นวันเดียวกัน
-                        if ($.bookingEndDate && !$.bookingEndDate.value) {
-                            $.bookingEndDate.value = dateStr;
-                        }
+                    onChange: function() {
                         validateBookingForm();
                         checkAvailability();
                     }
                 });
             }
 
-            // วันที่สิ้นสุด
             if ($.bookingEndDate && !state.flatpickrInstances.bookingEndDate) {
                 state.flatpickrInstances.bookingEndDate = flatpickr($.bookingEndDate, {
                     locale: 'th',
@@ -1783,7 +1908,6 @@
                 });
             }
 
-            // เวลาเริ่ม
             if ($.bookingStart && !state.flatpickrInstances.bookingStart) {
                 state.flatpickrInstances.bookingStart = flatpickr($.bookingStart, {
                     enableTime: true,
@@ -1800,7 +1924,6 @@
                 });
             }
 
-            // เวลาสิ้นสุด
             if ($.bookingEnd && !state.flatpickrInstances.bookingEnd) {
                 state.flatpickrInstances.bookingEnd = flatpickr($.bookingEnd, {
                     enableTime: true,
@@ -1828,7 +1951,6 @@
             const end = $.bookingEnd?.value;
             const attendees = parseInt($.bookingAttendees?.value) || 0;
 
-            // ตรวจสอบจำนวนผู้เข้าร่วม (ต้องมีอย่างน้อย 1 คน)
             if (!attendees || attendees < 1) {
                 if ($.availabilityStatus) {
                     $.availabilityStatus.innerHTML = '<span class="text-red-500">⚠️ จำนวนผู้เข้าร่วมต้องมีอย่างน้อย 1 คน</span>';
@@ -1843,7 +1965,6 @@
                 return false;
             }
 
-            // ตรวจสอบวันที่เริ่ม <= วันที่สิ้นสุด
             if (date && endDate && date > endDate) {
                 if ($.availabilityStatus) {
                     $.availabilityStatus.innerHTML = '<span class="text-red-500">⚠️ วันที่สิ้นสุดต้องไม่ก่อนวันที่เริ่ม</span>';
@@ -1889,6 +2010,293 @@
             }
         }
 
+        // ========== FLEX MESSAGE ==========
+        function createBookingFlexMessage(bookingData) {
+            const { 
+                title, 
+                roomName, 
+                userName, 
+                startTime, 
+                endTime, 
+                status, 
+                reason, 
+                attendees, 
+                description, 
+                meetingLink,
+                action 
+            } = bookingData;
+            
+            let statusColor = '#f7c50f';
+            let statusEmoji = '📝';
+            let statusText = 'ข้อมูลการจอง';
+            
+            if (action === 'cancelled') {
+                statusColor = '#9ca3af';
+                statusEmoji = '❌';
+                statusText = 'ยกเลิก';
+            } else if (action === 'rejected') {
+                statusColor = '#ef4444';
+                statusEmoji = '❌';
+                statusText = 'ปฏิเสธ';
+            } else if (action === 'deleted') {
+                statusColor = '#ef4444';
+                statusEmoji = '🗑️';
+                statusText = 'ลบ';
+            } else if (action === 'approved') {
+                statusColor = '#06c755';
+                statusEmoji = '✅';
+                statusText = 'อนุมัติ';
+            } else if (action === 'role_updated') {
+                statusColor = '#3b82f6';
+                statusEmoji = '🔑';
+                statusText = 'อัปเดตสิทธิ์';
+            } else if (action === 'settings_updated') {
+                statusColor = '#f59e0b';
+                statusEmoji = '⚙️';
+                statusText = 'อัปเดตการตั้งค่า';
+            } else if (action === 'user_deleted') {
+                statusColor = '#ef4444';
+                statusEmoji = '🗑️';
+                statusText = 'ลบผู้ใช้';
+            }
+            
+            const flexMessage = {
+                type: 'flex',
+                altText: `${statusEmoji} ${statusText} - ${title}`,
+                contents: {
+                    type: 'bubble',
+                    header: {
+                        type: 'box',
+                        layout: 'vertical',
+                        backgroundColor: statusColor,
+                        spacing: 'none',
+                        contents: [
+                            {
+                                type: 'text',
+                                text: `${statusEmoji} ${statusText}`,
+                                size: 'xl',
+                                weight: 'bold',
+                                color: '#ffffff',
+                                align: 'center'
+                            }
+                        ]
+                    },
+                    body: {
+                        type: 'box',
+                        layout: 'vertical',
+                        spacing: 'md',
+                        contents: [
+                            {
+                                type: 'text',
+                                text: title || 'ไม่ระบุหัวข้อ',
+                                size: 'xl',
+                                weight: 'bold',
+                                wrap: true
+                            },
+                            {
+                                type: 'box',
+                                layout: 'vertical',
+                                spacing: 'sm',
+                                contents: [
+                                    {
+                                        type: 'box',
+                                        layout: 'baseline',
+                                        spacing: 'sm',
+                                        contents: [
+                                            {
+                                                type: 'text',
+                                                text: '🏢',
+                                                size: 'sm',
+                                                flex: 0
+                                            },
+                                            {
+                                                type: 'text',
+                                                text: roomName || 'ไม่ระบุห้อง',
+                                                size: 'sm',
+                                                color: '#06c755',
+                                                flex: 5,
+                                                wrap: true
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        type: 'box',
+                                        layout: 'baseline',
+                                        spacing: 'sm',
+                                        contents: [
+                                            {
+                                                type: 'text',
+                                                text: '👤',
+                                                size: 'sm',
+                                                flex: 0
+                                            },
+                                            {
+                                                type: 'text',
+                                                text: userName || 'ไม่ระบุชื่อ',
+                                                size: 'sm',
+                                                flex: 5,
+                                                wrap: true
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        type: 'box',
+                                        layout: 'baseline',
+                                        spacing: 'sm',
+                                        contents: [
+                                            {
+                                                type: 'text',
+                                                text: '📅',
+                                                size: 'sm',
+                                                flex: 0
+                                            },
+                                            {
+                                                type: 'text',
+                                                text: formatDateShort(startTime) || 'ไม่ระบุวันที่',
+                                                size: 'sm',
+                                                flex: 5
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        type: 'box',
+                                        layout: 'baseline',
+                                        spacing: 'sm',
+                                        contents: [
+                                            {
+                                                type: 'text',
+                                                text: '⏰',
+                                                size: 'sm',
+                                                flex: 0
+                                            },
+                                            {
+                                                type: 'text',
+                                                text: (formatTime(startTime) || 'ไม่ระบุ') + ' - ' + (formatTime(endTime) || 'ไม่ระบุ'),
+                                                size: 'sm',
+                                                flex: 5
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        type: 'box',
+                                        layout: 'baseline',
+                                        spacing: 'sm',
+                                        contents: [
+                                            {
+                                                type: 'text',
+                                                text: '👥',
+                                                size: 'sm',
+                                                flex: 0
+                                            },
+                                            {
+                                                type: 'text',
+                                                text: (attendees || 0) + ' คน',
+                                                size: 'sm',
+                                                flex: 5
+                                            }
+                                        ]
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    footer: {
+                        type: 'box',
+                        layout: 'vertical',
+                        spacing: 'sm',
+                        contents: []
+                    }
+                }
+            };
+            
+            if (meetingLink) {
+                flexMessage.contents.footer.contents.push({
+                    type: 'button',
+                    action: {
+                        type: 'uri',
+                        label: '🔗 เข้าร่วมประชุม',
+                        uri: meetingLink
+                    },
+                    style: 'primary',
+                    color: '#06c755'
+                });
+            }
+            
+            if (action === 'rejected' && reason) {
+                flexMessage.contents.body.contents.push({
+                    type: 'box',
+                    layout: 'vertical',
+                    spacing: 'sm',
+                    margin: 'md',
+                    paddingAll: 'md',
+                    backgroundColor: '#fef2f2',
+                    borderColor: '#ef4444',
+                    borderWidth: '1px',
+                    contents: [
+                        {
+                            type: 'text',
+                            text: '📝 เหตุผลที่ปฏิเสธ:',
+                            size: 'sm',
+                            weight: 'bold',
+                            color: '#ef4444'
+                        },
+                        {
+                            type: 'text',
+                            text: reason,
+                            size: 'sm',
+                            color: '#666666',
+                            wrap: true
+                        }
+                    ]
+                });
+            }
+            
+            if (description) {
+                flexMessage.contents.body.contents.push({
+                    type: 'box',
+                    layout: 'vertical',
+                    spacing: 'sm',
+                    margin: 'md',
+                    paddingAll: 'md',
+                    backgroundColor: '#f5f5f5',
+                    contents: [
+                        {
+                            type: 'text',
+                            text: '📄 รายละเอียด:',
+                            size: 'sm',
+                            weight: 'bold'
+                        },
+                        {
+                            type: 'text',
+                            text: description,
+                            size: 'sm',
+                            color: '#666666',
+                            wrap: true
+                        }
+                    ]
+                });
+            }
+            
+            return flexMessage;
+        }
+        
+        async function sendBookingToChat(bookingData) {
+            try {
+                if (!liff.isInClient()) {
+                    console.log('Not in LINE client, cannot send message');
+                    return false;
+                }
+                const flexMessage = createBookingFlexMessage(bookingData);
+                await liff.sendMessages([flexMessage]);
+                console.log('Flex message sent successfully');
+                showToast('ส่งข้อมูลการจองไปยังแชทเรียบร้อย');
+                return true;
+            } catch (error) {
+                console.error('Error sending flex message:', error);
+                return false;
+            }
+        }
+
         // ========== IMAGE UPLOAD ==========
         async function uploadImageToDrive(file) {
             try {
@@ -1925,526 +2333,6 @@
                 reader.readAsDataURL(input.files[0]);
             }
         };
-
-        // ========== LINE MESSAGING FUNCTIONS ==========
-        
-        /**
-         * สร้าง Flex Message สำหรับการแจ้งเตือนสถานะการจอง
-         */
-        function createStatusChangeFlexMessage(booking, action, adminName = 'ผู้ดูแลระบบ') {
-            const startTime = new Date(booking.startTime);
-            const endTime = new Date(booking.endTime);
-            const dateStr = startTime.toLocaleDateString('th-TH', { 
-                weekday: 'long', 
-                year: 'numeric', 
-                month: 'long', 
-                day: 'numeric' 
-            });
-            const timeStr = startTime.toLocaleTimeString('th-TH', { 
-                hour: '2-digit', 
-                minute: '2-digit' 
-            }) + ' - ' + 
-            endTime.toLocaleTimeString('th-TH', { 
-                hour: '2-digit', 
-                minute: '2-digit' 
-            }) + ' น.';
-            
-            // กำหนดสีและข้อความตาม action
-            let headerColor, statusText, emoji, titleText;
-            
-            switch(action) {
-                case 'approve':
-                    headerColor = '#06c755';
-                    statusText = '✅ อนุมัติการจองแล้ว';
-                    emoji = '✅';
-                    titleText = 'การจองได้รับการอนุมัติ';
-                    break;
-                case 'reject':
-                    headerColor = '#ef4444';
-                    statusText = '❌ ปฏิเสธการจอง';
-                    emoji = '❌';
-                    titleText = 'การจองถูกปฏิเสธ';
-                    break;
-                case 'cancel':
-                    headerColor = '#f59e0b';
-                    statusText = '⚠️ ยกเลิกการจอง';
-                    emoji = '⚠️';
-                    titleText = 'การจองถูกยกเลิก';
-                    break;
-                case 'delete':
-                    headerColor = '#ef4444';
-                    statusText = '🗑️ ลบการจอง';
-                    emoji = '🗑️';
-                    titleText = 'การจองถูกลบ';
-                    break;
-                case 'update':
-                    headerColor = '#3b82f6';
-                    statusText = '✏️ แก้ไขการจอง';
-                    emoji = '✏️';
-                    titleText = 'มีการแก้ไขการจอง';
-                    break;
-                default:
-                    headerColor = '#06c755';
-                    statusText = '📅 อัปเดตการจอง';
-                    emoji = '📅';
-                    titleText = 'อัปเดตการจอง';
-            }
-
-            // ข้อความเหตุผล (ถ้ามี)
-            const reasonText = booking.rejectionReason ? `เหตุผล: ${booking.rejectionReason}` : '';
-
-            return {
-                type: 'flex',
-                altText: `${emoji} ${titleText}: ${booking.title}`,
-                contents: {
-                    type: 'bubble',
-                    header: {
-                        type: 'box',
-                        layout: 'vertical',
-                        contents: [
-                            {
-                                type: 'text',
-                                text: emoji + ' ' + titleText,
-                                weight: 'bold',
-                                size: 'xl',
-                                color: headerColor
-                            }
-                        ]
-                    },
-                    body: {
-                        type: 'box',
-                        layout: 'vertical',
-                        contents: [
-                            {
-                                type: 'text',
-                                text: booking.roomName,
-                                weight: 'bold',
-                                size: 'lg',
-                                wrap: true
-                            },
-                            {
-                                type: 'text',
-                                text: booking.title,
-                                size: 'md',
-                                color: '#666666',
-                                wrap: true,
-                                margin: 'md'
-                            },
-                            {
-                                type: 'separator',
-                                margin: 'lg'
-                            },
-                            {
-                                type: 'box',
-                                layout: 'vertical',
-                                margin: 'lg',
-                                contents: [
-                                    {
-                                        type: 'box',
-                                        layout: 'horizontal',
-                                        contents: [
-                                            {
-                                                type: 'text',
-                                                text: '📅 วันที่',
-                                                size: 'sm',
-                                                color: '#aaaaaa',
-                                                flex: 2
-                                            },
-                                            {
-                                                type: 'text',
-                                                text: dateStr,
-                                                size: 'sm',
-                                                flex: 5,
-                                                wrap: true
-                                            }
-                                        ]
-                                    },
-                                    {
-                                        type: 'box',
-                                        layout: 'horizontal',
-                                        margin: 'md',
-                                        contents: [
-                                            {
-                                                type: 'text',
-                                                text: '⏰ เวลา',
-                                                size: 'sm',
-                                                color: '#aaaaaa',
-                                                flex: 2
-                                            },
-                                            {
-                                                type: 'text',
-                                                text: timeStr,
-                                                size: 'sm',
-                                                flex: 5
-                                            }
-                                        ]
-                                    },
-                                    {
-                                        type: 'box',
-                                        layout: 'horizontal',
-                                        margin: 'md',
-                                        contents: [
-                                            {
-                                                type: 'text',
-                                                text: '👥 ผู้เข้าร่วม',
-                                                size: 'sm',
-                                                color: '#aaaaaa',
-                                                flex: 2
-                                            },
-                                            {
-                                                type: 'text',
-                                                text: booking.attendees + ' คน',
-                                                size: 'sm',
-                                                flex: 5
-                                            }
-                                        ]
-                                    },
-                                    {
-                                        type: 'box',
-                                        layout: 'horizontal',
-                                        margin: 'md',
-                                        contents: [
-                                            {
-                                                type: 'text',
-                                                text: '📌 สถานะ',
-                                                size: 'sm',
-                                                color: '#aaaaaa',
-                                                flex: 2
-                                            },
-                                            {
-                                                type: 'text',
-                                                text: statusText,
-                                                size: 'sm',
-                                                color: headerColor,
-                                                flex: 5,
-                                                wrap: true
-                                            }
-                                        ]
-                                    }
-                                ]
-                            },
-                            {
-                                type: 'separator',
-                                margin: 'lg'
-                            },
-                            {
-                                type: 'text',
-                                text: '👤 ผู้จอง: ' + booking.userName,
-                                size: 'sm',
-                                color: '#888888',
-                                margin: 'lg'
-                            },
-                            {
-                                type: 'text',
-                                text: '👑 ดำเนินการโดย: ' + adminName,
-                                size: 'sm',
-                                color: '#888888',
-                                margin: 'md'
-                            }
-                        ]
-                    },
-                    footer: {
-                        type: 'box',
-                        layout: 'vertical',
-                        contents: [
-                            {
-                                type: 'button',
-                                action: {
-                                    type: 'uri',
-                                    label: 'ดูรายละเอียด',
-                                    uri: 'https://liff.line.me/' + CONFIG.LIFF_ID
-                                },
-                                style: 'primary',
-                                color: headerColor
-                            }
-                        ]
-                    }
-                }
-            };
-        }
-
-        /**
-         * สร้าง Flex Message สำหรับการแจ้งเตือนการลบห้อง
-         */
-        function createRoomDeleteFlexMessage(room, adminName) {
-            return {
-                type: 'flex',
-                altText: `🗑️ ลบห้องประชุม: ${room.name}`,
-                contents: {
-                    type: 'bubble',
-                    header: {
-                        type: 'box',
-                        layout: 'vertical',
-                        contents: [
-                            {
-                                type: 'text',
-                                text: '🗑️ ลบห้องประชุม',
-                                weight: 'bold',
-                                size: 'xl',
-                                color: '#ef4444'
-                            }
-                        ]
-                    },
-                    body: {
-                        type: 'box',
-                        layout: 'vertical',
-                        contents: [
-                            {
-                                type: 'text',
-                                text: room.name,
-                                weight: 'bold',
-                                size: 'lg',
-                                wrap: true
-                            },
-                            {
-                                type: 'separator',
-                                margin: 'lg'
-                            },
-                            {
-                                type: 'box',
-                                layout: 'vertical',
-                                margin: 'lg',
-                                contents: [
-                                    {
-                                        type: 'box',
-                                        layout: 'horizontal',
-                                        contents: [
-                                            {
-                                                type: 'text',
-                                                text: '📍 สถานที่',
-                                                size: 'sm',
-                                                color: '#aaaaaa',
-                                                flex: 2
-                                            },
-                                            {
-                                                type: 'text',
-                                                text: room.location || '-',
-                                                size: 'sm',
-                                                flex: 5,
-                                                wrap: true
-                                            }
-                                        ]
-                                    },
-                                    {
-                                        type: 'box',
-                                        layout: 'horizontal',
-                                        margin: 'md',
-                                        contents: [
-                                            {
-                                                type: 'text',
-                                                text: '👥 ความจุ',
-                                                size: 'sm',
-                                                color: '#aaaaaa',
-                                                flex: 2
-                                            },
-                                            {
-                                                type: 'text',
-                                                text: room.capacity + ' คน',
-                                                size: 'sm',
-                                                flex: 5
-                                            }
-                                        ]
-                                    }
-                                ]
-                            },
-                            {
-                                type: 'separator',
-                                margin: 'lg'
-                            },
-                            {
-                                type: 'text',
-                                text: '🗑️ ห้องประชุมนี้ถูกลบออกจากระบบแล้ว',
-                                size: 'sm',
-                                color: '#ef4444',
-                                margin: 'lg',
-                                wrap: true
-                            },
-                            {
-                                type: 'text',
-                                text: '👑 ดำเนินการโดย: ' + adminName,
-                                size: 'sm',
-                                color: '#888888',
-                                margin: 'md'
-                            }
-                        ]
-                    }
-                }
-            };
-        }
-
-        /**
-         * สร้าง Flex Message สำหรับการแจ้งเตือนการสร้าง/แก้ไขห้อง
-         */
-        function createRoomUpdateFlexMessage(room, action, adminName) {
-            const isNew = action === 'create';
-            const emoji = isNew ? '🆕' : '✏️';
-            const titleText = isNew ? 'เพิ่มห้องประชุมใหม่' : 'แก้ไขห้องประชุม';
-            const headerColor = isNew ? '#06c755' : '#3b82f6';
-            
-            return {
-                type: 'flex',
-                altText: `${emoji} ${titleText}: ${room.name}`,
-                contents: {
-                    type: 'bubble',
-                    header: {
-                        type: 'box',
-                        layout: 'vertical',
-                        contents: [
-                            {
-                                type: 'text',
-                                text: emoji + ' ' + titleText,
-                                weight: 'bold',
-                                size: 'xl',
-                                color: headerColor
-                            }
-                        ]
-                    },
-                    body: {
-                        type: 'box',
-                        layout: 'vertical',
-                        contents: [
-                            {
-                                type: 'text',
-                                text: room.name,
-                                weight: 'bold',
-                                size: 'lg',
-                                wrap: true
-                            },
-                            {
-                                type: 'separator',
-                                margin: 'lg'
-                            },
-                            {
-                                type: 'box',
-                                layout: 'vertical',
-                                margin: 'lg',
-                                contents: [
-                                    {
-                                        type: 'box',
-                                        layout: 'horizontal',
-                                        contents: [
-                                            {
-                                                type: 'text',
-                                                text: '📍 สถานที่',
-                                                size: 'sm',
-                                                color: '#aaaaaa',
-                                                flex: 2
-                                            },
-                                            {
-                                                type: 'text',
-                                                text: room.location || '-',
-                                                size: 'sm',
-                                                flex: 5,
-                                                wrap: true
-                                            }
-                                        ]
-                                    },
-                                    {
-                                        type: 'box',
-                                        layout: 'horizontal',
-                                        margin: 'md',
-                                        contents: [
-                                            {
-                                                type: 'text',
-                                                text: '👥 ความจุ',
-                                                size: 'sm',
-                                                color: '#aaaaaa',
-                                                flex: 2
-                                            },
-                                            {
-                                                type: 'text',
-                                                text: room.capacity + ' คน',
-                                                size: 'sm',
-                                                flex: 5
-                                            }
-                                        ]
-                                    }
-                                ]
-                            },
-                            {
-                                type: 'separator',
-                                margin: 'lg'
-                            },
-                            {
-                                type: 'text',
-                                text: '👑 ดำเนินการโดย: ' + adminName,
-                                size: 'sm',
-                                color: '#888888',
-                                margin: 'lg'
-                            }
-                        ]
-                    }
-                }
-            };
-        }
-
-        /**
-         * ส่ง Flex Message ไปยังแชท (ใช้ได้ทั้งใน LIFF และ LINE OA)
-         */
-        async function sendFlexMessage(flexMessage) {
-            try {
-                if (!liff.isInClient()) {
-                    console.log('Not in LINE client, cannot send message');
-                    return false;
-                }
-
-                await liff.sendMessages([flexMessage]);
-                console.log('Flex message sent successfully');
-                return true;
-            } catch (error) {
-                console.error('Error sending flex message:', error);
-                return false;
-            }
-        }
-
-        /**
-         * แจ้งเตือนการเปลี่ยนแปลงสถานะการจอง
-         */
-        async function notifyBookingStatusChange(booking, action, adminName = null) {
-            try {
-                // ถ้าไม่มีการระบุชื่อผู้ดำเนินการ ให้ใช้ชื่อผู้ใช้ปัจจุบัน
-                const actorName = adminName || (state.user?.displayName || 'ผู้ดูแลระบบ');
-                
-                const flexMessage = createStatusChangeFlexMessage(booking, action, actorName);
-                
-                // ส่งข้อความไปยังกลุ่มหรือผู้ใช้
-                if (liff.isInClient()) {
-                    await liff.sendMessages([flexMessage]);
-                    console.log(`Booking ${action} notification sent`);
-                }
-                
-                return true;
-            } catch (error) {
-                console.error('Error sending booking status notification:', error);
-                return false;
-            }
-        }
-
-        /**
-         * แจ้งเตือนการเปลี่ยนแปลงห้องประชุม
-         */
-        async function notifyRoomChange(room, action, adminName = null) {
-            try {
-                const actorName = adminName || (state.user?.displayName || 'ผู้ดูแลระบบ');
-                
-                let flexMessage;
-                if (action === 'delete') {
-                    flexMessage = createRoomDeleteFlexMessage(room, actorName);
-                } else {
-                    flexMessage = createRoomUpdateFlexMessage(room, action, actorName);
-                }
-                
-                if (liff.isInClient()) {
-                    await liff.sendMessages([flexMessage]);
-                    console.log(`Room ${action} notification sent`);
-                }
-                
-                return true;
-            } catch (error) {
-                console.error('Error sending room change notification:', error);
-                return false;
-            }
-        }
 
         // ========== CALENDAR FUNCTIONS ==========
         async function loadMonthBookings(year, month) {
@@ -2495,7 +2383,6 @@
             
             let html = '';
             
-            // Previous month days
             for (let i = startDay - 1; i >= 0; i--) {
                 const day = prevMonthLastDay - i;
                 const date = new Date(year, month - 1, day);
@@ -2507,7 +2394,6 @@
                 html += renderCalendarDay(day, true, hasBooking, isToday, dateStr, bookingCount);
             }
             
-            // Current month days
             for (let day = 1; day <= totalDays; day++) {
                 const date = new Date(year, month, day);
                 const dateStr = formatDateForInput(date);
@@ -2520,7 +2406,6 @@
                 html += renderCalendarDay(day, false, hasBooking, isToday, dateStr, bookingCount, isSelected);
             }
             
-            // Next month days
             const totalCells = 42;
             const remainingCells = totalCells - (startDay + totalDays);
             for (let day = 1; day <= remainingCells; day++) {
@@ -2651,10 +2536,12 @@
         };
 
         // ========== LIFF INIT ==========
+        // ========== LIFF INIT ==========
         async function initLIFF() {
             try {
-                // Render from cache immediately for zero-load feel
                 if (state.user) {
+                    state.role = state.user.role || 'user';
+                    updateRoleFlags();
                     updateUserUI(state.user);
                     if (state.rooms.length > 0) {
                         renderRooms();
@@ -2663,29 +2550,56 @@
                 }
 
                 await liff.init({ liffId: CONFIG.LIFF_ID });
+                
+                const urlParams = new URLSearchParams(window.location.search);
+                if (urlParams.has('liff.state')) {
+                    window.history.replaceState({}, document.title, window.location.pathname);
+                }
+                
                 if (!liff.isLoggedIn()) {
-                    liff.login();
+                    liff.login({ 
+                        scope: 'openid email profile',
+                        prompt: 'consent'
+                    });
                     return;
                 }
 
                 const profile = await liff.getProfile();
-                const idToken = liff.getDecodedIDToken();
+                
+                // ดึงข้อมูลผู้ใช้
+                const userData = {
+                    lineUserId: profile.userId,
+                    displayName: profile.displayName,
+                    pictureUrl: profile.pictureUrl || '',
+                    email: '',
+                    source: 'miniapp'
+                };
 
-                // Fetch critical data in parallel (not sequential)
+                // ลองดึงอีเมลจาก ID Token ก่อน
+                const idToken = liff.getIDToken();
+                const tokenPayload = idToken ? parseJwt(idToken) : {};
+                if (tokenPayload.email) {
+                    userData.email = tokenPayload.email;
+                    console.log('Email from ID Token:', tokenPayload.email);
+                }
+
                 const [userResult, roomsResult] = await Promise.all([
-                    callGAS('user/profile', {
-                        lineUserId: profile.userId,
-                        displayName: profile.displayName,
-                        pictureUrl: profile.pictureUrl || '',
-                        email: idToken?.email || ''
-                    }),
+                    callGAS('user/profile', userData),
                     callGAS('rooms')
                 ]);
 
                 if (userResult.success) {
                     state.user = userResult.data;
+                    state.role = state.user.role || 'user';
+                    updateRoleFlags();
                     localStorage.setItem('user_cache', JSON.stringify(state.user));
                     updateUserUI(state.user);
+                    
+                    // ถ้ายังไม่มีอีเมล ให้พยายามดึงอีกครั้ง
+                    if (!state.user.email || state.user.email === '') {
+                        console.log('No email found, attempting to fetch...');
+                        await tryFetchEmail();
+                    }
                 }
 
                 if (roomsResult.success) {
@@ -2694,14 +2608,11 @@
                     renderRooms();
                 }
 
-                // Hide loading as soon as we have fresh critical data
                 $.initLoading.classList.add('hide');
                 state.initialized = true;
 
-                // Initialize Flatpickr
                 initFlatpickr();
 
-                // Load non-critical data in background
                 loadSettings().then(s => {
                     if(s.success) localStorage.setItem('settings_cache', JSON.stringify(state.settings));
                 }).catch(console.warn);
@@ -2718,24 +2629,51 @@
             }
         }
 
-        // Helper function to update user UI
         function updateUserUI(user) {
             if (!user) return;
-            state.isAdmin = user.role === 'admin';
-            state.isManager = state.isAdmin || user.role === 'manager';
             
             $.profileName.textContent = user.displayName || 'ผู้ใช้';
-            $.profileEmail.textContent = user.email || '';
+            
+            if (user.email && user.email !== '') {
+                $.profileEmail.textContent = user.email;
+                $.profileEmail.classList.remove('text-gray-500', 'cursor-pointer');
+            } else {
+                // แสดงข้อความว่ากำลังโหลดอีเมลแทนปุ่มขอสิทธิ์
+                $.profileEmail.innerHTML = '<span class="text-gray-400"><i class="fas fa-spinner fa-spin mr-1"></i>กำลังโหลดอีเมล...</span>';
+            }
+            
             $.profileAvatar.src = user.pictureUrl || 'https://via.placeholder.com/60';
-            $.profileRole.textContent = {
+            
+            const roleText = {
                 admin: '👑 ผู้ดูแลระบบ',
                 manager: '👥 ผู้จัดการ',
                 user: '👤 ผู้ใช้ทั่วไป'
             }[user.role] || '';
+            
+            $.profileRole.textContent = roleText;
 
-            $.adminOnly.forEach(el => {
-                if (state.isAdmin) el.classList.remove('hidden');
+            if ($.userRoleBadge) {
+                $.userRoleBadge.textContent = roleText;
+                if (state.isAdmin || state.isManager) {
+                    $.userRoleBadge.classList.remove('hidden');
+                } else {
+                    $.userRoleBadge.classList.add('hidden');
+                }
+            }
+
+            $.managerAdmin.forEach(el => {
+                if (state.isManager) el.classList.remove('hidden');
                 else el.classList.add('hidden');
+            });
+
+            $.adminOnlyUsers.forEach(el => {
+                if (state.isAdmin) el.style.display = 'block';
+                else el.style.display = 'none';
+            });
+
+            $.adminOnlySettings.forEach(el => {
+                if (state.isAdmin) el.style.display = 'block';
+                else el.style.display = 'none';
             });
 
             if (!state.isAdmin) {
@@ -2744,25 +2682,17 @@
             }
         }
 
-        // โหลดข้อมูลเริ่มต้นที่จำเป็น
         async function loadInitialData() {
             try {
-                // โหลดห้องประชุมก่อน (จำเป็น)
                 const roomsPromise = loadRooms();
-                
-                // โหลดปฏิทินเดือนปัจจุบัน
                 const calendarPromise = loadMonthBookings(
                     state.currentMonth.getFullYear(), 
                     state.currentMonth.getMonth()
                 );
-                
-                // โหลดข้อมูลสถิติวันนี้แบบเบาๆ
                 const statsPromise = loadTodayStats();
                 
-                // รอให้ข้อมูลพื้นฐานโหลดเสร็จ (พร้อมกัน)
                 await Promise.all([roomsPromise, calendarPromise, statsPromise]);
                 
-                // หลังจากได้ข้อมูลพื้นฐานแล้ว ค่อยโหลดการจองของฉัน
                 loadMyBookings().catch(console.warn);
                 
             } catch (error) {
@@ -2770,9 +2700,7 @@
             }
         }
 
-        // โหลดข้อมูลสำหรับ manager/admin แบบ lazy
         function loadManagerData() {
-            // หน่วงเวลาเล็กน้อย เพื่อไม่ให้แย่ง bandwidth กับข้อมูลหลัก
             setTimeout(() => {
                 Promise.all([
                     loadUsers().catch(console.warn),
@@ -2806,7 +2734,6 @@
             );
 
             if (!filtered.length && state.rooms.length === 0) {
-                // ถ้ายังไม่มีข้อมูล ให้แสดง skeleton
                 return;
             }
 
@@ -2989,7 +2916,7 @@
 
                 $.modalBookBtn.onclick = () => showBookingModal(roomId);
 
-                if (state.isAdmin) {
+                if (state.isManager) {
                     $.modalAdminControls.classList.remove('hidden');
                     $.modalEditBtn.disabled = false;
                     $.modalDeleteBtn.disabled = false;
@@ -3032,7 +2959,6 @@
             const endTime = new Date(nextHour);
             endTime.setHours(nextHour.getHours() + 1, 0, 0, 0);
             
-            // รีเซ็ต flatpickr values
             if (state.flatpickrInstances.bookingDate) {
                 state.flatpickrInstances.bookingDate.setDate(formatDateForInput(nextHour), true);
             }
@@ -3046,7 +2972,6 @@
                 state.flatpickrInstances.bookingEnd.setDate(endTime.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' }), true);
             }
             
-            // ตรวจสอบความถูกต้องหลังจากตั้งค่า
             setTimeout(() => {
                 validateBookingForm();
             }, 100);
@@ -3068,7 +2993,6 @@
             
             if (!roomId || !startDate || !endDate || !start || !end) return;
             
-            // ตรวจสอบจำนวนผู้เข้าร่วม
             if (attendees < 1) {
                 $.availabilityStatus.innerHTML = '<span class="text-red-500">⚠️ จำนวนผู้เข้าร่วมต้องมีอย่างน้อย 1 คน</span>';
                 $.availabilityStatus.classList.remove('hidden');
@@ -3086,7 +3010,6 @@
                 return;
             }
             
-            // ตรวจสอบว่าวันที่เริ่มไม่เกินวันที่สิ้นสุด
             if (startDate > endDate) {
                 $.availabilityStatus.innerHTML = '<span class="text-red-500">⚠️ วันที่สิ้นสุดต้องไม่ก่อนวันที่เริ่ม</span>';
                 $.availabilityStatus.classList.remove('hidden');
@@ -3111,7 +3034,6 @@
                 return;
             }
             
-            // ตรวจสอบความจุห้อง
             const selectedRoom = state.rooms.find(r => r.roomId === roomId);
             if (selectedRoom && attendees > selectedRoom.capacity) {
                 $.availabilityStatus.innerHTML = `<span class="text-red-500">⚠️ จำนวนผู้เข้าร่วม (${attendees}) เกินความจุห้อง (${selectedRoom.capacity} คน)</span>`;
@@ -3146,193 +3068,6 @@
             }
         }
 
-        // ========== สร้าง Flex Message สำหรับส่งไปแชท ==========
-        function createBookingFlexMessage(booking) {
-            const startTime = new Date(booking.startTime);
-            const endTime = new Date(booking.endTime);
-            const dateStr = startTime.toLocaleDateString('th-TH', { 
-                weekday: 'long', 
-                year: 'numeric', 
-                month: 'long', 
-                day: 'numeric' 
-            });
-            const timeStr = startTime.toLocaleTimeString('th-TH', { 
-                hour: '2-digit', 
-                minute: '2-digit' 
-            }) + ' - ' + 
-            endTime.toLocaleTimeString('th-TH', { 
-                hour: '2-digit', 
-                minute: '2-digit' 
-            }) + ' น.';
-            
-            const statusColor = booking.status === 'confirmed' ? '#06c755' : '#f59e0b';
-            const statusText = booking.status === 'confirmed' ? '✅ อนุมัติแล้ว' : '⏳ รออนุมัติ';
-
-            return {
-                type: 'flex',
-                altText: `📅 การจอง: ${booking.title}`,
-                contents: {
-                    type: 'bubble',
-                    header: {
-                        type: 'box',
-                        layout: 'vertical',
-                        contents: [
-                            {
-                                type: 'text',
-                                text: '📅 รายละเอียดการจอง',
-                                weight: 'bold',
-                                size: 'xl',
-                                color: '#06c755'
-                            }
-                        ]
-                    },
-                    body: {
-                        type: 'box',
-                        layout: 'vertical',
-                        contents: [
-                            {
-                                type: 'text',
-                                text: booking.roomName,
-                                weight: 'bold',
-                                size: 'lg',
-                                wrap: true
-                            },
-                            {
-                                type: 'text',
-                                text: booking.title,
-                                size: 'md',
-                                color: '#666666',
-                                wrap: true,
-                                margin: 'md'
-                            },
-                            {
-                                type: 'separator',
-                                margin: 'lg'
-                            },
-                            {
-                                type: 'box',
-                                layout: 'vertical',
-                                margin: 'lg',
-                                contents: [
-                                    {
-                                        type: 'box',
-                                        layout: 'horizontal',
-                                        contents: [
-                                            {
-                                                type: 'text',
-                                                text: '📅 วันที่',
-                                                size: 'sm',
-                                                color: '#aaaaaa',
-                                                flex: 2
-                                            },
-                                            {
-                                                type: 'text',
-                                                text: dateStr,
-                                                size: 'sm',
-                                                flex: 5,
-                                                wrap: true
-                                            }
-                                        ]
-                                    },
-                                    {
-                                        type: 'box',
-                                        layout: 'horizontal',
-                                        margin: 'md',
-                                        contents: [
-                                            {
-                                                type: 'text',
-                                                text: '⏰ เวลา',
-                                                size: 'sm',
-                                                color: '#aaaaaa',
-                                                flex: 2
-                                            },
-                                            {
-                                                type: 'text',
-                                                text: timeStr,
-                                                size: 'sm',
-                                                flex: 5
-                                            }
-                                        ]
-                                    },
-                                    {
-                                        type: 'box',
-                                        layout: 'horizontal',
-                                        margin: 'md',
-                                        contents: [
-                                            {
-                                                type: 'text',
-                                                text: '👥 ผู้เข้าร่วม',
-                                                size: 'sm',
-                                                color: '#aaaaaa',
-                                                flex: 2
-                                            },
-                                            {
-                                                type: 'text',
-                                                text: booking.attendees + ' คน',
-                                                size: 'sm',
-                                                flex: 5
-                                            }
-                                        ]
-                                    },
-                                    {
-                                        type: 'box',
-                                        layout: 'horizontal',
-                                        margin: 'md',
-                                        contents: [
-                                            {
-                                                type: 'text',
-                                                text: '📌 สถานะ',
-                                                size: 'sm',
-                                                color: '#aaaaaa',
-                                                flex: 2
-                                            },
-                                            {
-                                                type: 'text',
-                                                text: statusText,
-                                                size: 'sm',
-                                                color: statusColor,
-                                                flex: 5
-                                            }
-                                        ]
-                                    }
-                                ]
-                            },
-                            {
-                                type: 'separator',
-                                margin: 'lg'
-                            },
-                            {
-                                type: 'text',
-                                text: '👤 ผู้จอง: ' + booking.userName,
-                                size: 'sm',
-                                color: '#888888',
-                                margin: 'lg'
-                            }
-                        ]
-                    }
-                }
-            };
-        }
-
-        // ========== ส่ง Flex Message ไปยังแชทอัตโนมัติ ==========
-        async function sendBookingToChat(bookingData) {
-            try {
-                if (!liff.isInClient()) {
-                    console.log('Not in LINE client, cannot send message');
-                    return false;
-                }
-
-                const flexMessage = createBookingFlexMessage(bookingData);
-                await liff.sendMessages([flexMessage]);
-                console.log('Flex message sent successfully');
-                showToast('ส่งข้อมูลการจองไปยังแชทเรียบร้อย');
-                return true;
-            } catch (error) {
-                console.error('Error sending flex message:', error);
-                return false;
-            }
-        }
-
         window.saveBooking = async function(e) {
             e.preventDefault();
             
@@ -3350,7 +3085,6 @@
                 const end = $.bookingEnd.value;
                 const attendees = parseInt($.bookingAttendees.value) || 0;
                 
-                // ตรวจสอบจำนวนผู้เข้าร่วมอีกครั้ง
                 if (attendees < 1) {
                     showToast('จำนวนผู้เข้าร่วมต้องมีอย่างน้อย 1 คน', 'error');
                     setButtonLoading(btn, false);
@@ -3360,14 +3094,12 @@
                 const startDateTime = new Date(`${startDate}T${start}:00`);
                 const endDateTime = new Date(`${endDate}T${end}:00`);
                 
-                // ตรวจสอบว่าวันที่เริ่มไม่เกินวันที่สิ้นสุด
                 if (startDate > endDate) {
                     showToast('วันที่สิ้นสุดต้องไม่ก่อนวันที่เริ่ม', 'error');
                     setButtonLoading(btn, false);
                     return;
                 }
                 
-                // ตรวจสอบความจุห้อง
                 const selectedRoom = state.rooms.find(r => r.roomId === roomId);
                 if (selectedRoom && attendees > selectedRoom.capacity) {
                     showToast(`จำนวนผู้เข้าร่วม (${attendees}) เกินความจุห้อง (${selectedRoom.capacity} คน)`, 'error');
@@ -3403,17 +3135,9 @@
                         loadMonthBookings(state.currentMonth.getFullYear(), state.currentMonth.getMonth())
                     ]);
                     
-                    // ส่งข้อความไปยังแชทอัตโนมัติเมื่อจองสำเร็จ
                     if (!id && result.data?.bookingData) {
                         setTimeout(async () => {
                             await sendBookingToChat(result.data.bookingData);
-                        }, 500);
-                    }
-                    
-                    // ถ้าเป็นการแก้ไข ส่งแจ้งเตือนด้วย
-                    if (id && result.data?.bookingData) {
-                        setTimeout(async () => {
-                            await notifyBookingStatusChange(result.data.bookingData, 'update', state.user?.displayName);
                         }, 500);
                     }
                 } else {
@@ -3427,7 +3151,6 @@
             }
         };
 
-        // ========== SHARE BOOKING VIA SHARE TARGET PICKER ==========
         window.shareBookingViaPicker = async function(bookingId) {
             try {
                 if (!liff.isInClient()) {
@@ -3673,21 +3396,24 @@
 
                 if (apiResult.success) {
                     showToast('ยกเลิกการจองสำเร็จ');
+                    const booking = state.currentBooking || {};
+                    await sendBookingToChat({
+                        title: booking.title,
+                        roomName: booking.roomName,
+                        userName: state.user.displayName,
+                        startTime: booking.startTime,
+                        endTime: booking.endTime,
+                        attendees: booking.attendees,
+                        description: booking.description,
+                        meetingLink: booking.meetingLink,
+                        action: 'cancelled'
+                    });
                     closeBookingDetailModal();
-                    
-                    // ดึงข้อมูลการจองล่าสุดเพื่อส่งแจ้งเตือน
-                    const bookingResult = await callGAS('booking', { bookingId });
-                    if (bookingResult.success) {
-                        await notifyBookingStatusChange(bookingResult.data, 'cancel', state.user?.displayName);
-                    }
-                    
                     await Promise.all([
                         loadMyBookings(), 
                         loadRooms(), 
                         loadTodayStats(),
-                        loadMonthBookings(state.currentMonth.getFullYear(), state.currentMonth.getMonth()),
-                        loadPendingBookings(),
-                        loadAllBookings()
+                        loadMonthBookings(state.currentMonth.getFullYear(), state.currentMonth.getMonth())
                     ]);
                 } else {
                     showToast(apiResult.message || 'ยกเลิกไม่สำเร็จ', 'error');
@@ -3779,13 +3505,18 @@
             
             if (result.success) {
                 showToast('อนุมัติการจองสำเร็จ');
-                
-                // ดึงข้อมูลการจองล่าสุดเพื่อส่งแจ้งเตือน
-                const bookingResult = await callGAS('booking', { bookingId });
-                if (bookingResult.success) {
-                    await notifyBookingStatusChange(bookingResult.data, 'approve', state.user?.displayName);
-                }
-                
+                const booking = state.pendingBookings.find(b => b.bookingId === bookingId) || {};
+                await sendBookingToChat({
+                    title: booking.title,
+                    roomName: booking.roomName,
+                    userName: booking.userName,
+                    startTime: booking.startTime,
+                    endTime: booking.endTime,
+                    attendees: booking.attendees,
+                    description: booking.description,
+                    meetingLink: booking.meetingLink,
+                    action: 'approved'
+                });
                 await Promise.all([
                     loadPendingBookings(), 
                     loadAdminStats(), 
@@ -3822,14 +3553,19 @@
                 
                 if (apiResult.success) {
                     showToast('ปฏิเสธการจองสำเร็จ');
-                    
-                    // ดึงข้อมูลการจองล่าสุดเพื่อส่งแจ้งเตือน
-                    const bookingResult = await callGAS('booking', { bookingId });
-                    if (bookingResult.success) {
-                        bookingResult.data.rejectionReason = result.value;
-                        await notifyBookingStatusChange(bookingResult.data, 'reject', state.user?.displayName);
-                    }
-                    
+                    const booking = state.pendingBookings.find(b => b.bookingId === bookingId) || {};
+                    await sendBookingToChat({
+                        title: booking.title,
+                        roomName: booking.roomName,
+                        userName: booking.userName,
+                        startTime: booking.startTime,
+                        endTime: booking.endTime,
+                        attendees: booking.attendees,
+                        description: booking.description,
+                        meetingLink: booking.meetingLink,
+                        reason: result.value || 'ไม่ระบุเหตุผล',
+                        action: 'rejected'
+                    });
                     await Promise.all([
                         loadPendingBookings(), 
                         loadAdminStats(), 
@@ -3931,12 +3667,19 @@
                         <button class="text-[#06c755] text-xs" onclick="showRoleModal('${u.lineUserId}', '${u.displayName}', '${u.role}')">
                             <i class="fas fa-cog"></i>
                         </button>
+                        <button class="text-red-500 text-xs" onclick="showDeleteUserModal('${u.lineUserId}', '${u.displayName}')">
+                            <i class="fas fa-trash"></i>
+                        </button>
                     ` : ''}
                 </div>
             `).join('');
         }
 
         window.showRoleModal = function(userId, userName, currentRole) {
+            if (!state.isAdmin) {
+                showToast('เฉพาะผู้ดูแลระบบเท่านั้น', 'error');
+                return;
+            }
             document.getElementById('role-user-id').value = userId;
             document.getElementById('role-user-name').textContent = `จัดการสิทธิ์: ${userName}`;
             document.getElementById('user-role').value = currentRole;
@@ -3947,9 +3690,74 @@
             document.getElementById('role-modal').classList.remove('active');
         };
 
+        window.showDeleteUserModal = function(userId, userName) {
+            if (!state.isAdmin) {
+                showToast('เฉพาะผู้ดูแลระบบเท่านั้น', 'error');
+                return;
+            }
+            state.currentUserToDelete = userId;
+            document.getElementById('delete-user-name').textContent = `คุณแน่ใจหรือไม่ว่าต้องการลบผู้ใช้: ${userName}`;
+            document.getElementById('delete-user-modal').classList.add('active');
+        };
+
+        window.closeDeleteUserModal = function() {
+            document.getElementById('delete-user-modal').classList.remove('active');
+            state.currentUserToDelete = null;
+        };
+
+        window.confirmDeleteUser = async function() {
+            if (!state.isAdmin || !state.currentUserToDelete) {
+                closeDeleteUserModal();
+                return;
+            }
+
+            const btn = document.querySelector('#delete-user-modal .btn-danger');
+            setButtonLoading(btn, true);
+
+            try {
+                const result = await callGAS('admin/user/delete', {
+                    targetUserId: state.currentUserToDelete,
+                    lineUserId: state.user.lineUserId
+                });
+
+                if (result.success) {
+                    showToast('ลบผู้ใช้สำเร็จ');
+                    
+                    const deletedUser = state.users.find(u => u.lineUserId === state.currentUserToDelete) || {};
+                    await sendBookingToChat({
+                        title: 'ลบผู้ใช้ออกจากระบบ',
+                        roomName: 'การจัดการผู้ใช้',
+                        userName: state.user.displayName,
+                        startTime: new Date().toISOString(),
+                        endTime: new Date().toISOString(),
+                        description: 'ผู้ใช้ที่ถูกลบ: ' + (deletedUser.displayName || 'ไม่ระบุ') + '\nสิทธิ์เดิม: ' + (deletedUser.role || 'ไม่ระบุ'),
+                        action: 'user_deleted'
+                    });
+
+                    closeDeleteUserModal();
+                    await loadUsers();
+                    await loadAdminStats();
+                } else {
+                    showToast(result.message || 'ลบผู้ใช้ไม่สำเร็จ', 'error');
+                    closeDeleteUserModal();
+                }
+            } catch (error) {
+                console.error('Delete user error:', error);
+                showToast('เกิดข้อผิดพลาด', 'error');
+                closeDeleteUserModal();
+            } finally {
+                setButtonLoading(btn, false);
+            }
+        };
+
         window.saveUserRole = async function(e) {
             e.preventDefault();
             
+            if (!state.isAdmin) {
+                showToast('เฉพาะผู้ดูแลระบบเท่านั้น', 'error');
+                return;
+            }
+
             const userId = document.getElementById('role-user-id').value;
             const role = document.getElementById('user-role').value;
 
@@ -3964,17 +3772,31 @@
 
             if (result.success) {
                 showToast('อัปเดตสิทธิ์สำเร็จ');
+                
+                const targetUser = state.users.find(u => u.lineUserId === userId) || {};
+                const roleNames = { admin: 'ผู้ดูแลระบบ', manager: 'ผู้จัดการ', user: 'ผู้ใช้ทั่วไป' };
+                await sendBookingToChat({
+                    title: 'เปลี่ยนสิทธิ์ผู้ใช้งาน: ' + (targetUser.displayName || 'ไม่ระบุ'),
+                    roomName: 'ระบบจัดการสิทธิ์',
+                    userName: state.user.displayName,
+                    startTime: new Date().toISOString(),
+                    endTime: new Date().toISOString(),
+                    description: 'ผู้ใช้: ' + (targetUser.displayName || 'ไม่ระบุ') + '\nสิทธิ์ใหม่: ' + (roleNames[role] || role),
+                    action: 'role_updated'
+                });
+
                 closeRoleModal();
                 await loadUsers();
                 
                 if (userId === state.user?.lineUserId) {
                     const userResult = await callGAS('user/profile', {
-                        lineUserId: state.user.lineUserId
+                        lineUserId: state.user.lineUserId,
+                        forceEmailFetch: 'true'
                     });
                     if (userResult.success) {
                         state.user = userResult.data;
-                        state.isAdmin = state.user.role === 'admin';
-                        state.isManager = state.isAdmin || state.user.role === 'manager';
+                        state.role = state.user.role || 'user';
+                        updateRoleFlags();
                         
                         $.profileRole.textContent = {
                             admin: '👑 ผู้ดูแลระบบ',
@@ -3982,9 +3804,19 @@
                             user: '👤 ผู้ใช้ทั่วไป'
                         }[state.user.role] || '';
                         
-                        $.adminOnly.forEach(el => {
-                            if (state.isAdmin) el.classList.remove('hidden');
+                        $.managerAdmin.forEach(el => {
+                            if (state.isManager) el.classList.remove('hidden');
                             else el.classList.add('hidden');
+                        });
+
+                        $.adminOnlyUsers.forEach(el => {
+                            if (state.isAdmin) el.style.display = 'block';
+                            else el.style.display = 'none';
+                        });
+
+                        $.adminOnlySettings.forEach(el => {
+                            if (state.isAdmin) el.style.display = 'block';
+                            else el.style.display = 'none';
                         });
                     }
                 }
@@ -4047,16 +3879,6 @@
 
                 if (result.success) {
                     showToast(id ? 'แก้ไขห้องสำเร็จ' : 'เพิ่มห้องสำเร็จ');
-                    
-                    // ส่งแจ้งเตือนการเปลี่ยนแปลงห้อง
-                    if (result.data?.room) {
-                        await notifyRoomChange(
-                            result.data.room, 
-                            id ? 'update' : 'create', 
-                            state.user?.displayName
-                        );
-                    }
-                    
                     closeRoomModal();
                     await loadRooms();
                     await loadRoomsManagement();
@@ -4110,9 +3932,6 @@
                 const deleteBtn = $.modalDeleteBtn;
                 setButtonLoading(deleteBtn, true);
 
-                // เก็บข้อมูลห้องไว้ก่อนลบเพื่อใช้ส่งแจ้งเตือน
-                const roomToDelete = { ...state.currentRoom };
-
                 const apiResult = await callGAS('room/delete', { 
                     roomId: state.currentRoom.roomId,
                     lineUserId: state.user.lineUserId
@@ -4120,10 +3939,16 @@
 
                 if (apiResult.success) {
                     showToast('ลบห้องสำเร็จ');
-                    
-                    // ส่งแจ้งเตือนการลบห้อง
-                    await notifyRoomChange(roomToDelete, 'delete', state.user?.displayName);
-                    
+                    const room = state.currentRoom || {};
+                    await sendBookingToChat({
+                        title: 'ห้องประชุม: ' + (room.name || 'ไม่ระบุ'),
+                        roomName: room.name,
+                        userName: state.user.displayName,
+                        startTime: new Date().toISOString(),
+                        endTime: new Date().toISOString(),
+                        description: 'ห้องประชุมนี้ถูกลบออกจากระบบ การจองทั้งหมดอาจได้รับผลกระทบ',
+                        action: 'deleted'
+                    });
                     closeModal();
                     await loadRooms();
                     await loadRoomsManagement();
@@ -4216,6 +4041,11 @@
         window.saveSettings = async function(e) {
             e.preventDefault();
             
+            if (!state.isAdmin) {
+                showToast('เฉพาะผู้ดูแลระบบเท่านั้น', 'error');
+                return;
+            }
+            
             const appName = document.getElementById('setting-app-name').value.trim() || 'Meeting Room';
             const requireApproval = $.settingRequireApproval ? $.settingRequireApproval.checked : true;
             const reminderMinutes = $.settingReminderMinutes?.value || '30';
@@ -4234,6 +4064,17 @@
             
             if (result.success) {
                 showToast('บันทึกสำเร็จ');
+                
+                await sendBookingToChat({
+                    title: 'อัปเดตการตั้งค่าระบบ',
+                    roomName: 'การตั้งค่า',
+                    userName: state.user.displayName,
+                    startTime: new Date().toISOString(),
+                    endTime: new Date().toISOString(),
+                    description: 'ชื่อแอป: ' + appName + '\nระบบอนุมัติ: ' + (requireApproval ? 'เปิดใช้งาน' : 'ปิดใช้งาน') + '\nแจ้งเตือนล่วงหน้า: ' + reminderMinutes + ' นาที',
+                    action: 'settings_updated'
+                });
+
                 Object.assign(state.settings, data);
                 updateAppName(appName);
             } else {
@@ -4367,17 +4208,19 @@
         document.getElementById('profile-header').addEventListener('click', () => {
             Swal.fire({
                 title: state.user?.displayName,
-                text: state.user?.email,
+                text: state.user?.email || 'ไม่มีอีเมล',
                 showCancelButton: true,
                 confirmButtonText: 'แก้ไขโปรไฟล์',
                 cancelButtonText: 'ออกจากระบบ'
-            }).then(r => {
-                if (r.isConfirmed) showProfileSettings();
-                else if (r.dismiss === Swal.DismissReason.cancel) logout();
+            }).then(async r => {
+                if (r.isConfirmed) {
+                    showProfileSettings();
+                } else if (r.dismiss === Swal.DismissReason.cancel) {
+                    logout();
+                }
             });
         });
 
-        // เพิ่ม event listener สำหรับจำนวนผู้เข้าร่วม
         $.bookingAttendees?.addEventListener('input', () => {
             validateBookingForm();
             checkAvailability();
