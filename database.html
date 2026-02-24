@@ -12,11 +12,16 @@
 <body class="bg-gray-100 p-6">
     <div class="max-w-7xl mx-auto">
         <!-- Header -->
-        <div class="mb-8 flex justify-between items-center">
+        <div class="mb-8 flex flex-wrap gap-4 justify-between items-center">
             <h1 class="text-3xl font-bold text-gray-800">ระบบจัดการข้อมูล Firebase</h1>
-            <button onclick="openModal()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition duration-200">
-                <i class="fas fa-plus"></i> เพิ่มข้อมูล
-            </button>
+            <div class="flex gap-2">
+                <button onclick="addSampleData()" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition duration-200">
+                    <i class="fas fa-database"></i> เพิ่มข้อมูลตัวอย่าง
+                </button>
+                <button onclick="openModal()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition duration-200">
+                    <i class="fas fa-plus"></i> เพิ่มข้อมูล
+                </button>
+            </div>
         </div>
 
         <!-- Connection Status -->
@@ -47,17 +52,11 @@
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">อีเมล</th>
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">แผนก</th>
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">สถานะ</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">วันที่สร้าง</th>
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">จัดการ</th>
                     </tr>
                 </thead>
                 <tbody id="tableBody" class="bg-white divide-y divide-gray-200">
-                    <tr>
-                        <td colspan="7" class="px-6 py-8 text-center text-gray-500">
-                            <i class="fas fa-circle-notch fa-spin text-3xl text-blue-500 mb-2"></i>
-                            <p>กำลังโหลดข้อมูล...</p>
-                        </td>
-                    </tr>
+                    <!-- Data will be shown here -->
                 </tbody>
             </table>
         </div>
@@ -80,12 +79,12 @@
                     
                     <div class="mb-4">
                         <label class="block text-gray-700 text-sm font-bold mb-2">ชื่อ-นามสกุล <span class="text-red-500">*</span></label>
-                        <input type="text" id="name" required class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="เช่น สมชาย ใจดี">
+                        <input type="text" id="name" required class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
                     </div>
                     
                     <div class="mb-4">
                         <label class="block text-gray-700 text-sm font-bold mb-2">อีเมล <span class="text-red-500">*</span></label>
-                        <input type="email" id="email" required class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="example@email.com">
+                        <input type="email" id="email" required class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
                     </div>
                     
                     <div class="mb-4">
@@ -96,14 +95,12 @@
                             <option value="HR">HR</option>
                             <option value="Sales">Sales</option>
                             <option value="Marketing">Marketing</option>
-                            <option value="Finance">Finance</option>
                         </select>
                     </div>
                     
                     <div class="mb-4">
                         <label class="block text-gray-700 text-sm font-bold mb-2">URL รูปภาพ</label>
                         <input type="url" id="avatarUrl" placeholder="https://example.com/image.jpg" class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
-                        <p class="text-xs text-gray-500 mt-1">วางลิงค์รูปภาพสำหรับ Avatar (ไม่บังคับ)</p>
                     </div>
                     
                     <div class="mb-4">
@@ -115,8 +112,8 @@
                     </div>
                     
                     <div class="flex gap-2 justify-end">
-                        <button type="button" onclick="closeModal()" class="px-4 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 transition duration-200">ยกเลิก</button>
-                        <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition duration-200">บันทึก</button>
+                        <button type="button" onclick="closeModal()" class="px-4 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400">ยกเลิก</button>
+                        <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">บันทึก</button>
                     </div>
                 </form>
             </div>
@@ -125,20 +122,17 @@
         <!-- Delete Confirmation Modal -->
         <div id="deleteModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 hidden overflow-y-auto h-full w-full z-50">
             <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-lg bg-white">
-                <div class="text-center">
-                    <i class="fas fa-exclamation-triangle text-yellow-500 text-4xl mb-4"></i>
-                    <h3 class="text-lg font-bold mb-4">ยืนยันการลบข้อมูล</h3>
-                    <p class="mb-4 text-gray-600">คุณต้องการลบข้อมูลนี้ใช่หรือไม่? การกระทำนี้ไม่สามารถเรียกคืนได้</p>
-                </div>
+                <h3 class="text-lg font-bold mb-4">ยืนยันการลบ</h3>
+                <p class="mb-4">คุณต้องการลบข้อมูลนี้ใช่หรือไม่?</p>
                 <div class="flex gap-2 justify-end">
-                    <button onclick="closeDeleteModal()" class="px-4 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 transition duration-200">ยกเลิก</button>
-                    <button onclick="confirmDelete()" class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition duration-200">ยืนยันการลบ</button>
+                    <button onclick="closeDeleteModal()" class="px-4 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400">ยกเลิก</button>
+                    <button onclick="confirmDelete()" class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700">ลบ</button>
                 </div>
             </div>
         </div>
 
         <!-- Toast Notification -->
-        <div id="toast" class="fixed bottom-4 right-4 px-6 py-3 rounded-lg shadow-lg hidden transition-all duration-500 transform translate-y-0">
+        <div id="toast" class="fixed bottom-4 right-4 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg hidden">
             <span id="toastMessage"></span>
         </div>
     </div>
@@ -158,10 +152,10 @@
         // Initialize Firebase
         try {
             firebase.initializeApp(firebaseConfig);
-            console.log("Firebase initialized successfully");
+            console.log("✅ Firebase initialized successfully");
+            console.log("Database URL:", firebaseConfig.databaseURL);
         } catch (error) {
-            console.error("Error initializing Firebase:", error);
-            showConnectionStatus("error", "ไม่สามารถเชื่อมต่อ Firebase ได้: " + error.message);
+            console.error("❌ Error initializing Firebase:", error);
         }
 
         const database = firebase.database();
@@ -175,10 +169,12 @@
         const connectedRef = database.ref('.info/connected');
         connectedRef.on('value', (snap) => {
             if (snap.val() === true) {
-                showConnectionStatus("success", "เชื่อมต่อ Firebase สำเร็จ");
+                console.log("✅ Connected to Firebase");
+                showConnectionStatus("success", "✅ เชื่อมต่อ Firebase สำเร็จ");
                 loadData();
             } else {
-                showConnectionStatus("error", "ไม่สามารถเชื่อมต่อ Firebase ได้");
+                console.log("❌ Disconnected from Firebase");
+                showConnectionStatus("error", "❌ ไม่สามารถเชื่อมต่อ Firebase ได้");
             }
         });
 
@@ -205,11 +201,21 @@
 
         // Load data from Firebase
         function loadData() {
-            showLoading(true);
+            console.log("🔄 Loading data from Firebase...");
+            
+            // Show loading state
+            document.getElementById('tableBody').innerHTML = `
+                <tr>
+                    <td colspan="6" class="px-6 py-8 text-center">
+                        <i class="fas fa-circle-notch fa-spin text-3xl text-blue-500 mb-2"></i>
+                        <p class="text-gray-500">กำลังโหลดข้อมูล...</p>
+                    </td>
+                </tr>
+            `;
             
             dataRef.once('value', (snapshot) => {
                 const data = snapshot.val();
-                console.log("Data loaded:", data);
+                console.log("📦 Data received:", data);
                 
                 currentData = [];
                 
@@ -219,26 +225,21 @@
                         id: key,
                         ...data[key]
                     }));
-                    
-                    // Sort by createdAt descending (newest first)
-                    currentData.sort((a, b) => {
-                        return (b.createdAt || '').localeCompare(a.createdAt || '');
-                    });
+                    console.log(`✅ Loaded ${currentData.length} records`);
+                } else {
+                    console.log("ℹ️ No data found in Firebase");
                 }
                 
                 renderTable();
                 updateDataCount();
-                showLoading(false);
                 
             }, (error) => {
-                console.error("Error loading data:", error);
+                console.error("❌ Error loading data:", error);
                 showToast("เกิดข้อผิดพลาดในการโหลดข้อมูล: " + error.message, "error");
-                showLoading(false);
                 
-                // Show error in table
                 document.getElementById('tableBody').innerHTML = `
                     <tr>
-                        <td colspan="7" class="px-6 py-8 text-center text-red-500">
+                        <td colspan="6" class="px-6 py-8 text-center text-red-500">
                             <i class="fas fa-exclamation-circle text-3xl mb-2"></i>
                             <p>ไม่สามารถโหลดข้อมูลได้: ${error.message}</p>
                             <button onclick="loadData()" class="mt-2 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600">
@@ -274,31 +275,44 @@
             const tbody = document.getElementById('tableBody');
             
             if (filteredData.length === 0) {
-                tbody.innerHTML = `
-                    <tr>
-                        <td colspan="7" class="px-6 py-8 text-center text-gray-500">
-                            <i class="fas fa-inbox text-3xl mb-2 text-gray-400"></i>
-                            <p>ไม่พบข้อมูล</p>
-                            <button onclick="openModal()" class="mt-2 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600">
-                                เพิ่มข้อมูลแรก
-                            </button>
-                        </td>
-                    </tr>
-                `;
+                if (currentData.length === 0) {
+                    tbody.innerHTML = `
+                        <tr>
+                            <td colspan="6" class="px-6 py-8 text-center">
+                                <i class="fas fa-database text-4xl text-gray-400 mb-2"></i>
+                                <p class="text-gray-500 mb-2">ไม่พบข้อมูลใน Firebase</p>
+                                <p class="text-sm text-gray-400 mb-4">คุณสามารถเพิ่มข้อมูลตัวอย่างหรือเพิ่มข้อมูลด้วยตนเอง</p>
+                                <div class="flex gap-2 justify-center">
+                                    <button onclick="addSampleData()" class="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600">
+                                        <i class="fas fa-database mr-2"></i>เพิ่มข้อมูลตัวอย่าง
+                                    </button>
+                                    <button onclick="openModal()" class="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600">
+                                        <i class="fas fa-plus mr-2"></i>เพิ่มข้อมูลเอง
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                    `;
+                } else {
+                    tbody.innerHTML = `
+                        <tr>
+                            <td colspan="6" class="px-6 py-8 text-center text-gray-500">
+                                <i class="fas fa-search text-3xl mb-2"></i>
+                                <p>ไม่พบข้อมูลที่ค้นหา</p>
+                            </td>
+                        </tr>
+                    `;
+                }
                 return;
             }
             
-            tbody.innerHTML = filteredData.map(item => {
-                // Format date
-                const createdDate = item.createdAt ? new Date(item.createdAt).toLocaleDateString('th-TH') : '-';
-                
-                return `
-                <tr class="hover:bg-gray-50 transition duration-150">
+            tbody.innerHTML = filteredData.map(item => `
+                <tr class="hover:bg-gray-50">
                     <td class="px-6 py-4 whitespace-nowrap">
                         ${item.avatarUrl ? 
-                            `<img src="${item.avatarUrl}" alt="avatar" class="h-10 w-10 rounded-full object-cover border-2 border-gray-200" 
-                                onerror="this.onerror=null; this.src='https://ui-avatars.com/api/?name=${encodeURIComponent(item.name || 'User')}&background=random';">` : 
-                            `<div class="h-10 w-10 rounded-full bg-gradient-to-r from-blue-400 to-blue-600 flex items-center justify-center text-white font-bold">
+                            `<img src="${item.avatarUrl}" alt="avatar" class="h-10 w-10 rounded-full object-cover" 
+                                onerror="this.src='https://ui-avatars.com/api/?name=${encodeURIComponent(item.name || 'User')}&background=0D9488&color=fff&bold=true';">` : 
+                            `<div class="h-10 w-10 rounded-full bg-gradient-to-r from-teal-400 to-blue-500 flex items-center justify-center text-white font-bold">
                                 ${item.name ? item.name.charAt(0).toUpperCase() : 'U'}
                             </div>`
                         }
@@ -306,26 +320,25 @@
                     <td class="px-6 py-4 whitespace-nowrap font-medium">${item.name || '-'}</td>
                     <td class="px-6 py-4 whitespace-nowrap">${item.email || '-'}</td>
                     <td class="px-6 py-4 whitespace-nowrap">
-                        <span class="px-2 py-1 bg-blue-100 text-blue-800 rounded-full text-xs font-medium">
+                        <span class="px-2 py-1 bg-blue-100 text-blue-800 rounded-full text-xs">
                             ${item.department || '-'}
                         </span>
                     </td>
                     <td class="px-6 py-4 whitespace-nowrap">
-                        <span class="px-2 py-1 text-xs rounded-full font-medium ${item.status === 'active' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}">
+                        <span class="px-2 py-1 text-xs rounded-full ${item.status === 'active' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}">
                             ${item.status === 'active' ? 'Active' : 'Inactive'}
                         </span>
                     </td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${createdDate}</td>
                     <td class="px-6 py-4 whitespace-nowrap">
-                        <button onclick="editData('${item.id}')" class="text-blue-600 hover:text-blue-900 mr-3 transition duration-200" title="แก้ไข">
+                        <button onclick="editData('${item.id}')" class="text-blue-600 hover:text-blue-900 mr-3">
                             <i class="fas fa-edit"></i>
                         </button>
-                        <button onclick="openDeleteModal('${item.id}')" class="text-red-600 hover:text-red-900 transition duration-200" title="ลบ">
+                        <button onclick="openDeleteModal('${item.id}')" class="text-red-600 hover:text-red-900">
                             <i class="fas fa-trash"></i>
                         </button>
                     </td>
                 </tr>
-            `}).join('');
+            `).join('');
         }
 
         // Update data count
@@ -334,9 +347,55 @@
             document.getElementById('dataCount').innerHTML = `พบข้อมูลทั้งหมด <strong>${count}</strong> รายการ`;
         }
 
+        // Add sample data
+        function addSampleData() {
+            const sampleData = [
+                {
+                    name: "สมชาย ใจดี",
+                    email: "somchai@example.com",
+                    department: "IT",
+                    status: "active",
+                    avatarUrl: "https://ui-avatars.com/api/?name=สมชาย+ใจดี&background=0D9488&color=fff&bold=true",
+                    createdAt: new Date().toISOString()
+                },
+                {
+                    name: "สาวิกา รักเรียน",
+                    email: "sawika@example.com",
+                    department: "HR",
+                    status: "active",
+                    avatarUrl: "https://ui-avatars.com/api/?name=สาวิกา+รักเรียน&background=FF6B6B&color=fff&bold=true",
+                    createdAt: new Date().toISOString()
+                },
+                {
+                    name: "ประชา พัฒนา",
+                    email: "prachya@example.com",
+                    department: "Sales",
+                    status: "inactive",
+                    avatarUrl: "https://ui-avatars.com/api/?name=ประชา+พัฒนา&background=4ECDC4&color=fff&bold=true",
+                    createdAt: new Date().toISOString()
+                }
+            ];
+
+            let count = 0;
+            sampleData.forEach(data => {
+                dataRef.push(data)
+                    .then(() => {
+                        count++;
+                        if (count === sampleData.length) {
+                            showToast(`เพิ่มข้อมูลตัวอย่าง ${count} รายการเรียบร้อย`);
+                            loadData();
+                        }
+                    })
+                    .catch(error => {
+                        console.error("Error adding sample:", error);
+                        showToast("เกิดข้อผิดพลาดในการเพิ่มข้อมูลตัวอย่าง", "error");
+                    });
+            });
+        }
+
         // Modal functions
         function openModal() {
-            document.getElementById('modalTitle').textContent = 'เพิ่มข้อมูลใหม่';
+            document.getElementById('modalTitle').textContent = 'เพิ่มข้อมูล';
             document.getElementById('dataForm').reset();
             document.getElementById('dataId').value = '';
             document.getElementById('modal').classList.remove('hidden');
@@ -352,21 +411,13 @@
             
             const id = document.getElementById('dataId').value;
             const data = {
-                name: document.getElementById('name').value.trim(),
-                email: document.getElementById('email').value.trim(),
+                name: document.getElementById('name').value,
+                email: document.getElementById('email').value,
                 department: document.getElementById('department').value,
-                avatarUrl: document.getElementById('avatarUrl').value.trim() || null,
+                avatarUrl: document.getElementById('avatarUrl').value || null,
                 status: document.getElementById('status').value,
                 updatedAt: new Date().toISOString()
             };
-            
-            // Validate data
-            if (!data.name || !data.email || !data.department) {
-                showToast('กรุณากรอกข้อมูลให้ครบถ้วน', 'error');
-                return;
-            }
-            
-            showLoading(true);
             
             if (id) {
                 // Update
@@ -374,12 +425,11 @@
                     .then(() => {
                         closeModal();
                         showToast('อัปเดตข้อมูลสำเร็จ');
-                        loadData(); // Reload data
+                        loadData();
                     })
                     .catch(error => {
                         console.error("Error updating:", error);
-                        showToast('เกิดข้อผิดพลาดในการอัปเดต: ' + error.message, 'error');
-                        showLoading(false);
+                        showToast('เกิดข้อผิดพลาดในการอัปเดต', 'error');
                     });
             } else {
                 // Create
@@ -388,12 +438,11 @@
                     .then(() => {
                         closeModal();
                         showToast('เพิ่มข้อมูลสำเร็จ');
-                        loadData(); // Reload data
+                        loadData();
                     })
                     .catch(error => {
                         console.error("Error saving:", error);
-                        showToast('เกิดข้อผิดพลาดในการบันทึก: ' + error.message, 'error');
-                        showLoading(false);
+                        showToast('เกิดข้อผิดพลาดในการบันทึก', 'error');
                     });
             }
         }
@@ -426,33 +475,17 @@
 
         function confirmDelete() {
             if (deleteId) {
-                showLoading(true);
                 dataRef.child(deleteId).remove()
                     .then(() => {
                         closeDeleteModal();
                         showToast('ลบข้อมูลสำเร็จ');
-                        loadData(); // Reload data
+                        loadData();
                     })
                     .catch(error => {
                         console.error("Error deleting:", error);
-                        showToast('เกิดข้อผิดพลาดในการลบ: ' + error.message, 'error');
-                        showLoading(false);
+                        showToast('เกิดข้อผิดพลาดในการลบ', 'error');
                         closeDeleteModal();
                     });
-            }
-        }
-
-        // Loading indicator
-        function showLoading(show) {
-            if (show) {
-                document.getElementById('tableBody').innerHTML = `
-                    <tr>
-                        <td colspan="7" class="px-6 py-8 text-center text-gray-500">
-                            <i class="fas fa-circle-notch fa-spin text-3xl text-blue-500 mb-2"></i>
-                            <p>กำลังโหลดข้อมูล...</p>
-                        </td>
-                    </tr>
-                `;
             }
         }
 
@@ -462,7 +495,7 @@
             const toastMessage = document.getElementById('toastMessage');
             
             toastMessage.textContent = message;
-            toast.className = `fixed bottom-4 right-4 px-6 py-3 rounded-lg shadow-lg transition-all duration-500 transform translate-y-0 ${type === 'success' ? 'bg-green-500' : 'bg-red-500'} text-white`;
+            toast.className = `fixed bottom-4 right-4 ${type === 'success' ? 'bg-green-500' : 'bg-red-500'} text-white px-6 py-3 rounded-lg shadow-lg`;
             toast.classList.remove('hidden');
             
             setTimeout(() => {
@@ -487,9 +520,9 @@
             }
         }
 
-        // Load data when page loads
+        // Initial load
         document.addEventListener('DOMContentLoaded', function() {
-            console.log("Page loaded, initializing...");
+            console.log("📱 Page loaded, checking Firebase connection...");
         });
     </script>
 </body>
