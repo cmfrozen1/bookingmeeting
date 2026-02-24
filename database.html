@@ -101,6 +101,19 @@
             box-shadow: 0 0 15px rgba(0, 229, 255, 0.5);
         }
         
+        .db-button-export {
+            background: #2d1b3c;
+            border: 1px solid #9d4edd;
+            color: #e0e4e9;
+        }
+        
+        .db-button-export:hover {
+            background: #4a2b63;
+            border-color: #c77dff;
+            color: #c77dff;
+            box-shadow: 0 0 15px rgba(157, 78, 221, 0.5);
+        }
+        
         .db-input {
             background: #1a1e24;
             border: 1px solid #2f3843;
@@ -166,6 +179,22 @@
             border-radius: 20px;
         }
         
+        .db-dropdown {
+            background: #1a1e24;
+            border: 1px solid #2f3843;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+        }
+        
+        .db-dropdown-item {
+            color: #b0b7c2;
+            transition: all 0.2s;
+        }
+        
+        .db-dropdown-item:hover {
+            background: #252e3a;
+            color: #00e5ff;
+        }
+        
         /* Scrollbar styling */
         ::-webkit-scrollbar {
             width: 8px;
@@ -197,6 +226,17 @@
                 linear-gradient(90deg, rgba(0, 229, 255, 0.05) 1px, transparent 1px);
             background-size: 20px 20px;
         }
+        
+        /* Export animation */
+        @keyframes exportPulse {
+            0% { box-shadow: 0 0 0 0 rgba(157, 78, 221, 0.7); }
+            70% { box-shadow: 0 0 0 10px rgba(157, 78, 221, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(157, 78, 221, 0); }
+        }
+        
+        .export-pulse {
+            animation: exportPulse 2s infinite;
+        }
     </style>
 </head>
 <body class="p-6 min-h-screen db-grid">
@@ -210,6 +250,32 @@
                 <p class="text-cyan-600 text-sm mt-1">Real-time Database · CRUD Operations</p>
             </div>
             <div class="flex gap-3">
+                <!-- Export Dropdown -->
+                <div class="relative" id="exportDropdown">
+                    <button onclick="toggleExportMenu()" class="db-button-export px-4 py-2 rounded-lg flex items-center gap-2 text-sm">
+                        <i class="fas fa-download"></i>
+                        <span>EXPORT</span>
+                        <i class="fas fa-chevron-down text-xs ml-1"></i>
+                    </button>
+                    <div id="exportMenu" class="absolute right-0 mt-2 w-48 db-dropdown rounded-lg overflow-hidden hidden z-50">
+                        <div class="py-1">
+                            <button onclick="exportAllData()" class="db-dropdown-item w-full text-left px-4 py-2 text-sm flex items-center gap-2">
+                                <i class="fas fa-database w-4"></i>
+                                <span>All Collections</span>
+                            </button>
+                            <button onclick="exportCurrentCollection()" class="db-dropdown-item w-full text-left px-4 py-2 text-sm flex items-center gap-2">
+                                <i class="fas fa-table w-4"></i>
+                                <span>Current Collection</span>
+                            </button>
+                            <div class="border-t border-[#2f3843] my-1"></div>
+                            <button onclick="showBackupHistory()" class="db-dropdown-item w-full text-left px-4 py-2 text-sm flex items-center gap-2">
+                                <i class="fas fa-history w-4"></i>
+                                <span>Backup History</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
                 <button onclick="refreshAllData()" class="db-button px-4 py-2 rounded-lg flex items-center gap-2 text-sm">
                     <i class="fas fa-sync-alt text-cyan-400"></i>
                     <span>REFRESH</span>
@@ -240,6 +306,72 @@
 
         <!-- Table Container -->
         <div id="tableContainer" class="space-y-6"></div>
+
+        <!-- Export Preview Modal -->
+        <div id="exportModal" class="fixed inset-0 bg-black bg-opacity-80 hidden overflow-y-auto h-full w-full z-50 backdrop-blur-sm">
+            <div class="relative top-20 mx-auto p-6 border w-[48rem] shadow-2xl rounded-xl db-modal">
+                <div class="flex justify-between items-center mb-6">
+                    <h3 class="text-lg font-bold text-purple-400">
+                        <i class="fas fa-file-export mr-2"></i>EXPORT PREVIEW
+                    </h3>
+                    <button onclick="closeExportModal()" class="text-gray-500 hover:text-purple-400 transition-colors">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                
+                <div class="mb-4 flex justify-between items-center">
+                    <div>
+                        <span class="text-xs text-gray-500">DATA SIZE:</span>
+                        <span id="exportSize" class="ml-2 text-cyan-400 text-sm"></span>
+                    </div>
+                    <div>
+                        <span class="text-xs text-gray-500">RECORDS:</span>
+                        <span id="exportCount" class="ml-2 text-cyan-400 text-sm"></span>
+                    </div>
+                </div>
+                
+                <div class="db-panel p-4 max-h-96 overflow-auto">
+                    <pre id="exportPreview" class="text-xs text-gray-300 font-mono"></pre>
+                </div>
+                
+                <div class="flex gap-3 justify-end mt-6 border-t border-[#2a2f35] pt-4">
+                    <div class="flex-1">
+                        <input type="text" id="exportFilename" class="db-input px-3 py-2 text-sm font-mono w-full" placeholder="filename.json" value="firebase-backup">
+                    </div>
+                    <button type="button" onclick="closeExportModal()" class="db-button px-4 py-2 rounded-lg text-sm">
+                        CANCEL
+                    </button>
+                    <button onclick="downloadExport()" class="db-button-export px-6 py-2 rounded-lg text-sm font-bold flex items-center gap-2">
+                        <i class="fas fa-download"></i>
+                        DOWNLOAD
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Backup History Modal -->
+        <div id="historyModal" class="fixed inset-0 bg-black bg-opacity-80 hidden overflow-y-auto h-full w-full z-50 backdrop-blur-sm">
+            <div class="relative top-20 mx-auto p-6 border w-[40rem] shadow-2xl rounded-xl db-modal">
+                <div class="flex justify-between items-center mb-6">
+                    <h3 class="text-lg font-bold text-purple-400">
+                        <i class="fas fa-history mr-2"></i>BACKUP HISTORY
+                    </h3>
+                    <button onclick="closeHistoryModal()" class="text-gray-500 hover:text-purple-400 transition-colors">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                
+                <div id="backupList" class="space-y-2 max-h-96 overflow-auto">
+                    <!-- Backup items will be added here -->
+                </div>
+                
+                <div class="flex justify-end mt-6 border-t border-[#2a2f35] pt-4">
+                    <button onclick="clearBackupHistory()" class="db-button px-4 py-2 rounded-lg text-sm text-red-400">
+                        CLEAR HISTORY
+                    </button>
+                </div>
+            </div>
+        </div>
 
         <!-- Add/Edit Modal -->
         <div id="modal" class="fixed inset-0 bg-black bg-opacity-80 hidden overflow-y-auto h-full w-full z-50 backdrop-blur-sm">
@@ -353,6 +485,9 @@
         let collections = [];
         let currentDelete = { collection: null, key: null };
         let currentImageUrl = '';
+        let currentCollection = null;
+        let exportData = null;
+        let backupHistory = JSON.parse(localStorage.getItem('firebaseBackupHistory') || '[]');
 
         // Check connection
         const connectedRef = database.ref('.info/connected');
@@ -607,9 +742,15 @@
                                 <i class="fas ${getCollectionIcon(collection)} mr-2"></i>${collection}
                                 <span class="ml-3 text-xs font-normal text-gray-500">${keys.length} RECORDS</span>
                             </h2>
-                            <button onclick="event.stopPropagation(); openAddModal('${collection}')" class="db-button px-3 py-1 rounded text-xs">
-                                <i class="fas fa-plus mr-1"></i>ADD
-                            </button>
+                            <div class="flex gap-2">
+                                <button onclick="event.stopPropagation(); exportCollection('${collection}')" class="db-button-export px-3 py-1 rounded text-xs flex items-center gap-1">
+                                    <i class="fas fa-download"></i>
+                                    <span>EXPORT</span>
+                                </button>
+                                <button onclick="openAddModal('${collection}')" class="db-button px-3 py-1 rounded text-xs">
+                                    <i class="fas fa-plus mr-1"></i>ADD
+                                </button>
+                            </div>
                         </div>
                         <div class="overflow-x-auto">
                             <table class="db-table min-w-full divide-y divide-[#2a2f35]">
@@ -634,6 +775,178 @@
             return avatarFields.some(af => field.toLowerCase().includes(af.toLowerCase()));
         }
 
+        // Export Functions
+        function toggleExportMenu() {
+            const menu = document.getElementById('exportMenu');
+            menu.classList.toggle('hidden');
+            
+            // Close menu when clicking outside
+            if (!menu.classList.contains('hidden')) {
+                setTimeout(() => {
+                    document.addEventListener('click', closeExportMenuOnClickOutside);
+                }, 100);
+            }
+        }
+
+        function closeExportMenuOnClickOutside(event) {
+            const dropdown = document.getElementById('exportDropdown');
+            const menu = document.getElementById('exportMenu');
+            
+            if (!dropdown.contains(event.target)) {
+                menu.classList.add('hidden');
+                document.removeEventListener('click', closeExportMenuOnClickOutside);
+            }
+        }
+
+        function exportAllData() {
+            exportData = allData;
+            showExportModal('Complete Database Backup', allData);
+            addToBackupHistory('full', new Date().toISOString(), Object.keys(allData).length);
+        }
+
+        function exportCurrentCollection() {
+            if (!currentCollection) {
+                showToast('NO COLLECTION SELECTED', 'error');
+                return;
+            }
+            
+            const collectionData = { [currentCollection]: allData[currentCollection] };
+            exportData = collectionData;
+            showExportModal(`Collection: ${currentCollection}`, collectionData);
+            addToBackupHistory(currentCollection, new Date().toISOString(), 
+                allData[currentCollection] ? Object.keys(allData[currentCollection]).length : 0);
+        }
+
+        function exportCollection(collection) {
+            const collectionData = { [collection]: allData[collection] };
+            exportData = collectionData;
+            showExportModal(`Collection: ${collection}`, collectionData);
+            addToBackupHistory(collection, new Date().toISOString(), 
+                allData[collection] ? Object.keys(allData[collection]).length : 0);
+        }
+
+        function showExportModal(title, data) {
+            document.getElementById('exportModal').classList.remove('hidden');
+            
+            // Update preview
+            const jsonString = JSON.stringify(data, null, 2);
+            document.getElementById('exportPreview').textContent = jsonString;
+            
+            // Calculate size
+            const size = new Blob([jsonString]).size;
+            const sizeText = size < 1024 ? `${size} B` : 
+                            size < 1048576 ? `${(size / 1024).toFixed(2)} KB` : 
+                            `${(size / 1048576).toFixed(2)} MB`;
+            document.getElementById('exportSize').textContent = sizeText;
+            
+            // Count records
+            let recordCount = 0;
+            Object.keys(data).forEach(collection => {
+                recordCount += Object.keys(data[collection] || {}).length;
+            });
+            document.getElementById('exportCount').textContent = recordCount;
+            
+            // Set filename
+            const date = new Date().toISOString().slice(0, 19).replace(/:/g, '-');
+            document.getElementById('exportFilename').value = `firebase-${title.toLowerCase().replace(/\s+/g, '-')}-${date}`;
+        }
+
+        function closeExportModal() {
+            document.getElementById('exportModal').classList.add('hidden');
+            exportData = null;
+        }
+
+        function downloadExport() {
+            if (!exportData) return;
+            
+            const filename = document.getElementById('exportFilename').value || 'firebase-backup';
+            const jsonString = JSON.stringify(exportData, null, 2);
+            const blob = new Blob([jsonString], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `${filename}.json`;
+            a.click();
+            
+            URL.revokeObjectURL(url);
+            closeExportModal();
+            showToast('EXPORT COMPLETED', 'success');
+        }
+
+        // Backup History Functions
+        function addToBackupHistory(type, timestamp, count) {
+            const backup = {
+                id: Date.now(),
+                type: type,
+                timestamp: timestamp,
+                count: count,
+                filename: `firebase-${type}-${new Date(timestamp).toISOString().slice(0,19).replace(/:/g,'-')}.json`
+            };
+            
+            backupHistory.unshift(backup);
+            if (backupHistory.length > 20) backupHistory.pop(); // Keep last 20 backups
+            
+            localStorage.setItem('firebaseBackupHistory', JSON.stringify(backupHistory));
+        }
+
+        function showBackupHistory() {
+            const list = document.getElementById('backupList');
+            
+            if (backupHistory.length === 0) {
+                list.innerHTML = '<p class="text-gray-500 text-center py-8">NO BACKUP HISTORY</p>';
+            } else {
+                list.innerHTML = backupHistory.map(backup => `
+                    <div class="db-panel p-3 flex justify-between items-center">
+                        <div>
+                            <p class="text-sm text-cyan-400">${backup.type}</p>
+                            <p class="text-xs text-gray-500">${new Date(backup.timestamp).toLocaleString('th-TH')}</p>
+                            <p class="text-xs text-gray-600">${backup.count} records</p>
+                        </div>
+                        <div class="flex gap-2">
+                            <button onclick="downloadBackup('${backup.id}')" class="text-cyan-400 hover:text-cyan-300">
+                                <i class="fas fa-download"></i>
+                            </button>
+                            <button onclick="removeBackup('${backup.id}')" class="text-red-400 hover:text-red-300">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
+                    </div>
+                `).join('');
+            }
+            
+            document.getElementById('historyModal').classList.remove('hidden');
+        }
+
+        function downloadBackup(id) {
+            const backup = backupHistory.find(b => b.id == id);
+            if (!backup) return;
+            
+            // In a real app, you would retrieve the actual backup data
+            // For now, we'll just show a message
+            showToast('BACKUP DATA WOULD BE DOWNLOADED', 'info');
+        }
+
+        function removeBackup(id) {
+            backupHistory = backupHistory.filter(b => b.id != id);
+            localStorage.setItem('firebaseBackupHistory', JSON.stringify(backupHistory));
+            showBackupHistory(); // Refresh
+            showToast('BACKUP REMOVED FROM HISTORY', 'info');
+        }
+
+        function clearBackupHistory() {
+            if (confirm('Clear all backup history?')) {
+                backupHistory = [];
+                localStorage.removeItem('firebaseBackupHistory');
+                closeHistoryModal();
+                showToast('HISTORY CLEARED', 'info');
+            }
+        }
+
+        function closeHistoryModal() {
+            document.getElementById('historyModal').classList.add('hidden');
+        }
+
         function showLargeImage(url) {
             currentImageUrl = url;
             document.getElementById('largeImage').src = url;
@@ -646,6 +959,8 @@
         }
 
         function showCollection(collection) {
+            currentCollection = collection;
+            
             document.querySelectorAll('.collection-table').forEach(el => {
                 el.classList.add('hidden');
             });
@@ -959,6 +1274,8 @@
             const modal = document.getElementById('modal');
             const deleteModal = document.getElementById('deleteModal');
             const imageModal = document.getElementById('imageModal');
+            const exportModal = document.getElementById('exportModal');
+            const historyModal = document.getElementById('historyModal');
             
             if (event.target === modal) {
                 closeModal();
@@ -968,6 +1285,12 @@
             }
             if (event.target === imageModal) {
                 closeImageModal();
+            }
+            if (event.target === exportModal) {
+                closeExportModal();
+            }
+            if (event.target === historyModal) {
+                closeHistoryModal();
             }
         }
     </script>
