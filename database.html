@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ระบบจัดการข้อมูล Firebase - แสดงข้อมูลจริง</title>
+    <title>ระบบแสดงข้อมูล Firebase - แยกตามตาราง</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
@@ -12,102 +12,107 @@
 <body class="bg-gray-100 p-6">
     <div class="max-w-7xl mx-auto">
         <!-- Header -->
-        <div class="mb-8 flex flex-wrap gap-4 justify-between items-center">
-            <h1 class="text-3xl font-bold text-gray-800">ระบบจัดการข้อมูล Firebase</h1>
-            <div class="flex gap-2">
-                <button onclick="refreshData()" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition duration-200">
-                    <i class="fas fa-sync-alt"></i> รีเฟรชข้อมูล
-                </button>
-            </div>
+        <div class="mb-8 flex justify-between items-center">
+            <h1 class="text-3xl font-bold text-gray-800">ระบบแสดงข้อมูล Firebase</h1>
+            <button onclick="loadAllData()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center gap-2">
+                <i class="fas fa-sync-alt"></i> โหลดข้อมูล
+            </button>
         </div>
 
-        <!-- Database Overview -->
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-            <div class="bg-white rounded-lg shadow p-4">
-                <h3 class="font-bold text-gray-700 mb-2 flex items-center">
-                    <i class="fas fa-database text-blue-500 mr-2"></i>Settings
-                </h3>
-                <p id="settingsCount" class="text-2xl font-bold text-blue-600">0</p>
-                <p class="text-sm text-gray-500">รายการ</p>
-            </div>
-            <div class="bg-white rounded-lg shadow p-4">
-                <h3 class="font-bold text-gray-700 mb-2 flex items-center">
-                    <i class="fas fa-users text-green-500 mr-2"></i>Users (ตัวใหญ่)
-                </h3>
-                <p id="usersBigCount" class="text-2xl font-bold text-green-600">0</p>
-                <p class="text-sm text-gray-500">รายการ</p>
-            </div>
-            <div class="bg-white rounded-lg shadow p-4">
-                <h3 class="font-bold text-gray-700 mb-2 flex items-center">
-                    <i class="fas fa-user text-purple-500 mr-2"></i>users (ตัวเล็ก)
-                </h3>
-                <p id="usersSmallCount" class="text-2xl font-bold text-purple-600">0</p>
-                <p class="text-sm text-gray-500">รายการ</p>
-            </div>
+        <!-- Tabs -->
+        <div class="mb-4 border-b border-gray-200">
+            <ul class="flex flex-wrap -mb-px text-sm font-medium text-center" id="tabs">
+                <li class="mr-2">
+                    <button onclick="showTab('settings')" class="inline-block p-4 border-b-2 border-transparent rounded-t-lg hover:text-gray-600 hover:border-gray-300" id="tab-settings">Settings</button>
+                </li>
+                <li class="mr-2">
+                    <button onclick="showTab('users-big')" class="inline-block p-4 border-b-2 border-transparent rounded-t-lg hover:text-gray-600 hover:border-gray-300" id="tab-users-big">Users (ตัวใหญ่)</button>
+                </li>
+                <li class="mr-2">
+                    <button onclick="showTab('users-small')" class="inline-block p-4 border-b-2 border-transparent rounded-t-lg hover:text-gray-600 hover:border-gray-300" id="tab-users-small">users (ตัวเล็ก)</button>
+                </li>
+                <li class="mr-2">
+                    <button onclick="showTab('raw')" class="inline-block p-4 border-b-2 border-transparent rounded-t-lg hover:text-gray-600 hover:border-gray-300" id="tab-raw">ข้อมูลดิบ</button>
+                </li>
+            </ul>
         </div>
 
-        <!-- Raw Data Display -->
-        <div class="bg-white rounded-lg shadow overflow-hidden mb-6">
-            <div class="bg-gray-50 px-6 py-3 border-b flex justify-between items-center">
-                <h2 class="font-bold text-gray-700">ข้อมูลดิบจาก Firebase</h2>
-                <div class="flex gap-2">
-                    <select id="collectionSelect" class="text-sm border rounded px-2 py-1">
-                        <option value="all">ทั้งหมด</option>
-                        <option value="Settings">Settings</option>
-                        <option value="Users">Users (ตัวใหญ่)</option>
-                        <option value="users">users (ตัวเล็ก)</option>
-                    </select>
+        <!-- Settings Tab -->
+        <div id="settings-tab" class="tab-content hidden">
+            <div class="bg-white rounded-lg shadow overflow-hidden">
+                <div class="bg-blue-50 px-6 py-3 border-b">
+                    <h2 class="font-bold text-blue-800">Settings Configuration</h2>
+                </div>
+                <div class="p-6" id="settings-content">
+                    กำลังโหลด...
                 </div>
             </div>
-            <div class="p-4 bg-gray-50 font-mono text-sm overflow-auto max-h-96" id="rawData">
-                <pre class="text-gray-600">กำลังโหลดข้อมูล...</pre>
+        </div>
+
+        <!-- Users Big Tab (Uxxxxx format) -->
+        <div id="users-big-tab" class="tab-content hidden">
+            <div class="bg-white rounded-lg shadow overflow-hidden">
+                <div class="bg-green-50 px-6 py-3 border-b flex justify-between items-center">
+                    <h2 class="font-bold text-green-800">Users (ตัวใหญ่) - รายชื่อผู้ใช้</h2>
+                    <span id="users-big-count" class="bg-green-200 text-green-800 px-3 py-1 rounded-full text-sm">0 รายการ</span>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">UID</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">อีเมล</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">ชื่อ</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">รูปภาพ</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">บทบาท</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">สร้างเมื่อ</th>
+                            </tr>
+                        </thead>
+                        <tbody id="users-big-table" class="bg-white divide-y divide-gray-200">
+                            <tr><td colspan="6" class="px-6 py-4 text-center">กำลังโหลด...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
             </div>
         </div>
 
-        <!-- Users Table (ตัวใหญ่) -->
-        <div class="bg-white rounded-lg shadow overflow-hidden mb-6">
-            <div class="bg-green-50 px-6 py-3 border-b">
-                <h2 class="font-bold text-green-800 flex items-center">
-                    <i class="fas fa-users mr-2"></i>Users (ตัวใหญ่) - UID Format
-                </h2>
-            </div>
-            <div class="overflow-x-auto">
-                <table class="min-w-full divide-y divide-gray-200">
-                    <thead class="bg-gray-50">
-                        <tr>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">UID</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">ข้อมูล</th>
-                        </tr>
-                    </thead>
-                    <tbody id="usersBigTable" class="bg-white divide-y divide-gray-200">
-                        <tr><td colspan="2" class="px-6 py-4 text-center text-gray-500">กำลังโหลด...</td></tr>
-                    </tbody>
-                </table>
+        <!-- Users Small Tab (-Oxxxx format) -->
+        <div id="users-small-tab" class="tab-content hidden">
+            <div class="bg-white rounded-lg shadow overflow-hidden">
+                <div class="bg-purple-50 px-6 py-3 border-b flex justify-between items-center">
+                    <h2 class="font-bold text-purple-800">users (ตัวเล็ก) - รายชื่อผู้ใช้</h2>
+                    <span id="users-small-count" class="bg-purple-200 text-purple-800 px-3 py-1 rounded-full text-sm">0 รายการ</span>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">ID</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">ชื่อ-นามสกุล</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">อีเมล</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">แผนก</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">สถานะ</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Avatar</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">สร้างเมื่อ</th>
+                            </tr>
+                        </thead>
+                        <tbody id="users-small-table" class="bg-white divide-y divide-gray-200">
+                            <tr><td colspan="7" class="px-6 py-4 text-center">กำลังโหลด...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
             </div>
         </div>
 
-        <!-- Users Table (ตัวเล็ก) -->
-        <div class="bg-white rounded-lg shadow overflow-hidden">
-            <div class="bg-purple-50 px-6 py-3 border-b">
-                <h2 class="font-bold text-purple-800 flex items-center">
-                    <i class="fas fa-user mr-2"></i>users (ตัวเล็ก) - Push ID Format
-                </h2>
-            </div>
-            <div class="overflow-x-auto">
-                <table class="min-w-full divide-y divide-gray-200">
-                    <thead class="bg-gray-50">
-                        <tr>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">ID</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">ชื่อ</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">อีเมล</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">แผนก</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">สถานะ</th>
-                        </tr>
-                    </thead>
-                    <tbody id="usersSmallTable" class="bg-white divide-y divide-gray-200">
-                        <tr><td colspan="5" class="px-6 py-4 text-center text-gray-500">กำลังโหลด...</td></tr>
-                    </tbody>
-                </table>
+        <!-- Raw Data Tab -->
+        <div id="raw-tab" class="tab-content hidden">
+            <div class="bg-white rounded-lg shadow overflow-hidden">
+                <div class="bg-gray-50 px-6 py-3 border-b">
+                    <h2 class="font-bold text-gray-700">ข้อมูลดิบจาก Firebase (JSON)</h2>
+                </div>
+                <div class="p-4 bg-gray-50 font-mono text-sm overflow-auto max-h-96" id="raw-content">
+                    <pre class="text-gray-600">กำลังโหลด...</pre>
+                </div>
             </div>
         </div>
     </div>
@@ -134,101 +139,110 @@
 
         const database = firebase.database();
 
-        // Load all data when page loads
+        // Load data when page loads
         document.addEventListener('DOMContentLoaded', function() {
-            console.log("📱 Page loaded, fetching data...");
             loadAllData();
+            showTab('users-big'); // แสดง Users (ตัวใหญ่) ก่อน
         });
 
         function loadAllData() {
             console.log("🔄 Loading all data from Firebase...");
             
-            // Get root reference
             const rootRef = database.ref();
             
             rootRef.once('value', (snapshot) => {
                 const data = snapshot.val();
-                console.log("📦 Complete data from Firebase:", data);
+                console.log("📦 Data loaded:", data);
                 
                 if (data) {
-                    // Update counts
-                    updateCounts(data);
+                    // แสดง Settings
+                    displaySettings(data.Settings);
                     
-                    // Show raw data
-                    displayRawData(data);
-                    
-                    // Display Users (ตัวใหญ่)
+                    // แสดง Users (ตัวใหญ่)
                     if (data.Users) {
                         displayUsersBig(data.Users);
                     } else {
-                        document.getElementById('usersBigTable').innerHTML = '<tr><td colspan="2" class="px-6 py-4 text-center text-gray-500">ไม่พบข้อมูลใน Users</td></tr>';
+                        document.getElementById('users-big-table').innerHTML = '<tr><td colspan="6" class="px-6 py-4 text-center text-gray-500">ไม่พบข้อมูลใน Users</td></tr>';
+                        document.getElementById('users-big-count').textContent = '0 รายการ';
                     }
                     
-                    // Display users (ตัวเล็ก)
+                    // แสดง users (ตัวเล็ก)
                     if (data.users) {
                         displayUsersSmall(data.users);
                     } else {
-                        document.getElementById('usersSmallTable').innerHTML = '<tr><td colspan="5" class="px-6 py-4 text-center text-gray-500">ไม่พบข้อมูลใน users</td></tr>';
+                        document.getElementById('users-small-table').innerHTML = '<tr><td colspan="7" class="px-6 py-4 text-center text-gray-500">ไม่พบข้อมูลใน users</td></tr>';
+                        document.getElementById('users-small-count').textContent = '0 รายการ';
                     }
                     
-                    // Show Settings if exists
-                    if (data.Settings) {
-                        console.log("Settings found:", data.Settings);
-                    }
+                    // แสดงข้อมูลดิบ
+                    displayRawData(data);
                 } else {
-                    console.log("ℹ️ No data found in database");
-                    document.getElementById('rawData').innerHTML = '<pre class="text-gray-500">ไม่พบข้อมูลในฐานข้อมูล</pre>';
+                    showNoData();
                 }
                 
             }, (error) => {
-                console.error("❌ Error loading data:", error);
-                document.getElementById('rawData').innerHTML = `<pre class="text-red-500">Error: ${error.message}</pre>`;
+                console.error("❌ Error:", error);
+                showError(error.message);
             });
         }
 
-        function updateCounts(data) {
-            // Settings count
-            const settingsCount = data.Settings ? Object.keys(data.Settings).length : 0;
-            document.getElementById('settingsCount').textContent = settingsCount;
+        function displaySettings(settings) {
+            const content = document.getElementById('settings-content');
             
-            // Users (ตัวใหญ่) count
-            const usersBigCount = data.Users ? Object.keys(data.Users).length : 0;
-            document.getElementById('usersBigCount').textContent = usersBigCount;
-            
-            // users (ตัวเล็ก) count
-            const usersSmallCount = data.users ? Object.keys(data.users).length : 0;
-            document.getElementById('usersSmallCount').textContent = usersSmallCount;
-        }
-
-        function displayRawData(data) {
-            const rawDiv = document.getElementById('rawData');
-            const selectedCollection = document.getElementById('collectionSelect').value;
-            
-            let displayData = data;
-            if (selectedCollection !== 'all') {
-                displayData = { [selectedCollection]: data[selectedCollection] };
+            if (!settings) {
+                content.innerHTML = '<p class="text-gray-500 text-center py-4">ไม่พบข้อมูล Settings</p>';
+                return;
             }
             
-            rawDiv.innerHTML = `<pre class="text-gray-700">${JSON.stringify(displayData, null, 2)}</pre>`;
+            let html = '<div class="grid grid-cols-1 md:grid-cols-2 gap-4">';
+            
+            Object.keys(settings).forEach(key => {
+                const value = settings[key];
+                html += `
+                    <div class="border rounded-lg p-4">
+                        <h3 class="font-bold text-gray-700 mb-2">${key}</h3>
+                        <pre class="bg-gray-50 p-2 rounded text-sm">${JSON.stringify(value, null, 2)}</pre>
+                    </div>
+                `;
+            });
+            
+            html += '</div>';
+            content.innerHTML = html;
         }
 
-        function displayUsersBig(usersData) {
-            const tbody = document.getElementById('usersBigTable');
+        function displayUsersBig(users) {
+            const tbody = document.getElementById('users-big-table');
+            const count = Object.keys(users).length;
             
-            if (!usersData || Object.keys(usersData).length === 0) {
-                tbody.innerHTML = '<tr><td colspan="2" class="px-6 py-4 text-center text-gray-500">ไม่มีข้อมูล</td></tr>';
+            document.getElementById('users-big-count').textContent = `${count} รายการ`;
+            
+            if (count === 0) {
+                tbody.innerHTML = '<tr><td colspan="6" class="px-6 py-4 text-center text-gray-500">ไม่มีข้อมูล</td></tr>';
                 return;
             }
             
             let html = '';
-            Object.keys(usersData).forEach(uid => {
-                const user = usersData[uid];
+            Object.keys(users).forEach(uid => {
+                const user = users[uid];
+                const created = user.createdAt ? new Date(user.createdAt).toLocaleString('th-TH') : '-';
+                
                 html += `
                     <tr class="hover:bg-gray-50">
                         <td class="px-6 py-4 whitespace-nowrap font-mono text-xs">${uid}</td>
-                        <td class="px-6 py-4">
-                            <pre class="text-xs text-gray-600">${JSON.stringify(user, null, 2)}</pre>
+                        <td class="px-6 py-4 whitespace-nowrap">${user.email || '-'}</td>
+                        <td class="px-6 py-4 whitespace-nowrap">${user.displayName || user.name || '-'}</td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            ${user.photoURL ? 
+                                `<img src="${user.photoURL}" class="h-8 w-8 rounded-full object-cover" onerror="this.src='https://ui-avatars.com/api/?name=${encodeURIComponent(user.displayName || 'User')}'">` : 
+                                '<span class="text-gray-400">ไม่มีรูป</span>'
+                            }
                         </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <span class="px-2 py-1 text-xs rounded-full ${user.role === 'admin' ? 'bg-purple-100 text-purple-800' : 'bg-gray-100 text-gray-800'}">
+                                ${user.role || 'user'}
+                            </span>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${created}</td>
                     </tr>
                 `;
             });
@@ -236,28 +250,44 @@
             tbody.innerHTML = html;
         }
 
-        function displayUsersSmall(usersData) {
-            const tbody = document.getElementById('usersSmallTable');
+        function displayUsersSmall(users) {
+            const tbody = document.getElementById('users-small-table');
+            const count = Object.keys(users).length;
             
-            if (!usersData || Object.keys(usersData).length === 0) {
-                tbody.innerHTML = '<tr><td colspan="5" class="px-6 py-4 text-center text-gray-500">ไม่มีข้อมูล</td></tr>';
+            document.getElementById('users-small-count').textContent = `${count} รายการ`;
+            
+            if (count === 0) {
+                tbody.innerHTML = '<tr><td colspan="7" class="px-6 py-4 text-center text-gray-500">ไม่มีข้อมูล</td></tr>';
                 return;
             }
             
             let html = '';
-            Object.keys(usersData).forEach(id => {
-                const user = usersData[id];
+            Object.keys(users).forEach(id => {
+                const user = users[id];
+                const created = user.createdAt ? new Date(user.createdAt).toLocaleString('th-TH') : '-';
+                
                 html += `
                     <tr class="hover:bg-gray-50">
                         <td class="px-6 py-4 whitespace-nowrap font-mono text-xs">${id.substring(0, 8)}...</td>
-                        <td class="px-6 py-4 whitespace-nowrap">${user.name || '-'}</td>
+                        <td class="px-6 py-4 whitespace-nowrap font-medium">${user.name || '-'}</td>
                         <td class="px-6 py-4 whitespace-nowrap">${user.email || '-'}</td>
-                        <td class="px-6 py-4 whitespace-nowrap">${user.department || '-'}</td>
                         <td class="px-6 py-4 whitespace-nowrap">
-                            <span class="px-2 py-1 text-xs rounded-full ${user.status === 'active' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}">
-                                ${user.status || 'N/A'}
+                            <span class="px-2 py-1 bg-blue-100 text-blue-800 rounded-full text-xs">
+                                ${user.department || '-'}
                             </span>
                         </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <span class="px-2 py-1 text-xs rounded-full ${user.status === 'active' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}">
+                                ${user.status || 'inactive'}
+                            </span>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            ${user.avatarUrl ? 
+                                `<img src="${user.avatarUrl}" class="h-8 w-8 rounded-full object-cover" onerror="this.src='https://ui-avatars.com/api/?name=${encodeURIComponent(user.name || 'User')}'">` : 
+                                '<span class="text-gray-400">ไม่มีรูป</span>'
+                            }
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${created}</td>
                     </tr>
                 `;
             });
@@ -265,26 +295,64 @@
             tbody.innerHTML = html;
         }
 
-        function refreshData() {
-            console.log("🔄 Refreshing data...");
-            loadAllData();
+        function displayRawData(data) {
+            const content = document.getElementById('raw-content');
+            content.innerHTML = `<pre class="text-gray-700">${JSON.stringify(data, null, 2)}</pre>`;
         }
 
-        // Event listener for collection select
-        document.getElementById('collectionSelect').addEventListener('change', function(e) {
-            const data = window.lastData || {};
-            displayRawData(data);
-        });
+        function showNoData() {
+            const tables = ['users-big-table', 'users-small-table'];
+            tables.forEach(id => {
+                document.getElementById(id).innerHTML = '<tr><td colspan="7" class="px-6 py-4 text-center text-gray-500">ไม่พบข้อมูลในฐานข้อมูล</td></tr>';
+            });
+            document.getElementById('settings-content').innerHTML = '<p class="text-gray-500 text-center py-4">ไม่พบข้อมูล Settings</p>';
+            document.getElementById('raw-content').innerHTML = '<pre class="text-gray-500">ไม่พบข้อมูลในฐานข้อมูล</pre>';
+        }
 
-        // Store last data for filtering
-        window.lastData = null;
-        
-        // Override displayRawData to store data
-        const originalDisplayRawData = displayRawData;
-        displayRawData = function(data) {
-            window.lastData = data;
-            originalDisplayRawData(data);
-        };
+        function showError(message) {
+            const tables = ['users-big-table', 'users-small-table'];
+            tables.forEach(id => {
+                document.getElementById(id).innerHTML = `<tr><td colspan="7" class="px-6 py-4 text-center text-red-500">เกิดข้อผิดพลาด: ${message}</td></tr>`;
+            });
+            document.getElementById('settings-content').innerHTML = `<p class="text-red-500 text-center py-4">เกิดข้อผิดพลาด: ${message}</p>`;
+            document.getElementById('raw-content').innerHTML = `<pre class="text-red-500">Error: ${message}</pre>`;
+        }
+
+        function showTab(tabName) {
+            // ซ่อนทุก tab
+            document.querySelectorAll('.tab-content').forEach(el => {
+                el.classList.add('hidden');
+            });
+            
+            // เปลี่ยนสถานะปุ่ม tab
+            document.querySelectorAll('#tabs button').forEach(btn => {
+                btn.classList.remove('border-blue-600', 'text-blue-600');
+                btn.classList.add('border-transparent', 'text-gray-500');
+            });
+            
+            // แสดง tab ที่เลือก
+            let tabId;
+            switch(tabName) {
+                case 'settings':
+                    tabId = 'settings-tab';
+                    document.getElementById('tab-settings').classList.add('border-blue-600', 'text-blue-600');
+                    break;
+                case 'users-big':
+                    tabId = 'users-big-tab';
+                    document.getElementById('tab-users-big').classList.add('border-blue-600', 'text-blue-600');
+                    break;
+                case 'users-small':
+                    tabId = 'users-small-tab';
+                    document.getElementById('tab-users-small').classList.add('border-blue-600', 'text-blue-600');
+                    break;
+                case 'raw':
+                    tabId = 'raw-tab';
+                    document.getElementById('tab-raw').classList.add('border-blue-600', 'text-blue-600');
+                    break;
+            }
+            
+            document.getElementById(tabId).classList.remove('hidden');
+        }
     </script>
 </body>
 </html>
