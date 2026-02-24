@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ระบบจัดการข้อมูล Firebase CRUD</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+</head>
+<body class="bg-gray-100 p-6">
+    <div class="max-w-7xl mx-auto">
+        <!-- Header -->
+        <div class="mb-8 flex justify-between items-center">
+            <h1 class="text-3xl font-bold text-gray-800">ระบบจัดการข้อมูล</h1>
+            <button onclick="openModal()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center gap-2">
+                <i class="fas fa-plus"></i> เพิ่มข้อมูล
+            </button>
+        </div>
+
+        <!-- Search and Filter -->
+        <div class="mb-6 flex gap-4">
+            <div class="flex-1">
+                <input type="text" id="searchInput" placeholder="ค้นหา..." class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+            </div>
+            <select id="filterSelect" class="px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                <option value="all">ทั้งหมด</option>
+                <option value="active">Active</option>
+                <option value="inactive">Inactive</option>
+            </select>
+        </div>
+
+        <!-- Data Table -->
+        <div class="bg-white rounded-lg shadow overflow-hidden">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">รูป</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ชื่อ</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">อีเมล</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">แผนก</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">สถานะ</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">จัดการ</th>
+                    </tr>
+                </thead>
+                <tbody id="tableBody" class="bg-white divide-y divide-gray-200">
+                    <!-- Data will be loaded here -->
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Loading Indicator -->
+        <div id="loading" class="hidden text-center py-4">
+            <i class="fas fa-spinner fa-spin text-2xl text-blue-600"></i>
+        </div>
+
+        <!-- Modal -->
+        <div id="modal" class="fixed inset-0 bg-gray-600 bg-opacity-50 hidden overflow-y-auto h-full w-full z-50">
+            <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-lg bg-white">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-lg font-bold" id="modalTitle">เพิ่มข้อมูล</h3>
+                    <button onclick="closeModal()" class="text-gray-600 hover:text-gray-900">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                
+                <form id="dataForm" onsubmit="saveData(event)">
+                    <input type="hidden" id="dataId">
+                    
+                    <div class="mb-4">
+                        <label class="block text-gray-700 text-sm font-bold mb-2">ชื่อ-นามสกุล</label>
+                        <input type="text" id="name" required class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+                    
+                    <div class="mb-4">
+                        <label class="block text-gray-700 text-sm font-bold mb-2">อีเมล</label>
+                        <input type="email" id="email" required class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+                    
+                    <div class="mb-4">
+                        <label class="block text-gray-700 text-sm font-bold mb-2">แผนก</label>
+                        <select id="department" required class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <option value="">เลือกแผนก</option>
+                            <option value="IT">IT</option>
+                            <option value="HR">HR</option>
+                            <option value="Sales">Sales</option>
+                            <option value="Marketing">Marketing</option>
+                        </select>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <label class="block text-gray-700 text-sm font-bold mb-2">URL รูปภาพ</label>
+                        <input type="url" id="avatarUrl" placeholder="https://example.com/image.jpg" class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <p class="text-xs text-gray-500 mt-1">วางลิงค์รูปภาพสำหรับ Avatar</p>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <label class="block text-gray-700 text-sm font-bold mb-2">สถานะ</label>
+                        <select id="status" class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <option value="active">Active</option>
+                            <option value="inactive">Inactive</option>
+                        </select>
+                    </div>
+                    
+                    <div class="flex gap-2 justify-end">
+                        <button type="button" onclick="closeModal()" class="px-4 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400">ยกเลิก</button>
+                        <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">บันทึก</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Delete Confirmation Modal -->
+        <div id="deleteModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 hidden overflow-y-auto h-full w-full z-50">
+            <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-lg bg-white">
+                <h3 class="text-lg font-bold mb-4">ยืนยันการลบ</h3>
+                <p class="mb-4">คุณต้องการลบข้อมูลนี้ใช่หรือไม่?</p>
+                <div class="flex gap-2 justify-end">
+                    <button onclick="closeDeleteModal()" class="px-4 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400">ยกเลิก</button>
+                    <button onclick="confirmDelete()" class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700">ลบ</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Toast Notification -->
+        <div id="toast" class="fixed bottom-4 right-4 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg hidden">
+            <span id="toastMessage"></span>
+        </div>
+    </div>
+
+    <script>
+        // Firebase Configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyAxQr1PCwjWhoz143Ipzcjx9sq2hw5R9dc",
+            authDomain: "cm-bookingroom.firebaseapp.com",
+            databaseURL: "https://cm-bookingroom-default-rtdb.firebaseio.com",
+            projectId: "cm-bookingroom",
+            storageBucket: "cm-bookingroom.firebasestorage.app",
+            messagingSenderId: "312076484549",
+            appId: "1:312076484549:web:d9e1cb3e28747c1aa695ac"
+        };
+
+        // Initialize Firebase
+        firebase.initializeApp(firebaseConfig);
+        const database = firebase.database();
+        const dataRef = database.ref('users');
+
+        // State
+        let currentData = [];
+        let deleteId = null;
+
+        // Load initial data
+        loadData();
+
+        // Load data from Firebase
+        function loadData() {
+            showLoading(true);
+            dataRef.on('value', (snapshot) => {
+                const data = snapshot.val();
+                currentData = [];
+                
+                if (data) {
+                    currentData = Object.keys(data).map(key => ({
+                        id: key,
+                        ...data[key]
+                    }));
+                }
+                
+                renderTable();
+                showLoading(false);
+            }, (error) => {
+                console.error("Error loading data:", error);
+                showToast("เกิดข้อผิดพลาดในการโหลดข้อมูล", "error");
+                showLoading(false);
+            });
+        }
+
+        // Render table
+        function renderTable() {
+            const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+            const filterValue = document.getElementById('filterSelect').value;
+            
+            let filteredData = currentData;
+            
+            // Apply search filter
+            if (searchTerm) {
+                filteredData = filteredData.filter(item => 
+                    (item.name && item.name.toLowerCase().includes(searchTerm)) ||
+                    (item.email && item.email.toLowerCase().includes(searchTerm)) ||
+                    (item.department && item.department.toLowerCase().includes(searchTerm))
+                );
+            }
+            
+            // Apply status filter
+            if (filterValue !== 'all') {
+                filteredData = filteredData.filter(item => item.status === filterValue);
+            }
+            
+            const tbody = document.getElementById('tableBody');
+            
+            if (filteredData.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="6" class="px-6 py-4 text-center text-gray-500">
+                            ไม่พบข้อมูล
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+            
+            tbody.innerHTML = filteredData.map(item => `
+                <tr class="hover:bg-gray-50">
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        ${item.avatarUrl ? 
+                            `<img src="${item.avatarUrl}" alt="avatar" class="h-10 w-10 rounded-full object-cover" 
+                                onerror="this.src='https://via.placeholder.com/40?text=?'">` : 
+                            `<div class="h-10 w-10 rounded-full bg-gray-300 flex items-center justify-center">
+                                <i class="fas fa-user text-gray-500"></i>
+                            </div>`
+                        }
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap font-medium">${item.name || '-'}</td>
+                    <td class="px-6 py-4 whitespace-nowrap">${item.email || '-'}</td>
+                    <td class="px-6 py-4 whitespace-nowrap">${item.department || '-'}</td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <span class="px-2 py-1 text-xs rounded-full ${item.status === 'active' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}">
+                            ${item.status === 'active' ? 'Active' : 'Inactive'}
+                        </span>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <button onclick="editData('${item.id}')" class="text-blue-600 hover:text-blue-900 mr-3">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        <button onclick="openDeleteModal('${item.id}')" class="text-red-600 hover:text-red-900">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        // Modal functions
+        function openModal() {
+            document.getElementById('modalTitle').textContent = 'เพิ่มข้อมูล';
+            document.getElementById('dataForm').reset();
+            document.getElementById('dataId').value = '';
+            document.getElementById('modal').classList.remove('hidden');
+        }
+
+        function closeModal() {
+            document.getElementById('modal').classList.add('hidden');
+        }
+
+        // Save data
+        function saveData(event) {
+            event.preventDefault();
+            
+            const id = document.getElementById('dataId').value;
+            const data = {
+                name: document.getElementById('name').value,
+                email: document.getElementById('email').value,
+                department: document.getElementById('department').value,
+                avatarUrl: document.getElementById('avatarUrl').value || null,
+                status: document.getElementById('status').value,
+                updatedAt: new Date().toISOString()
+            };
+            
+            if (id) {
+                // Update
+                dataRef.child(id).update(data)
+                    .then(() => {
+                        closeModal();
+                        showToast('อัปเดตข้อมูลสำเร็จ');
+                    })
+                    .catch(error => {
+                        console.error("Error updating:", error);
+                        showToast('เกิดข้อผิดพลาดในการอัปเดต', 'error');
+                    });
+            } else {
+                // Create
+                data.createdAt = new Date().toISOString();
+                dataRef.push(data)
+                    .then(() => {
+                        closeModal();
+                        showToast('เพิ่มข้อมูลสำเร็จ');
+                    })
+                    .catch(error => {
+                        console.error("Error saving:", error);
+                        showToast('เกิดข้อผิดพลาดในการบันทึก', 'error');
+                    });
+            }
+        }
+
+        // Edit data
+        function editData(id) {
+            const item = currentData.find(d => d.id === id);
+            if (item) {
+                document.getElementById('modalTitle').textContent = 'แก้ไขข้อมูล';
+                document.getElementById('dataId').value = item.id;
+                document.getElementById('name').value = item.name || '';
+                document.getElementById('email').value = item.email || '';
+                document.getElementById('department').value = item.department || '';
+                document.getElementById('avatarUrl').value = item.avatarUrl || '';
+                document.getElementById('status').value = item.status || 'active';
+                document.getElementById('modal').classList.remove('hidden');
+            }
+        }
+
+        // Delete functions
+        function openDeleteModal(id) {
+            deleteId = id;
+            document.getElementById('deleteModal').classList.remove('hidden');
+        }
+
+        function closeDeleteModal() {
+            deleteId = null;
+            document.getElementById('deleteModal').classList.add('hidden');
+        }
+
+        function confirmDelete() {
+            if (deleteId) {
+                dataRef.child(deleteId).remove()
+                    .then(() => {
+                        closeDeleteModal();
+                        showToast('ลบข้อมูลสำเร็จ');
+                    })
+                    .catch(error => {
+                        console.error("Error deleting:", error);
+                        showToast('เกิดข้อผิดพลาดในการลบ', 'error');
+                        closeDeleteModal();
+                    });
+            }
+        }
+
+        // Loading indicator
+        function showLoading(show) {
+            const loading = document.getElementById('loading');
+            if (show) {
+                loading.classList.remove('hidden');
+            } else {
+                loading.classList.add('hidden');
+            }
+        }
+
+        // Toast notification
+        function showToast(message, type = 'success') {
+            const toast = document.getElementById('toast');
+            const toastMessage = document.getElementById('toastMessage');
+            
+            toastMessage.textContent = message;
+            toast.className = `fixed bottom-4 right-4 ${type === 'success' ? 'bg-green-500' : 'bg-red-500'} text-white px-6 py-3 rounded-lg shadow-lg`;
+            toast.classList.remove('hidden');
+            
+            setTimeout(() => {
+                toast.classList.add('hidden');
+            }, 3000);
+        }
+
+        // Event listeners for search and filter
+        document.getElementById('searchInput').addEventListener('input', renderTable);
+        document.getElementById('filterSelect').addEventListener('change', renderTable);
+
+        // Close modal when clicking outside
+        window.onclick = function(event) {
+            const modal = document.getElementById('modal');
+            const deleteModal = document.getElementById('deleteModal');
+            
+            if (event.target === modal) {
+                closeModal();
+            }
+            if (event.target === deleteModal) {
+                closeDeleteModal();
+            }
+        }
+    </script>
+</body>
+</html>
