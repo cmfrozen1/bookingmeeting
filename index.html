@@ -1785,7 +1785,6 @@
         }
 
         // ========== EMAIL FETCH FUNCTIONS ==========
-        // ========== EMAIL FETCH FUNCTIONS ==========
         async function fetchEmailWithAccessToken() {
             try {
                 const accessToken = liff.getAccessToken();
@@ -1794,6 +1793,8 @@
                     return null;
                 }
 
+                console.log('Fetching email with access token...');
+                
                 const response = await fetch('https://api.line.me/oauth2/v2.1/userinfo', {
                     headers: {
                         'Authorization': `Bearer ${accessToken}`
@@ -1805,16 +1806,25 @@
                     console.log('User info from LINE API:', userInfo);
                     
                     if (userInfo.email) {
+                        console.log('Email found:', userInfo.email);
+                        
+                        // อัปเดต email ใน database
                         const updateResult = await callGAS('user/update-email', {
                             lineUserId: state.user.lineUserId,
                             email: userInfo.email
                         });
 
                         if (updateResult.success) {
-                            console.log('Email updated successfully in database:', userInfo.email);
+                            console.log('Email updated in database');
                             return userInfo.email;
+                        } else {
+                            console.log('Failed to update email in database');
                         }
+                    } else {
+                        console.log('No email in userinfo response');
                     }
+                } else {
+                    console.log('Failed to fetch userinfo:', response.status);
                 }
                 return null;
             } catch (error) {
@@ -1823,58 +1833,51 @@
             }
         }
 
-        async function fetchEmailFromIdToken() {
+        // ฟังก์ชันขอ email โดยไม่ต้องกดปุ่ม
+        async function requestEmailAutomatically() {
+            if (state.emailFetchAttempted) {
+                console.log('Email fetch already attempted');
+                return;
+            }
+            
+            state.emailFetchAttempted = true;
+            console.log('Attempting to fetch email automatically...');
+            
             try {
-                const idToken = liff.getIDToken();
-                if (!idToken) return null;
+                // ตรวจสอบว่ามี access token หรือไม่
+                const accessToken = liff.getAccessToken();
+                if (!accessToken) {
+                    console.log('No access token, cannot fetch email');
+                    return;
+                }
 
-                const tokenPayload = parseJwt(idToken);
-                if (tokenPayload.email) {
-                    const updateResult = await callGAS('user/update-email', {
-                        lineUserId: state.user.lineUserId,
-                        email: tokenPayload.email
-                    });
-
-                    if (updateResult.success) {
-                        console.log('Email updated successfully from ID token:', tokenPayload.email);
-                        return tokenPayload.email;
+                // ลองดึง email จาก access token
+                const email = await fetchEmailWithAccessToken();
+                
+                if (email) {
+                    console.log('Email fetched successfully:', email);
+                    state.user.email = email;
+                    localStorage.setItem('user_cache', JSON.stringify(state.user));
+                    
+                    if ($.profileEmail) {
+                        $.profileEmail.textContent = email;
+                        $.profileEmail.classList.remove('text-gray-400');
+                    }
+                    
+                    showToast('ดึงอีเมลจาก LINE สำเร็จ');
+                } else {
+                    console.log('Could not fetch email automatically');
+                    // แสดงข้อความว่าไม่มีอีเมล
+                    if ($.profileEmail) {
+                        $.profileEmail.innerHTML = '<span class="text-gray-400">ไม่มีอีเมล (ลองรีเฟรช)</span>';
                     }
                 }
-                return null;
             } catch (error) {
-                console.error('Error fetching email from ID token:', error);
-                return null;
+                console.error('Auto email fetch error:', error);
+                if ($.profileEmail) {
+                    $.profileEmail.innerHTML = '<span class="text-gray-400">ไม่สามารถดึงอีเมลได้</span>';
+                }
             }
-        }
-
-        async function tryFetchEmail() {
-            if (!state.user) return null;
-            if (state.user.email && state.user.email !== '') return state.user.email;
-
-            console.log('Attempting to fetch email...');
-
-            // Try ID Token first
-            let email = await fetchEmailFromIdToken();
-            if (email) {
-                state.user.email = email;
-                localStorage.setItem('user_cache', JSON.stringify(state.user));
-                updateUserUI(state.user);
-                showToast('ดึงอีเมลจาก LINE สำเร็จ');
-                return email;
-            }
-
-            // Try Access Token
-            email = await fetchEmailWithAccessToken();
-            if (email) {
-                state.user.email = email;
-                localStorage.setItem('user_cache', JSON.stringify(state.user));
-                updateUserUI(state.user);
-                showToast('ดึงอีเมลจาก LINE สำเร็จ');
-                return email;
-            }
-
-            console.log('Could not fetch email');
-            return null;
         }
 
         // ========== FLATPICKR INIT ==========
@@ -2536,9 +2539,9 @@
         };
 
         // ========== LIFF INIT ==========
-        // ========== LIFF INIT ==========
         async function initLIFF() {
             try {
+                // อัปเดต UI ทันทีถ้ามีข้อมูลแคช
                 if (state.user) {
                     state.role = state.user.role || 'user';
                     updateRoleFlags();
@@ -2551,38 +2554,48 @@
 
                 await liff.init({ liffId: CONFIG.LIFF_ID });
                 
+                // ลบ query parameters
                 const urlParams = new URLSearchParams(window.location.search);
                 if (urlParams.has('liff.state')) {
                     window.history.replaceState({}, document.title, window.location.pathname);
                 }
                 
+                // ถ้ายังไม่ได้ login ให้ login พร้อมขอ email
                 if (!liff.isLoggedIn()) {
+                    console.log('Not logged in, redirecting to login with email scope...');
                     liff.login({ 
                         scope: 'openid email profile',
-                        prompt: 'consent'
+                        prompt: 'consent'  // บังคับให้ขอ consent ทุกครั้ง
                     });
                     return;
                 }
 
+                // ได้รับข้อมูลจาก LINE
+                console.log('Getting profile...');
                 const profile = await liff.getProfile();
                 
-                // ดึงข้อมูลผู้ใช้
+                // ลองดึง email จาก ID token
+                const idToken = liff.getIDToken();
+                let email = '';
+                if (idToken) {
+                    const tokenPayload = parseJwt(idToken);
+                    console.log('Token payload:', tokenPayload);
+                    email = tokenPayload.email || '';
+                }
+
+                console.log('Profile:', profile);
+                console.log('Email from token:', email);
+
+                // สร้างข้อมูลผู้ใช้
                 const userData = {
                     lineUserId: profile.userId,
                     displayName: profile.displayName,
                     pictureUrl: profile.pictureUrl || '',
-                    email: '',
+                    email: email,
                     source: 'miniapp'
                 };
 
-                // ลองดึงอีเมลจาก ID Token ก่อน
-                const idToken = liff.getIDToken();
-                const tokenPayload = idToken ? parseJwt(idToken) : {};
-                if (tokenPayload.email) {
-                    userData.email = tokenPayload.email;
-                    console.log('Email from ID Token:', tokenPayload.email);
-                }
-
+                // ส่งข้อมูลไปยัง GAS
                 const [userResult, roomsResult] = await Promise.all([
                     callGAS('user/profile', userData),
                     callGAS('rooms')
@@ -2595,10 +2608,10 @@
                     localStorage.setItem('user_cache', JSON.stringify(state.user));
                     updateUserUI(state.user);
                     
-                    // ถ้ายังไม่มีอีเมล ให้พยายามดึงอีกครั้ง
+                    // ถ้ายังไม่มีอีเมล ให้พยายามดึงอัตโนมัติ
                     if (!state.user.email || state.user.email === '') {
-                        console.log('No email found, attempting to fetch...');
-                        await tryFetchEmail();
+                        console.log('No email in user data, attempting to fetch automatically...');
+                        setTimeout(() => requestEmailAutomatically(), 1000);
                     }
                 }
 
@@ -2608,11 +2621,14 @@
                     renderRooms();
                 }
 
+                // ซ่อน loading
                 $.initLoading.classList.add('hide');
                 state.initialized = true;
 
+                // เริ่มต้น flatpickr
                 initFlatpickr();
 
+                // โหลดข้อมูลอื่นๆ
                 loadSettings().then(s => {
                     if(s.success) localStorage.setItem('settings_cache', JSON.stringify(state.settings));
                 }).catch(console.warn);
@@ -2628,7 +2644,6 @@
                 if (!state.user) showToast('ไม่สามารถเชื่อมต่อ LINE ได้', 'error');
             }
         }
-        }
 
         function updateUserUI(user) {
             if (!user) return;
@@ -2637,9 +2652,9 @@
             
             if (user.email && user.email !== '') {
                 $.profileEmail.textContent = user.email;
-                $.profileEmail.classList.remove('text-gray-500', 'cursor-pointer');
+                $.profileEmail.classList.remove('text-gray-400');
             } else {
-                // แสดงข้อความว่ากำลังโหลดอีเมลแทนปุ่มขอสิทธิ์
+                // แสดงข้อความว่ากำลังโหลดอีเมล
                 $.profileEmail.innerHTML = '<span class="text-gray-400"><i class="fas fa-spinner fa-spin mr-1"></i>กำลังโหลดอีเมล...</span>';
             }
             
@@ -4240,3 +4255,4 @@
         }
     </script>
 </body>
+</html>
