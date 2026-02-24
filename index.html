@@ -1612,7 +1612,8 @@
                 reminderMinutes: '30'
             },
             initialized: false,
-            flatpickrInstances: {}
+            flatpickrInstances: {},
+            emailFetchAttempted: false // เพิ่ม flag เพื่อป้องกันการ fetch ซ้ำ
         };
 
         // Update role flags based on user role
@@ -1786,6 +1787,61 @@
             if (!name) name = 'Meeting Room';
             $.pageTitle.textContent = name + ' · LINE';
             $.navbarAppName.textContent = name;
+        }
+
+        // ========== EMAIL FETCH FUNCTION ==========
+        /**
+         * ดึงอีเมลจาก LINE และอัปเดตในฐานข้อมูล
+         * @returns {Promise<string|null>} อีเมลที่ได้ หรือ null ถ้าไม่สำเร็จ
+         */
+        async function fetchAndUpdateUserEmail() {
+            if (!state.user?.lineUserId) {
+                console.log('No user ID, cannot fetch email');
+                return null;
+            }
+
+            // ป้องกันการ fetch ซ้ำ
+            if (state.emailFetchAttempted) {
+                console.log('Email fetch already attempted in this session');
+                return state.user?.email || null;
+            }
+
+            console.log('📧 Attempting to fetch email from LINE for user:', state.user.lineUserId);
+            state.emailFetchAttempted = true;
+
+            try {
+                // เรียก API ที่ backend เพื่อดึงและอัปเดตอีเมล
+                const result = await callGAS('user/update-email', {
+                    lineUserId: state.user.lineUserId
+                });
+
+                console.log('Email fetch result:', result);
+
+                if (result.success && result.data?.email) {
+                    const email = result.data.email;
+                    console.log('✅ Email fetched and updated:', email);
+                    
+                    // อัปเดต state.user
+                    state.user.email = email;
+                    state.user.emailVerified = true;
+                    
+                    // อัปเดต localStorage
+                    localStorage.setItem('user_cache', JSON.stringify(state.user));
+                    
+                    // อัปเดต UI
+                    if ($.profileEmail) {
+                        $.profileEmail.textContent = email;
+                    }
+                    
+                    return email;
+                } else {
+                    console.log('ℹ️ No email found or user did not grant permission');
+                    return null;
+                }
+            } catch (error) {
+                console.error('Error fetching email:', error);
+                return null;
+            }
         }
 
         // ========== FLATPICKR INITIALIZATION ==========
@@ -2489,7 +2545,9 @@
                         lineUserId: profile.userId,
                         displayName: profile.displayName,
                         pictureUrl: profile.pictureUrl || '',
-                        email: idToken?.email || ''
+                        email: idToken?.email || '',
+                        source: 'miniapp',
+                        forceEmailFetch: 'true' // บังคับให้ backend ดึงอีเมลใหม่
                     }),
                     callGAS('rooms')
                 ]);
@@ -2500,6 +2558,18 @@
                     updateRoleFlags();
                     localStorage.setItem('user_cache', JSON.stringify(state.user));
                     updateUserUI(state.user);
+                    
+                    // ถ้ายังไม่มีอีเมล ให้ลองดึงอีกครั้งจาก backend endpoint ที่ออกแบบมาเฉพาะ
+                    if (!state.user.email || state.user.email === '') {
+                        console.log('No email found in initial profile, trying dedicated email endpoint...');
+                        setTimeout(async () => {
+                            const email = await fetchAndUpdateUserEmail();
+                            if (email) {
+                                console.log('Email fetched and updated:', email);
+                                showToast('ดึงอีเมลจาก LINE สำเร็จ');
+                            }
+                        }, 1000);
+                    }
                 }
 
                 if (roomsResult.success) {
@@ -2537,6 +2607,12 @@
             
             $.profileName.textContent = user.displayName || 'ผู้ใช้';
             $.profileEmail.textContent = user.email || '';
+            
+            // ถ้าไม่มีอีเมล แสดงข้อความแจ้ง
+            if (!user.email || user.email === '') {
+                $.profileEmail.innerHTML = '<span class="text-gray-500">ไม่มีอีเมล (LINE ไม่ได้ให้สิทธิ์)</span>';
+            }
+            
             $.profileAvatar.src = user.pictureUrl || 'https://via.placeholder.com/60';
             
             const roleText = {
@@ -3686,7 +3762,8 @@
                 
                 if (userId === state.user?.lineUserId) {
                     const userResult = await callGAS('user/profile', {
-                        lineUserId: state.user.lineUserId
+                        lineUserId: state.user.lineUserId,
+                        forceEmailFetch: 'true'
                     });
                     if (userResult.success) {
                         state.user = userResult.data;
@@ -4103,13 +4180,16 @@
         document.getElementById('profile-header').addEventListener('click', () => {
             Swal.fire({
                 title: state.user?.displayName,
-                text: state.user?.email,
+                text: state.user?.email || 'ไม่มีอีเมล',
                 showCancelButton: true,
                 confirmButtonText: 'แก้ไขโปรไฟล์',
                 cancelButtonText: 'ออกจากระบบ'
-            }).then(r => {
-                if (r.isConfirmed) showProfileSettings();
-                else if (r.dismiss === Swal.DismissReason.cancel) logout();
+            }).then(async r => {
+                if (r.isConfirmed) {
+                    showProfileSettings();
+                } else if (r.dismiss === Swal.DismissReason.cancel) {
+                    logout();
+                }
             });
         });
 
