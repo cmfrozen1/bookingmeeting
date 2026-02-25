@@ -1082,6 +1082,61 @@
         .line-button i {
             font-size: 16px;
         }
+
+        /* Toggle Switch */
+        .toggle-switch {
+            position: relative;
+            display: inline-block;
+            width: 52px;
+            height: 28px;
+        }
+        
+        .toggle-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        
+        .toggle-slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #4a4e57;
+            transition: .3s;
+            border-radius: 34px;
+        }
+        
+        .toggle-slider:before {
+            position: absolute;
+            content: "";
+            height: 22px;
+            width: 22px;
+            left: 3px;
+            bottom: 3px;
+            background-color: white;
+            transition: .3s;
+            border-radius: 50%;
+        }
+        
+        input:checked + .toggle-slider {
+            background-color: var(--primary);
+        }
+        
+        input:checked + .toggle-slider:before {
+            transform: translateX(24px);
+        }
+        
+        .notification-badge {
+            background: var(--primary);
+            color: white;
+            font-size: 10px;
+            padding: 2px 6px;
+            border-radius: 10px;
+            margin-left: 8px;
+        }
     </style>
 </head>
 <body>
@@ -1311,6 +1366,15 @@
                                 <option value="60">1 ชั่วโมง</option>
                                 <option value="120">2 ชั่วโมง</option>
                             </select>
+                            
+                            <!-- Notification Toggle -->
+                            <div class="mb-4 flex items-center justify-between">
+                                <span class="text-sm text-gray-400">เปิด/ปิดการแจ้งเตือนทั้งหมด</span>
+                                <label class="toggle-switch">
+                                    <input type="checkbox" id="setting-notifications-enabled" checked>
+                                    <span class="toggle-slider"></span>
+                                </label>
+                            </div>
                             
                             <button type="submit" class="btn-primary w-full" id="settings-save-btn">บันทึกการตั้งค่า</button>
                         </form>
@@ -1591,7 +1655,8 @@
             settings: JSON.parse(localStorage.getItem('settings_cache')) || { 
                 appName: 'Meeting Room',
                 requireApproval: 'true',
-                reminderMinutes: '30'
+                reminderMinutes: '30',
+                notificationsEnabled: true // ค่าเริ่มต้นเปิดการแจ้งเตือน
             },
             initialized: false,
             flatpickrInstances: {},
@@ -1655,6 +1720,7 @@
             settingsSaveBtn: document.getElementById('settings-save-btn'),
             settingRequireApproval: document.getElementById('setting-require-approval'),
             settingReminderMinutes: document.getElementById('setting-reminder-minutes'),
+            settingNotificationsEnabled: document.getElementById('setting-notifications-enabled'),
             calendarDays: document.getElementById('calendar-days'),
             currentMonth: document.getElementById('current-month'),
             selectedDateBookings: document.getElementById('selected-date-bookings'),
@@ -1767,6 +1833,12 @@
             if (!name) name = 'Meeting Room';
             $.pageTitle.textContent = name + ' · LINE';
             $.navbarAppName.textContent = name;
+        }
+
+        // ========== NOTIFICATION CHECK ==========
+        function areNotificationsEnabled() {
+            // ตรวจสอบสถานะการแจ้งเตือนจาก settings
+            return state.settings.notificationsEnabled !== false; // ถ้าไม่มีค่า ให้เปิดไว้ (true)
         }
 
         // ========== JWT PARSER ==========
@@ -2282,12 +2354,20 @@
             return flexMessage;
         }
         
+        // แก้ไขฟังก์ชัน sendBookingToChat ให้ตรวจสอบสถานะการแจ้งเตือนก่อนส่ง
         async function sendBookingToChat(bookingData) {
             try {
+                // ตรวจสอบว่าปิดการแจ้งเตือนหรือไม่
+                if (!areNotificationsEnabled()) {
+                    console.log('Notifications are disabled, skipping message send');
+                    return false;
+                }
+
                 if (!liff.isInClient()) {
                     console.log('Not in LINE client, cannot send message');
                     return false;
                 }
+                
                 const flexMessage = createBookingFlexMessage(bookingData);
                 await liff.sendMessages([flexMessage]);
                 console.log('Flex message sent successfully');
@@ -3216,6 +3296,9 @@
 
         window.shareBookingViaPicker = async function(bookingId) {
             try {
+                // ตรวจสอบการแจ้งเตือนก่อนแชร์ (การแชร์ไม่นับเป็นการแจ้งเตือน)
+                // ดังนั้นไม่ต้องตรวจสอบ areNotificationsEnabled()
+                
                 if (!liff.isInClient()) {
                     showToast('กรุณาเปิดใน LINE', 'warning');
                     return;
@@ -4038,7 +4121,8 @@
                     state.settings = result.data || {
                         appName: 'Meeting Room',
                         requireApproval: 'true',
-                        reminderMinutes: '30'
+                        reminderMinutes: '30',
+                        notificationsEnabled: true
                     };
                     
                     document.getElementById('setting-app-name').value = state.settings.appName || 'Meeting Room';
@@ -4062,6 +4146,11 @@
                     if ($.settingReminderMinutes) {
                         $.settingReminderMinutes.value = state.settings.reminderMinutes || '30';
                     }
+
+                    // ตั้งค่าสถานะการแจ้งเตือน
+                    if ($.settingNotificationsEnabled) {
+                        $.settingNotificationsEnabled.checked = state.settings.notificationsEnabled !== false;
+                    }
                     
                     updateAppName(state.settings.appName);
                 } else {
@@ -4072,7 +4161,8 @@
                         state.settings = fallbackResult.data || {
                             appName: 'Meeting Room',
                             requireApproval: 'true',
-                            reminderMinutes: '30'
+                            reminderMinutes: '30',
+                            notificationsEnabled: true
                         };
                         
                         document.getElementById('setting-app-name').value = state.settings.appName || 'Meeting Room';
@@ -4094,6 +4184,10 @@
                         
                         if ($.settingReminderMinutes) {
                             $.settingReminderMinutes.value = state.settings.reminderMinutes || '30';
+                        }
+
+                        if ($.settingNotificationsEnabled) {
+                            $.settingNotificationsEnabled.checked = state.settings.notificationsEnabled !== false;
                         }
                         
                         updateAppName(state.settings.appName);
@@ -4117,6 +4211,7 @@
             const appName = document.getElementById('setting-app-name').value.trim() || 'Meeting Room';
             const requireApproval = $.settingRequireApproval ? $.settingRequireApproval.checked : true;
             const reminderMinutes = $.settingReminderMinutes?.value || '30';
+            const notificationsEnabled = $.settingNotificationsEnabled ? $.settingNotificationsEnabled.checked : true;
 
             const saveBtn = $.settingsSaveBtn;
             setButtonLoading(saveBtn, true);
@@ -4125,6 +4220,7 @@
                 appName,
                 requireApproval: requireApproval ? 'true' : 'false',
                 reminderMinutes,
+                notificationsEnabled: notificationsEnabled ? 'true' : 'false',
                 lineUserId: state.user.lineUserId
             };
 
@@ -4139,7 +4235,7 @@
                     userName: state.user.displayName,
                     startTime: new Date().toISOString(),
                     endTime: new Date().toISOString(),
-                    description: 'ชื่อแอป: ' + appName + '\nระบบอนุมัติ: ' + (requireApproval ? 'เปิดใช้งาน' : 'ปิดใช้งาน') + '\nแจ้งเตือนล่วงหน้า: ' + reminderMinutes + ' นาที',
+                    description: 'ชื่อแอป: ' + appName + '\nระบบอนุมัติ: ' + (requireApproval ? 'เปิดใช้งาน' : 'ปิดใช้งาน') + '\nแจ้งเตือนล่วงหน้า: ' + reminderMinutes + ' นาที\nการแจ้งเตือน: ' + (notificationsEnabled ? 'เปิด' : 'ปิด'),
                     action: 'settings_updated'
                 });
 
