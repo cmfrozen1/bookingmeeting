@@ -1950,6 +1950,7 @@
             const end = $.bookingEnd?.value;
             const attendees = parseInt($.bookingAttendees?.value) || 0;
 
+            // ตรวจสอบจำนวนผู้เข้าร่วม
             if (!attendees || attendees < 1) {
                 if ($.availabilityStatus) {
                     $.availabilityStatus.innerHTML = '<span class="text-red-500">⚠️ จำนวนผู้เข้าร่วมต้องมีอย่างน้อย 1 คน</span>';
@@ -1959,11 +1960,13 @@
                 return false;
             }
 
+            // ตรวจสอบว่ากรอกข้อมูลครบหรือไม่
             if (!roomId || !title || !date || !endDate || !start || !end) {
                 $.saveBookingBtn.disabled = true;
                 return false;
             }
 
+            // ตรวจสอบวันที่
             if (date && endDate && date > endDate) {
                 if ($.availabilityStatus) {
                     $.availabilityStatus.innerHTML = '<span class="text-red-500">⚠️ วันที่สิ้นสุดต้องไม่ก่อนวันที่เริ่ม</span>';
@@ -2351,12 +2354,6 @@
                 if (result.success) {
                     state.dateBookings = {};
                     result.data.bookings.forEach(booking => {
-                        // Ensure roomId exists in booking data
-                        if (!booking.roomId) {
-                            console.warn('Warning: Booking without roomId detected:', booking);
-                            return; // Skip bookings without roomId
-                        }
-                        
                         const date = new Date(booking.startTime).toISOString().split('T')[0];
                         if (!state.dateBookings[date]) {
                             state.dateBookings[date] = [];
@@ -2364,7 +2361,6 @@
                         state.dateBookings[date].push(booking);
                     });
                     
-                    console.log('Bookings loaded successfully. Total dates with bookings:', Object.keys(state.dateBookings).length);
                     renderCalendar();
                 }
             } catch (error) {
@@ -2988,6 +2984,7 @@
             document.getElementById('booking-create-modal').classList.remove('active');
         };
 
+        // ========== CHECK AVAILABILITY (แก้ไขแล้ว) ==========
         async function checkAvailability() {
             const roomId = document.getElementById('booking-room').value;
             const startDate = $.bookingDate?.value;
@@ -2995,10 +2992,20 @@
             const start = $.bookingStart?.value;
             const end = $.bookingEnd?.value;
             const attendees = parseInt($.bookingAttendees?.value) || 0;
-            const editBookingId = document.getElementById('edit-booking-id')?.value; // ดึง ID สำหรับแก้ไข
+            const editBookingId = document.getElementById('edit-booking-id')?.value;
             
-            if (!roomId || !startDate || !endDate || !start || !end) return;
+            // ถ้ายังไม่ได้เลือกห้องหรือวันที่ ให้ซ่อนสถานะ
+            if (!roomId || !startDate || !endDate || !start || !end) {
+                $.availabilityStatus.classList.add('hidden');
+                $.saveBookingBtn.disabled = true;
+                return;
+            }
             
+            // หาชื่อห้องที่เลือก
+            const selectedRoom = state.rooms.find(r => r.roomId === roomId);
+            const roomName = selectedRoom ? selectedRoom.name : 'ห้องที่เลือก';
+            
+            // ตรวจสอบจำนวนผู้เข้าร่วม
             if (attendees < 1) {
                 $.availabilityStatus.innerHTML = '<span class="text-red-500">⚠️ จำนวนผู้เข้าร่วมต้องมีอย่างน้อย 1 คน</span>';
                 $.availabilityStatus.classList.remove('hidden');
@@ -3025,7 +3032,16 @@
             
             const startHour = startDateTime.getHours();
             const endHour = endDateTime.getHours();
-            if (startHour < 8 || endHour > 20 || (endHour === 20 && endDateTime.getMinutes() > 0)) {
+            const endMinutes = endDateTime.getMinutes();
+            
+            if (startHour < 8 || startHour > 20 || (startHour === 20 && startDateTime.getMinutes() > 0)) {
+                $.availabilityStatus.innerHTML = '<span class="text-red-500">⚠️ เวลาทำการ 08:00 - 20:00 น.</span>';
+                $.availabilityStatus.classList.remove('hidden');
+                $.saveBookingBtn.disabled = true;
+                return;
+            }
+            
+            if (endHour < 8 || endHour > 20 || (endHour === 20 && endMinutes > 0)) {
                 $.availabilityStatus.innerHTML = '<span class="text-red-500">⚠️ เวลาทำการ 08:00 - 20:00 น.</span>';
                 $.availabilityStatus.classList.remove('hidden');
                 $.saveBookingBtn.disabled = true;
@@ -3040,7 +3056,6 @@
                 return;
             }
             
-            const selectedRoom = state.rooms.find(r => r.roomId === roomId);
             if (selectedRoom && attendees > selectedRoom.capacity) {
                 $.availabilityStatus.innerHTML = `<span class="text-red-500">⚠️ จำนวนผู้เข้าร่วม (${attendees}) เกินความจุห้อง (${selectedRoom.capacity} คน)</span>`;
                 $.availabilityStatus.classList.remove('hidden');
@@ -3048,108 +3063,54 @@
                 return;
             }
             
-            // ตรวจสอบ Frontend ก่อน: ตรวจสอบการจองของห้องนี้เท่านั้น
-            // ใช้ dateBookings ที่โหลดมาแล้ว เพื่อตรวจสอบการจองของห้องที่เลือกเท่านั้น
-            const hasConflict = checkLocalConflict(roomId, startDateTime, endDateTime, editBookingId);
+            // แสดงสถานะกำลังตรวจสอบ
+            $.availabilityStatus.innerHTML = `<span class="text-yellow-500"><i class="fas fa-spinner fa-spin mr-2"></i>กำลังตรวจสอบห้องว่างสำหรับห้อง "${roomName}"...</span>`;
+            $.availabilityStatus.classList.remove('hidden');
+            $.saveBookingBtn.disabled = true;
             
-            if (hasConflict.conflict) {
-                let message = '❌ ห้องไม่ว่างในช่วงเวลาที่เลือก';
-                if (hasConflict.conflicts && hasConflict.conflicts.length > 0) {
-                    const times = hasConflict.conflicts.map(c => 
-                        `${formatTime(c.startTime)}-${formatTime(c.endTime)}`
-                    ).join(', ');
-                    message = `❌ มีการจองแล้วในช่วงเวลา: ${times}`;
-                }
-                $.availabilityStatus.innerHTML = `<span class="text-red-500">${message}</span>`;
-                $.availabilityStatus.classList.remove('hidden');
-                $.saveBookingBtn.disabled = true;
-                return;
-            }
-            
-            // ส่ง editBookingId ไปด้วยถ้ามี เพื่อให้ backend ไม่นับการจองตัวเอง
-            const result = await callGAS('booking/check-availability', {
-                roomId,
-                startTime: startDateTime.toISOString(),
-                endTime: endDateTime.toISOString(),
-                bookingId: editBookingId || undefined // ส่งไปถ้าเป็นการแก้ไข
-            });
-            
-            if (result.success) {
-                if (result.data.available) {
-                    $.availabilityStatus.innerHTML = '<span class="text-green-500">✅ ห้องว่างในช่วงเวลาที่เลือก</span>';
-                    $.availabilityStatus.classList.remove('hidden');
-                    $.saveBookingBtn.disabled = false;
-                } else {
-                    let message = '❌ ห้องไม่ว่างในช่วงเวลาที่เลือก';
-                    if (result.data.conflictingBookings && result.data.conflictingBookings.length > 0) {
-                        const times = result.data.conflictingBookings.map(c => 
-                            `${formatTime(c.startTime)}-${formatTime(c.endTime)}`
-                        ).join(', ');
-                        message = `❌ มีการจองแล้วในช่วงเวลา: ${times}`;
+            // ตรวจสอบห้องว่างกับ backend
+            try {
+                console.log('Checking availability for room:', roomId, roomName);
+                
+                const result = await callGAS('booking/check-availability', {
+                    roomId,
+                    startTime: startDateTime.toISOString(),
+                    endTime: endDateTime.toISOString(),
+                    bookingId: editBookingId || undefined
+                });
+                
+                if (result.success) {
+                    if (result.data.available) {
+                        // แสดงข้อมูลห้องที่เลือกให้ชัดเจน
+                        $.availabilityStatus.innerHTML = `<span class="text-green-500">✅ ห้อง "${roomName}" ว่างในช่วงเวลาที่เลือก</span>`;
+                        $.availabilityStatus.classList.remove('hidden');
+                        $.saveBookingBtn.disabled = false;
+                    } else {
+                        let message = `❌ ห้อง "${roomName}" ไม่ว่างในช่วงเวลาที่เลือก`;
+                        if (result.data.conflictingBookings && result.data.conflictingBookings.length > 0) {
+                            const times = result.data.conflictingBookings.map(c => 
+                                `${formatTime(c.startTime)}-${formatTime(c.endTime)}`
+                            ).join(', ');
+                            message = `❌ ห้อง "${roomName}" มีการจองแล้วในช่วงเวลา: ${times}`;
+                        }
+                        $.availabilityStatus.innerHTML = `<span class="text-red-500">${message}</span>`;
+                        $.availabilityStatus.classList.remove('hidden');
+                        $.saveBookingBtn.disabled = true;
                     }
-                    $.availabilityStatus.innerHTML = `<span class="text-red-500">${message}</span>`;
+                } else {
+                    $.availabilityStatus.innerHTML = '<span class="text-red-500">❌ ไม่สามารถตรวจสอบห้องว่างได้ กรุณาลองใหม่อีกครั้ง</span>';
                     $.availabilityStatus.classList.remove('hidden');
                     $.saveBookingBtn.disabled = true;
                 }
+            } catch (error) {
+                console.error('Check availability error:', error);
+                $.availabilityStatus.innerHTML = '<span class="text-red-500">❌ เกิดข้อผิดพลาดในการตรวจสอบ</span>';
+                $.availabilityStatus.classList.remove('hidden');
+                $.saveBookingBtn.disabled = true;
             }
         }
-        
-        // ฟังก์ชันตรวจสอบการจองในระดับ Frontend เพื่อให้แน่ใจว่าตรวจสอบเฉพาะห้องที่เลือกเท่านั้น
-        function checkLocalConflict(roomId, startDateTime, endDateTime, editBookingId) {
-            const conflicts = [];
-            
-            console.log('=== Checking Local Conflict ===');
-            console.log('RoomId to check:', roomId, 'Type:', typeof roomId);
-            console.log('Start:', startDateTime.toISOString());
-            console.log('End:', endDateTime.toISOString());
-            console.log('EditBookingId:', editBookingId);
-            
-            // วนลูปผ่านการจองทั้งหมดในปฏิทิน
-            for (const dateStr in state.dateBookings) {
-                const bookingsOnDate = state.dateBookings[dateStr] || [];
-                
-                // ตรวจสอบเฉพาะการจองของห้องที่เลือก - ใช้ String comparison เพื่อหลีกเลี่ยง type mismatch
-                const roomBookings = bookingsOnDate.filter(b => {
-                    const isSameRoom = String(b.roomId).trim() === String(roomId).trim();
-                    const isNotEditingBooking = b.bookingId !== editBookingId;
-                    if (isSameRoom && isNotEditingBooking) {
-                        console.log('Found booking in this room:', b.title, 'RoomId:', b.roomId, 'BookingId:', b.bookingId);
-                    }
-                    return isSameRoom && isNotEditingBooking;
-                });
-                
-                console.log('Date:', dateStr, '| Bookings for room:', roomBookings.length);
-                
-                // ตรวจสอบการทับซ้อนของเวลา
-                roomBookings.forEach(booking => {
-                    const bookingStart = new Date(booking.startTime);
-                    const bookingEnd = new Date(booking.endTime);
-                    
-                    // ตรวจสอบว่ามีการทับซ้อนหรือไม่
-                    // การทับซ้อนเกิดขึ้นเมื่อ: startDateTime < bookingEnd AND endDateTime > bookingStart
-                    if (startDateTime < bookingEnd && endDateTime > bookingStart) {
-                        console.log('CONFLICT DETECTED:', booking.title, 'Time:', formatTime(booking.startTime), '-', formatTime(booking.endTime));
-                        conflicts.push({
-                            startTime: booking.startTime,
-                            endTime: booking.endTime,
-                            title: booking.title,
-                            userName: booking.userName
-                        });
-                    }
-                });
-            }
-            
-            console.log('Total conflicts found:', conflicts.length);
-            console.log('=== End Conflict Check ===');
-            
-            return {
-                conflict: conflicts.length > 0,
-                conflicts: conflicts
-            };
-        }
 
-
-
+        // ========== SAVE BOOKING (แก้ไขแล้ว) ==========
         window.saveBooking = async function(e) {
             e.preventDefault();
             
@@ -3189,18 +3150,12 @@
                     return;
                 }
                 
-                // ตรวจสอบความขัดแย้งในระดับ Frontend ก่อน (ตรวจสอบเฉพาะห้องนี้เท่านั้น)
-                const localConflict = checkLocalConflict(roomId, startDateTime, endDateTime, id);
-                if (localConflict.conflict) {
-                    const times = localConflict.conflicts.map(c => 
-                        `${formatTime(c.startTime)}-${formatTime(c.endTime)}`
-                    ).join(', ');
-                    showToast(`ห้องนี้มีการจองแล้วในช่วงเวลา: ${times}`, 'error');
-                    setButtonLoading(btn, false);
-                    return;
-                }
+                // หาชื่อห้อง
+                const roomName = selectedRoom ? selectedRoom.name : 'ห้องที่เลือก';
                 
-                // ตรวจสอบซ้ำอีกครั้งเผื่อมีการเปลี่ยนแปลง (ตรวจสอบเฉพาะห้องนี้เท่านั้น)
+                console.log('Saving booking for room:', roomId, roomName);
+                
+                // ตรวจสอบซ้ำอีกครั้งเผื่อมีการเปลี่ยนแปลง
                 const checkResult = await callGAS('booking/check-availability', {
                     roomId,
                     startTime: startDateTime.toISOString(),
@@ -3209,7 +3164,7 @@
                 });
                 
                 if (!checkResult.success || !checkResult.data.available) {
-                    showToast('ห้องไม่ว่างในช่วงเวลาที่เลือก', 'error');
+                    showToast(`ห้อง "${roomName}" ไม่ว่างในช่วงเวลาที่เลือก`, 'error');
                     setButtonLoading(btn, false);
                     await checkAvailability(); // อัพเดทสถานะ
                     return;
