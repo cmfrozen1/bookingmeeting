@@ -3041,6 +3041,24 @@
                 return;
             }
             
+            // ตรวจสอบ Frontend ก่อน: ตรวจสอบการจองของห้องนี้เท่านั้น
+            // ใช้ dateBookings ที่โหลดมาแล้ว เพื่อตรวจสอบการจองของห้องที่เลือกเท่านั้น
+            const hasConflict = checkLocalConflict(roomId, startDateTime, endDateTime, editBookingId);
+            
+            if (hasConflict.conflict) {
+                let message = '❌ ห้องไม่ว่างในช่วงเวลาที่เลือก';
+                if (hasConflict.conflicts && hasConflict.conflicts.length > 0) {
+                    const times = hasConflict.conflicts.map(c => 
+                        `${formatTime(c.startTime)}-${formatTime(c.endTime)}`
+                    ).join(', ');
+                    message = `❌ มีการจองแล้วในช่วงเวลา: ${times}`;
+                }
+                $.availabilityStatus.innerHTML = `<span class="text-red-500">${message}</span>`;
+                $.availabilityStatus.classList.remove('hidden');
+                $.saveBookingBtn.disabled = true;
+                return;
+            }
+            
             // ส่ง editBookingId ไปด้วยถ้ามี เพื่อให้ backend ไม่นับการจองตัวเอง
             const result = await callGAS('booking/check-availability', {
                 roomId,
@@ -3067,6 +3085,41 @@
                     $.saveBookingBtn.disabled = true;
                 }
             }
+        }
+        
+        // ฟังก์ชันตรวจสอบการจองในระดับ Frontend เพื่อให้แน่ใจว่าตรวจสอบเฉพาะห้องที่เลือกเท่านั้น
+        function checkLocalConflict(roomId, startDateTime, endDateTime, editBookingId) {
+            const conflicts = [];
+            
+            // วนลูปผ่านการจองทั้งหมดในปฏิทิน
+            for (const dateStr in state.dateBookings) {
+                const bookingsOnDate = state.dateBookings[dateStr] || [];
+                
+                // ตรวจสอบเฉพาะการจองของห้องที่เลือก
+                const roomBookings = bookingsOnDate.filter(b => b.roomId === roomId && b.bookingId !== editBookingId);
+                
+                // ตรวจสอบการทับซ้อนของเวลา
+                roomBookings.forEach(booking => {
+                    const bookingStart = new Date(booking.startTime);
+                    const bookingEnd = new Date(booking.endTime);
+                    
+                    // ตรวจสอบว่ามีการทับซ้อนหรือไม่
+                    // การทับซ้อนเกิดขึ้นเมื่อ: startDateTime < bookingEnd AND endDateTime > bookingStart
+                    if (startDateTime < bookingEnd && endDateTime > bookingStart) {
+                        conflicts.push({
+                            startTime: booking.startTime,
+                            endTime: booking.endTime,
+                            title: booking.title,
+                            userName: booking.userName
+                        });
+                    }
+                });
+            }
+            
+            return {
+                conflict: conflicts.length > 0,
+                conflicts: conflicts
+            };
         }
 
         window.saveBooking = async function(e) {
