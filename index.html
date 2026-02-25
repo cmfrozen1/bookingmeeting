@@ -1785,7 +1785,6 @@
         }
 
         // ========== EMAIL FETCH FUNCTIONS ==========
-        // ========== EMAIL FETCH FUNCTIONS ==========
         async function fetchEmailWithAccessToken() {
             try {
                 const accessToken = liff.getAccessToken();
@@ -2536,7 +2535,6 @@
         };
 
         // ========== LIFF INIT ==========
-        // ========== LIFF INIT ==========
         async function initLIFF() {
             try {
                 if (state.user) {
@@ -2990,6 +2988,7 @@
             const start = $.bookingStart?.value;
             const end = $.bookingEnd?.value;
             const attendees = parseInt($.bookingAttendees?.value) || 0;
+            const editBookingId = document.getElementById('edit-booking-id')?.value; // ดึง ID สำหรับแก้ไข
             
             if (!roomId || !startDate || !endDate || !start || !end) return;
             
@@ -3042,10 +3041,12 @@
                 return;
             }
             
+            // ส่ง editBookingId ไปด้วยถ้ามี เพื่อให้ backend ไม่นับการจองตัวเอง
             const result = await callGAS('booking/check-availability', {
                 roomId,
                 startTime: startDateTime.toISOString(),
-                endTime: endDateTime.toISOString()
+                endTime: endDateTime.toISOString(),
+                bookingId: editBookingId || undefined // ส่งไปถ้าเป็นการแก้ไข
             });
             
             if (result.success) {
@@ -3104,6 +3105,21 @@
                 if (selectedRoom && attendees > selectedRoom.capacity) {
                     showToast(`จำนวนผู้เข้าร่วม (${attendees}) เกินความจุห้อง (${selectedRoom.capacity} คน)`, 'error');
                     setButtonLoading(btn, false);
+                    return;
+                }
+                
+                // ตรวจสอบซ้ำอีกครั้งเผื่อมีการเปลี่ยนแปลง
+                const checkResult = await callGAS('booking/check-availability', {
+                    roomId,
+                    startTime: startDateTime.toISOString(),
+                    endTime: endDateTime.toISOString(),
+                    bookingId: id || undefined
+                });
+                
+                if (!checkResult.success || !checkResult.data.available) {
+                    showToast('ห้องไม่ว่างในช่วงเวลาที่เลือก', 'error');
+                    setButtonLoading(btn, false);
+                    await checkAvailability(); // อัพเดทสถานะ
                     return;
                 }
                 
@@ -3615,18 +3631,23 @@
                 }[b.status] || 'badge-pending';
                 
                 return `
-                <div class="bg-[#1a1d24] p-3 rounded-lg border border-[#2a2e36]">
-                    <div class="flex justify-between items-start mb-2">
-                        <div>
-                            <span class="font-semibold text-sm">${b.title}</span>
-                            <span class="text-xs text-gray-400 ml-2">${b.roomName}</span>
+                <div class="bg-[#1a1d24] p-3 rounded-lg border border-[#2a2e36] flex justify-between items-center">
+                    <div class="flex-1">
+                        <div class="flex justify-between items-start mb-2">
+                            <div>
+                                <span class="font-semibold text-sm">${b.title}</span>
+                                <span class="text-xs text-gray-400 ml-2">${b.roomName}</span>
+                            </div>
+                            <span class="badge ${statusClass} text-xs">${b.status}</span>
                         </div>
-                        <span class="badge ${statusClass} text-xs">${b.status}</span>
+                        <div class="flex justify-between text-xs text-gray-400">
+                            <span><i class="far fa-user mr-1"></i> ${b.userName}</span>
+                            <span><i class="far fa-clock mr-1"></i> ${formatDateShort(b.startTime)} - ${formatDateShort(b.endTime)}</span>
+                        </div>
                     </div>
-                    <div class="flex justify-between text-xs text-gray-400">
-                        <span><i class="far fa-user mr-1"></i> ${b.userName}</span>
-                        <span><i class="far fa-clock mr-1"></i> ${formatDateShort(b.startTime)} - ${formatDateShort(b.endTime)}</span>
-                    </div>
+                    <button class="text-[#06c755] text-xs ml-2" onclick="shareBookingViaPicker('${b.bookingId}'); event.stopPropagation();">
+                        <i class="fas fa-share-alt mr-1"></i>แชร์
+                    </button>
                 </div>
             `}).join('');
         }
