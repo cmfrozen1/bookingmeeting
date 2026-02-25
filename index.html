@@ -2351,6 +2351,12 @@
                 if (result.success) {
                     state.dateBookings = {};
                     result.data.bookings.forEach(booking => {
+                        // Ensure roomId exists in booking data
+                        if (!booking.roomId) {
+                            console.warn('Warning: Booking without roomId detected:', booking);
+                            return; // Skip bookings without roomId
+                        }
+                        
                         const date = new Date(booking.startTime).toISOString().split('T')[0];
                         if (!state.dateBookings[date]) {
                             state.dateBookings[date] = [];
@@ -2358,6 +2364,7 @@
                         state.dateBookings[date].push(booking);
                     });
                     
+                    console.log('Bookings loaded successfully. Total dates with bookings:', Object.keys(state.dateBookings).length);
                     renderCalendar();
                 }
             } catch (error) {
@@ -3091,12 +3098,27 @@
         function checkLocalConflict(roomId, startDateTime, endDateTime, editBookingId) {
             const conflicts = [];
             
+            console.log('=== Checking Local Conflict ===');
+            console.log('RoomId to check:', roomId, 'Type:', typeof roomId);
+            console.log('Start:', startDateTime.toISOString());
+            console.log('End:', endDateTime.toISOString());
+            console.log('EditBookingId:', editBookingId);
+            
             // วนลูปผ่านการจองทั้งหมดในปฏิทิน
             for (const dateStr in state.dateBookings) {
                 const bookingsOnDate = state.dateBookings[dateStr] || [];
                 
-                // ตรวจสอบเฉพาะการจองของห้องที่เลือก
-                const roomBookings = bookingsOnDate.filter(b => b.roomId === roomId && b.bookingId !== editBookingId);
+                // ตรวจสอบเฉพาะการจองของห้องที่เลือก - ใช้ String comparison เพื่อหลีกเลี่ยง type mismatch
+                const roomBookings = bookingsOnDate.filter(b => {
+                    const isSameRoom = String(b.roomId).trim() === String(roomId).trim();
+                    const isNotEditingBooking = b.bookingId !== editBookingId;
+                    if (isSameRoom && isNotEditingBooking) {
+                        console.log('Found booking in this room:', b.title, 'RoomId:', b.roomId, 'BookingId:', b.bookingId);
+                    }
+                    return isSameRoom && isNotEditingBooking;
+                });
+                
+                console.log('Date:', dateStr, '| Bookings for room:', roomBookings.length);
                 
                 // ตรวจสอบการทับซ้อนของเวลา
                 roomBookings.forEach(booking => {
@@ -3106,6 +3128,7 @@
                     // ตรวจสอบว่ามีการทับซ้อนหรือไม่
                     // การทับซ้อนเกิดขึ้นเมื่อ: startDateTime < bookingEnd AND endDateTime > bookingStart
                     if (startDateTime < bookingEnd && endDateTime > bookingStart) {
+                        console.log('CONFLICT DETECTED:', booking.title, 'Time:', formatTime(booking.startTime), '-', formatTime(booking.endTime));
                         conflicts.push({
                             startTime: booking.startTime,
                             endTime: booking.endTime,
@@ -3116,11 +3139,16 @@
                 });
             }
             
+            console.log('Total conflicts found:', conflicts.length);
+            console.log('=== End Conflict Check ===');
+            
             return {
                 conflict: conflicts.length > 0,
                 conflicts: conflicts
             };
         }
+
+
 
         window.saveBooking = async function(e) {
             e.preventDefault();
@@ -3161,7 +3189,18 @@
                     return;
                 }
                 
-                // ตรวจสอบซ้ำอีกครั้งเผื่อมีการเปลี่ยนแปลง
+                // ตรวจสอบความขัดแย้งในระดับ Frontend ก่อน (ตรวจสอบเฉพาะห้องนี้เท่านั้น)
+                const localConflict = checkLocalConflict(roomId, startDateTime, endDateTime, id);
+                if (localConflict.conflict) {
+                    const times = localConflict.conflicts.map(c => 
+                        `${formatTime(c.startTime)}-${formatTime(c.endTime)}`
+                    ).join(', ');
+                    showToast(`ห้องนี้มีการจองแล้วในช่วงเวลา: ${times}`, 'error');
+                    setButtonLoading(btn, false);
+                    return;
+                }
+                
+                // ตรวจสอบซ้ำอีกครั้งเผื่อมีการเปลี่ยนแปลง (ตรวจสอบเฉพาะห้องนี้เท่านั้น)
                 const checkResult = await callGAS('booking/check-availability', {
                     roomId,
                     startTime: startDateTime.toISOString(),
