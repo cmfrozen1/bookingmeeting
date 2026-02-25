@@ -1137,6 +1137,32 @@
             border-radius: 10px;
             margin-left: 8px;
         }
+
+        .settings-item {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .settings-item:hover {
+            border-color: var(--primary);
+        }
+        
+        .settings-item-label {
+            font-size: 15px;
+            font-weight: 500;
+        }
+        
+        .settings-item-desc {
+            font-size: 12px;
+            color: var(--text-secondary);
+            margin-top: 4px;
+        }
     </style>
 </head>
 <body>
@@ -1367,15 +1393,6 @@
                                 <option value="120">2 ชั่วโมง</option>
                             </select>
                             
-                            <!-- Notification Toggle -->
-                            <div class="mb-4 flex items-center justify-between">
-                                <span class="text-sm text-gray-400">เปิด/ปิดการแจ้งเตือนทั้งหมด</span>
-                                <label class="toggle-switch">
-                                    <input type="checkbox" id="setting-notifications-enabled" checked>
-                                    <span class="toggle-slider"></span>
-                                </label>
-                            </div>
-                            
                             <button type="submit" class="btn-primary w-full" id="settings-save-btn">บันทึกการตั้งค่า</button>
                         </form>
                     </div>
@@ -1549,8 +1566,27 @@
                 </div>
                 <div class="modal-body">
                     <form id="profile-form" onsubmit="saveProfile(event)">
-                        <input type="text" id="profile-phone" placeholder="เบอร์โทรศัพท์" class="input-field" maxlength="10">
-                        <input type="text" id="profile-department" placeholder="แผนก/หน่วยงาน" class="input-field" maxlength="50">
+                        <div class="mb-4">
+                            <label class="text-sm text-gray-400 mb-1 block">เบอร์โทรศัพท์</label>
+                            <input type="text" id="profile-phone" placeholder="เช่น 0812345678" class="input-field" maxlength="10">
+                        </div>
+                        
+                        <div class="mb-4">
+                            <label class="text-sm text-gray-400 mb-1 block">แผนก/หน่วยงาน</label>
+                            <input type="text" id="profile-department" placeholder="เช่น ไอที, ฝ่ายขาย" class="input-field" maxlength="50">
+                        </div>
+                        
+                        <!-- Notification Settings moved here -->
+                        <div class="settings-item">
+                            <div>
+                                <div class="settings-item-label">การแจ้งเตือน LINE</div>
+                                <div class="settings-item-desc">รับข้อความแจ้งเตือนเมื่อมีการจอง อนุมัติ หรือเปลี่ยนแปลง</div>
+                            </div>
+                            <label class="toggle-switch">
+                                <input type="checkbox" id="profile-notifications-enabled" checked>
+                                <span class="toggle-slider"></span>
+                            </label>
+                        </div>
                     </form>
                 </div>
                 <div class="modal-footer">
@@ -1655,7 +1691,9 @@
             settings: JSON.parse(localStorage.getItem('settings_cache')) || { 
                 appName: 'Meeting Room',
                 requireApproval: 'true',
-                reminderMinutes: '30',
+                reminderMinutes: '30'
+            },
+            userSettings: JSON.parse(localStorage.getItem('user_settings_cache')) || { 
                 notificationsEnabled: true // ค่าเริ่มต้นเปิดการแจ้งเตือน
             },
             initialized: false,
@@ -1720,7 +1758,7 @@
             settingsSaveBtn: document.getElementById('settings-save-btn'),
             settingRequireApproval: document.getElementById('setting-require-approval'),
             settingReminderMinutes: document.getElementById('setting-reminder-minutes'),
-            settingNotificationsEnabled: document.getElementById('setting-notifications-enabled'),
+            profileNotificationsEnabled: document.getElementById('profile-notifications-enabled'),
             calendarDays: document.getElementById('calendar-days'),
             currentMonth: document.getElementById('current-month'),
             selectedDateBookings: document.getElementById('selected-date-bookings'),
@@ -1837,8 +1875,8 @@
 
         // ========== NOTIFICATION CHECK ==========
         function areNotificationsEnabled() {
-            // ตรวจสอบสถานะการแจ้งเตือนจาก settings
-            return state.settings.notificationsEnabled !== false; // ถ้าไม่มีค่า ให้เปิดไว้ (true)
+            // ตรวจสอบจาก userSettings ของ user ปัจจุบัน
+            return state.userSettings.notificationsEnabled !== false;
         }
 
         // ========== JWT PARSER ==========
@@ -2354,12 +2392,12 @@
             return flexMessage;
         }
         
-        // แก้ไขฟังก์ชัน sendBookingToChat ให้ตรวจสอบสถานะการแจ้งเตือนก่อนส่ง
+        // แก้ไขฟังก์ชัน sendBookingToChat ให้ตรวจสอบการแจ้งเตือนก่อนส่ง
         async function sendBookingToChat(bookingData) {
             try {
-                // ตรวจสอบว่าปิดการแจ้งเตือนหรือไม่
+                // ตรวจสอบว่าปิดการแจ้งเตือนหรือไม่ (เฉพาะ user คนนั้นๆ)
                 if (!areNotificationsEnabled()) {
-                    console.log('Notifications are disabled, skipping message send');
+                    console.log('Notifications are disabled for this user, skipping message send');
                     return false;
                 }
 
@@ -2689,6 +2727,9 @@
                     renderRooms();
                 }
 
+                // โหลด user settings
+                loadUserSettings();
+
                 $.initLoading.classList.add('hide');
                 state.initialized = true;
 
@@ -2708,6 +2749,27 @@
                 $.initLoading.classList.add('hide');
                 if (!state.user) showToast('ไม่สามารถเชื่อมต่อ LINE ได้', 'error');
             }
+        }
+
+        function loadUserSettings() {
+            // โหลดการตั้งค่าส่วนตัวจาก localStorage
+            const saved = localStorage.getItem('user_settings_cache');
+            if (saved) {
+                try {
+                    state.userSettings = JSON.parse(saved);
+                } catch (e) {
+                    console.warn('Error parsing user settings', e);
+                }
+            }
+            
+            // อัปเดต UI
+            if ($.profileNotificationsEnabled) {
+                $.profileNotificationsEnabled.checked = state.userSettings.notificationsEnabled !== false;
+            }
+        }
+
+        function saveUserSettings() {
+            localStorage.setItem('user_settings_cache', JSON.stringify(state.userSettings));
         }
 
         function updateUserUI(user) {
@@ -4121,8 +4183,7 @@
                     state.settings = result.data || {
                         appName: 'Meeting Room',
                         requireApproval: 'true',
-                        reminderMinutes: '30',
-                        notificationsEnabled: true
+                        reminderMinutes: '30'
                     };
                     
                     document.getElementById('setting-app-name').value = state.settings.appName || 'Meeting Room';
@@ -4146,11 +4207,6 @@
                     if ($.settingReminderMinutes) {
                         $.settingReminderMinutes.value = state.settings.reminderMinutes || '30';
                     }
-
-                    // ตั้งค่าสถานะการแจ้งเตือน
-                    if ($.settingNotificationsEnabled) {
-                        $.settingNotificationsEnabled.checked = state.settings.notificationsEnabled !== false;
-                    }
                     
                     updateAppName(state.settings.appName);
                 } else {
@@ -4161,8 +4217,7 @@
                         state.settings = fallbackResult.data || {
                             appName: 'Meeting Room',
                             requireApproval: 'true',
-                            reminderMinutes: '30',
-                            notificationsEnabled: true
+                            reminderMinutes: '30'
                         };
                         
                         document.getElementById('setting-app-name').value = state.settings.appName || 'Meeting Room';
@@ -4184,10 +4239,6 @@
                         
                         if ($.settingReminderMinutes) {
                             $.settingReminderMinutes.value = state.settings.reminderMinutes || '30';
-                        }
-
-                        if ($.settingNotificationsEnabled) {
-                            $.settingNotificationsEnabled.checked = state.settings.notificationsEnabled !== false;
                         }
                         
                         updateAppName(state.settings.appName);
@@ -4211,7 +4262,6 @@
             const appName = document.getElementById('setting-app-name').value.trim() || 'Meeting Room';
             const requireApproval = $.settingRequireApproval ? $.settingRequireApproval.checked : true;
             const reminderMinutes = $.settingReminderMinutes?.value || '30';
-            const notificationsEnabled = $.settingNotificationsEnabled ? $.settingNotificationsEnabled.checked : true;
 
             const saveBtn = $.settingsSaveBtn;
             setButtonLoading(saveBtn, true);
@@ -4220,7 +4270,6 @@
                 appName,
                 requireApproval: requireApproval ? 'true' : 'false',
                 reminderMinutes,
-                notificationsEnabled: notificationsEnabled ? 'true' : 'false',
                 lineUserId: state.user.lineUserId
             };
 
@@ -4235,7 +4284,7 @@
                     userName: state.user.displayName,
                     startTime: new Date().toISOString(),
                     endTime: new Date().toISOString(),
-                    description: 'ชื่อแอป: ' + appName + '\nระบบอนุมัติ: ' + (requireApproval ? 'เปิดใช้งาน' : 'ปิดใช้งาน') + '\nแจ้งเตือนล่วงหน้า: ' + reminderMinutes + ' นาที\nการแจ้งเตือน: ' + (notificationsEnabled ? 'เปิด' : 'ปิด'),
+                    description: 'ชื่อแอป: ' + appName + '\nระบบอนุมัติ: ' + (requireApproval ? 'เปิดใช้งาน' : 'ปิดใช้งาน') + '\nแจ้งเตือนล่วงหน้า: ' + reminderMinutes + ' นาที',
                     action: 'settings_updated'
                 });
 
@@ -4252,6 +4301,12 @@
         window.showProfileSettings = function() {
             document.getElementById('profile-phone').value = state.user?.phone || '';
             document.getElementById('profile-department').value = state.user?.department || '';
+            
+            // ตั้งค่าสถานะการแจ้งเตือน
+            if ($.profileNotificationsEnabled) {
+                $.profileNotificationsEnabled.checked = state.userSettings.notificationsEnabled !== false;
+            }
+            
             document.getElementById('profile-modal').classList.add('active');
         };
 
@@ -4264,6 +4319,12 @@
             
             const saveBtn = e.submitter;
             setButtonLoading(saveBtn, true);
+
+            // บันทึกการตั้งค่าการแจ้งเตือน
+            if ($.profileNotificationsEnabled) {
+                state.userSettings.notificationsEnabled = $.profileNotificationsEnabled.checked;
+                saveUserSettings();
+            }
 
             const data = {
                 phone: document.getElementById('profile-phone').value,
