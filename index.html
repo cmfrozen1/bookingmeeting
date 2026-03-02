@@ -1699,7 +1699,9 @@
             },
             initialized: false,
             flatpickrInstances: {},
-            emailFetchAttempted: false
+            emailFetchAttempted: false,
+            // Cache for user names by lineUserId
+            userNamesCache: {}
         };
 
         function updateRoleFlags() {
@@ -1892,6 +1894,62 @@
                 console.error('Error parsing JWT:', e);
                 return {};
             }
+        }
+
+        // ========== USER NAME CACHE FUNCTIONS ==========
+        async function getUserNameFromCache(userId) {
+            if (!userId) return '';
+            
+            // Check if we already have it in state cache
+            if (state.userNamesCache[userId]) {
+                return state.userNamesCache[userId];
+            }
+            
+            // Check if it's the current user
+            if (state.user && state.user.lineUserId === userId) {
+                state.userNamesCache[userId] = state.user.displayName || 'Unknown User';
+                return state.userNamesCache[userId];
+            }
+            
+            // Try to find in users list
+            if (state.users && state.users.length > 0) {
+                const foundUser = state.users.find(u => u.lineUserId === userId);
+                if (foundUser) {
+                    state.userNamesCache[userId] = foundUser.displayName || 'Unknown User';
+                    return state.userNamesCache[userId];
+                }
+            }
+            
+            // Try to find in bookings
+            if (state.bookings && state.bookings.length > 0) {
+                const foundBooking = state.bookings.find(b => b.userId === userId);
+                if (foundBooking && foundBooking.userName) {
+                    state.userNamesCache[userId] = foundBooking.userName;
+                    return state.userNamesCache[userId];
+                }
+            }
+            
+            if (state.myBookings && state.myBookings.length > 0) {
+                const foundBooking = state.myBookings.find(b => b.userId === userId);
+                if (foundBooking && foundBooking.userName) {
+                    state.userNamesCache[userId] = foundBooking.userName;
+                    return state.userNamesCache[userId];
+                }
+            }
+            
+            // If not found, try to fetch from API
+            try {
+                const result = await callGAS('user/get-name', { userId });
+                if (result.success && result.data.name) {
+                    state.userNamesCache[userId] = result.data.name;
+                    return result.data.name;
+                }
+            } catch (error) {
+                console.error('Error fetching user name:', error);
+            }
+            
+            // Return userId if all else fails
+            return userId.substring(0, 8) + '...';
         }
 
         // ========== EMAIL FETCH FUNCTIONS ==========
@@ -2818,9 +2876,24 @@
                 });
                 
                 $.selectedDateTitle.textContent = `📅 การจองวันที่ ${dateThai}`;
-                $.selectedDateBookingsList.innerHTML = bookings.map(b => {
+                
+                // Process each booking to get approver names
+                const processedBookings = await Promise.all(bookings.map(async (b) => {
+                    let approvedByName = b.approvedBy;
+                    
+                    // If approvedBy is a userId (looks like a LINE userId), try to get the name
+                    if (approvedByName && approvedByName.length > 20 && !approvedByName.includes(' ')) {
+                        approvedByName = await getUserNameFromCache(approvedByName);
+                    }
+                    
+                    return {
+                        ...b,
+                        approvedByName
+                    };
+                }));
+                
+                $.selectedDateBookingsList.innerHTML = processedBookings.map(b => {
                     const statusClass = b.status === 'confirmed' ? '' : 'pending';
-                    let approvedByName = b.approvedBy || '';
                     
                     return `
                         <div class="date-booking-item ${statusClass}" onclick="showBookingDetail('${b.bookingId}')">
@@ -2829,7 +2902,7 @@
                             </div>
                             <div class="date-booking-title">${b.title}</div>
                             <div class="date-booking-room">${b.roomName} | โดย: ${b.userName}</div>
-                            ${approvedByName ? `<div class="text-xs text-green-500 mt-1">✅ อนุมัติโดย: ${approvedByName}</div>` : ''}
+                            ${b.approvedByName ? `<div class="text-xs text-green-500 mt-1">✅ อนุมัติโดย: ${b.approvedByName}</div>` : ''}
                         </div>
                     `;
                 }).join('');
@@ -3658,7 +3731,23 @@
                 return;
             }
 
-            $.myBookingsList.innerHTML = filtered.map(b => {
+            // Process each booking to get approver names
+            const processedBookings = filtered.map(b => {
+                let approvedByName = b.approvedBy;
+                
+                // If approvedBy is a userId (looks like a LINE userId), try to get the name
+                if (approvedByName && approvedByName.length > 20 && !approvedByName.includes(' ')) {
+                    // We'll use the cached name if available, otherwise show a placeholder
+                    approvedByName = state.userNamesCache[approvedByName] || approvedByName.substring(0, 8) + '...';
+                }
+                
+                return {
+                    ...b,
+                    approvedByName
+                };
+            });
+
+            $.myBookingsList.innerHTML = processedBookings.map(b => {
                 const statusClass = {
                     'confirmed': 'badge-confirmed',
                     'pending': 'badge-pending',
@@ -3673,8 +3762,6 @@
                     'rejected': 'ปฏิเสธ'
                 }[b.status] || b.status;
                 
-                let approvedByName = b.approvedBy || '';
-                
                 return `
                 <div class="bg-[#1a1d24] p-4 rounded-xl border border-[#2a2e36] cursor-pointer" onclick="showBookingDetail('${b.bookingId}')">
                     <div class="flex justify-between items-start mb-2">
@@ -3686,7 +3773,7 @@
                         <i class="far fa-calendar mr-1"></i> ${formatDateShort(b.startTime)} - ${formatDateShort(b.endTime)}<br>
                         <i class="far fa-clock mr-1"></i> ${formatTime(b.startTime)} - ${formatTime(b.endTime)}
                     </p>
-                    ${approvedByName ? `<p class="text-xs text-green-500 mb-2">✅ อนุมัติโดย: ${approvedByName}</p>` : ''}
+                    ${b.approvedByName ? `<p class="text-xs text-green-500 mb-2">✅ อนุมัติโดย: ${b.approvedByName}</p>` : ''}
                     <div class="flex justify-between items-center text-xs">
                         <span class="text-gray-500"><i class="fas fa-users mr-1"></i> ${b.attendees || 0} คน</span>
                         ${b.meetingLink ? '<span class="text-blue-500"><i class="fas fa-video mr-1"></i> มีลิงค์</span>' : ''}
@@ -3728,6 +3815,22 @@
                     'cancelled': 'ยกเลิก',
                     'rejected': 'ปฏิเสธ'
                 }[b.status] || b.status;
+
+                // Get approver name if it's a userId
+                let approvedByName = b.approvedBy;
+                if (approvedByName && approvedByName.length > 20 && !approvedByName.includes(' ')) {
+                    approvedByName = await getUserNameFromCache(approvedByName);
+                }
+                
+                let rejectedByName = b.rejectedBy;
+                if (rejectedByName && rejectedByName.length > 20 && !rejectedByName.includes(' ')) {
+                    rejectedByName = await getUserNameFromCache(rejectedByName);
+                }
+                
+                let cancelledByName = b.cancelledBy;
+                if (cancelledByName && cancelledByName.length > 20 && !cancelledByName.includes(' ')) {
+                    cancelledByName = await getUserNameFromCache(cancelledByName);
+                }
 
                 document.getElementById('booking-modal-body').innerHTML = `
                     <div class="mb-4">
@@ -3785,26 +3888,26 @@
                         </div>
                     ` : ''}
                     
-                    ${b.approvedBy ? `
+                    ${approvedByName ? `
                         <div class="mb-4 p-3 bg-green-900/20 rounded-lg">
                             <p class="text-sm text-gray-400 mb-1">✅ อนุมัติโดย</p>
-                            <p class="font-semibold text-green-500">${b.approvedBy}</p>
+                            <p class="font-semibold text-green-500">${approvedByName}</p>
                             <p class="text-xs text-gray-500">${b.approvedAt ? formatDateTime(b.approvedAt) : ''}</p>
                         </div>
                     ` : ''}
                     
-                    ${b.rejectedBy ? `
+                    ${rejectedByName ? `
                         <div class="mb-4 p-3 bg-red-900/20 rounded-lg">
                             <p class="text-sm text-gray-400 mb-1">❌ ปฏิเสธโดย</p>
-                            <p class="font-semibold text-red-500">${b.rejectedBy}</p>
+                            <p class="font-semibold text-red-500">${rejectedByName}</p>
                             ${b.rejectReason ? `<p class="text-sm mt-1">เหตุผล: ${b.rejectReason}</p>` : ''}
                         </div>
                     ` : ''}
                     
-                    ${b.cancelledBy ? `
+                    ${cancelledByName ? `
                         <div class="mb-4 p-3 bg-gray-800 rounded-lg">
                             <p class="text-sm text-gray-400 mb-1">❌ ยกเลิกโดย</p>
-                            <p class="font-semibold text-gray-400">${b.cancelledBy}</p>
+                            <p class="font-semibold text-gray-400">${cancelledByName}</p>
                         </div>
                     ` : ''}
                     
@@ -4075,16 +4178,32 @@
                 return;
             }
 
-            $.allBookingsList.innerHTML = filtered.map(b => {
+            // Process each booking to get approver names
+            const processedBookings = filtered.map(b => {
+                let approvedByName = b.approvedBy;
+                if (approvedByName && approvedByName.length > 20 && !approvedByName.includes(' ')) {
+                    approvedByName = state.userNamesCache[approvedByName] || approvedByName.substring(0, 8) + '...';
+                }
+                
+                let rejectedByName = b.rejectedBy;
+                if (rejectedByName && rejectedByName.length > 20 && !rejectedByName.includes(' ')) {
+                    rejectedByName = state.userNamesCache[rejectedByName] || rejectedByName.substring(0, 8) + '...';
+                }
+                
+                return {
+                    ...b,
+                    approvedByName,
+                    rejectedByName
+                };
+            });
+
+            $.allBookingsList.innerHTML = processedBookings.map(b => {
                 const statusClass = {
                     'confirmed': 'badge-confirmed',
                     'pending': 'badge-pending',
                     'cancelled': 'badge-cancelled',
                     'rejected': 'badge-rejected'
                 }[b.status] || 'badge-pending';
-                
-                let approvedByName = b.approvedBy || '';
-                let rejectedByName = b.rejectedBy || '';
                 
                 return `
                 <div class="bg-[#1a1d24] p-3 rounded-lg border border-[#2a2e36] flex justify-between items-center">
@@ -4100,8 +4219,8 @@
                             <span><i class="far fa-user mr-1"></i> ${b.userName}</span>
                             <span><i class="far fa-clock mr-1"></i> ${formatDateShort(b.startTime)} - ${formatDateShort(b.endTime)}</span>
                         </div>
-                        ${approvedByName ? `<p class="text-xs text-green-500 mt-1">✅ อนุมัติโดย: ${approvedByName}</p>` : ''}
-                        ${rejectedByName ? `<p class="text-xs text-red-500 mt-1">❌ ปฏิเสธโดย: ${rejectedByName}</p>` : ''}
+                        ${b.approvedByName ? `<p class="text-xs text-green-500 mt-1">✅ อนุมัติโดย: ${b.approvedByName}</p>` : ''}
+                        ${b.rejectedByName ? `<p class="text-xs text-red-500 mt-1">❌ ปฏิเสธโดย: ${b.rejectedByName}</p>` : ''}
                     </div>
                     <button class="text-[#06c755] text-xs ml-2" onclick="shareBookingViaPicker('${b.bookingId}'); event.stopPropagation();">
                         <i class="fas fa-share-alt mr-1"></i>แชร์
@@ -4115,6 +4234,12 @@
                 const result = await callGAS('admin/users');
                 if (result.success) {
                     state.users = result.data || [];
+                    // Update user names cache
+                    state.users.forEach(u => {
+                        if (u.lineUserId && u.displayName) {
+                            state.userNamesCache[u.lineUserId] = u.displayName;
+                        }
+                    });
                     renderUsers();
                 }
             } catch (error) {
