@@ -34,6 +34,7 @@
     <script src="https://npmcdn.com/flatpickr/dist/l10n/th.js"></script>
     
     <style>
+        /* (CSS เดิมทั้งหมดเหมือนเดิม) */
         * {
             font-family: 'IBM Plex Sans Thai', sans-serif;
             margin: 0;
@@ -1694,7 +1695,7 @@
                 reminderMinutes: '30'
             },
             userSettings: JSON.parse(localStorage.getItem('user_settings_cache')) || { 
-                notificationsEnabled: true // ค่าเริ่มต้นเปิดการแจ้งเตือน
+                notificationsEnabled: true
             },
             initialized: false,
             flatpickrInstances: {},
@@ -1875,7 +1876,6 @@
 
         // ========== NOTIFICATION CHECK ==========
         function areNotificationsEnabled() {
-            // ตรวจสอบจาก userSettings ของ user ปัจจุบัน
             return state.userSettings.notificationsEnabled !== false;
         }
 
@@ -1962,7 +1962,6 @@
 
             console.log('Attempting to fetch email...');
 
-            // Try ID Token first
             let email = await fetchEmailFromIdToken();
             if (email) {
                 state.user.email = email;
@@ -1972,7 +1971,6 @@
                 return email;
             }
 
-            // Try Access Token
             email = await fetchEmailWithAccessToken();
             if (email) {
                 state.user.email = email;
@@ -2060,7 +2058,6 @@
             const end = $.bookingEnd?.value;
             const attendees = parseInt($.bookingAttendees?.value) || 0;
 
-            // ตรวจสอบจำนวนผู้เข้าร่วม
             if (!attendees || attendees < 1) {
                 if ($.availabilityStatus) {
                     $.availabilityStatus.innerHTML = '<span class="text-red-500">⚠️ จำนวนผู้เข้าร่วมต้องมีอย่างน้อย 1 คน</span>';
@@ -2070,13 +2067,11 @@
                 return false;
             }
 
-            // ตรวจสอบว่ากรอกข้อมูลครบหรือไม่
             if (!roomId || !title || !date || !endDate || !start || !end) {
                 $.saveBookingBtn.disabled = true;
                 return false;
             }
 
-            // ตรวจสอบวันที่
             if (date && endDate && date > endDate) {
                 if ($.availabilityStatus) {
                     $.availabilityStatus.innerHTML = '<span class="text-red-500">⚠️ วันที่สิ้นสุดต้องไม่ก่อนวันที่เริ่ม</span>';
@@ -2136,12 +2131,12 @@
                 description, 
                 meetingLink,
                 action,
-                approvedBy,      // ชื่อ LINE ของผู้อนุมัติ
-                approvedAt,       // วันที่อนุมัติ
-                rejectedBy,       // ชื่อ LINE ของผู้ปฏิเสธ
-                cancelledBy,      // ชื่อ LINE ของผู้ยกเลิก
-                createdAt,        // วันที่จอง
-                bookingId         // รหัสการจอง
+                approvedBy,      
+                approvedAt,       
+                rejectedBy,       
+                cancelledBy,      
+                createdAt,        
+                bookingId         
             } = bookingData;
             
             let statusColor = '#f7c50f';
@@ -2171,7 +2166,6 @@
                 statusThai = '❌ ปฏิเสธการจอง';
             }
             
-            // กำหนด action text
             if (action === 'created') {
                 statusEmoji = '📅';
                 statusText = 'จองใหม่';
@@ -2585,7 +2579,6 @@
                 });
             }
             
-            // วันที่สร้างการจอง
             if (createdAt) {
                 flexMessage.contents.body.contents.push({
                     type: 'box',
@@ -2604,7 +2597,6 @@
                 });
             }
             
-            // ปุ่มลิงค์ประชุม
             if (meetingLink) {
                 flexMessage.contents.footer.contents.push({
                     type: 'button',
@@ -2619,7 +2611,6 @@
                 });
             }
             
-            // ปุ่มดูรายละเอียด (ถ้ามี bookingId)
             if (bookingId && liff.isInClient()) {
                 flexMessage.contents.footer.contents.push({
                     type: 'button',
@@ -2636,10 +2627,8 @@
             return flexMessage;
         }
         
-        // ส่ง Flex Message ไปยังแชท
         async function sendBookingToChat(bookingData) {
             try {
-                // ตรวจสอบว่าปิดการแจ้งเตือนหรือไม่ (เฉพาะ user คนนั้นๆ)
                 if (!areNotificationsEnabled()) {
                     console.log('Notifications are disabled for this user, skipping message send');
                     return false;
@@ -2831,6 +2820,8 @@
                 $.selectedDateTitle.textContent = `📅 การจองวันที่ ${dateThai}`;
                 $.selectedDateBookingsList.innerHTML = bookings.map(b => {
                     const statusClass = b.status === 'confirmed' ? '' : 'pending';
+                    let approvedByName = b.approvedBy || '';
+                    
                     return `
                         <div class="date-booking-item ${statusClass}" onclick="showBookingDetail('${b.bookingId}')">
                             <div class="date-booking-time">
@@ -2838,7 +2829,7 @@
                             </div>
                             <div class="date-booking-title">${b.title}</div>
                             <div class="date-booking-room">${b.roomName} | โดย: ${b.userName}</div>
-                            ${b.approvedBy ? `<div class="text-xs text-green-500 mt-1">✅ อนุมัติโดย: ${b.approvedBy}</div>` : ''}
+                            ${approvedByName ? `<div class="text-xs text-green-500 mt-1">✅ อนุมัติโดย: ${approvedByName}</div>` : ''}
                         </div>
                     `;
                 }).join('');
@@ -2930,7 +2921,6 @@
 
                 const profile = await liff.getProfile();
                 
-                // ดึงข้อมูลผู้ใช้
                 const userData = {
                     lineUserId: profile.userId,
                     displayName: profile.displayName,
@@ -2939,7 +2929,6 @@
                     source: 'miniapp'
                 };
 
-                // ลองดึงอีเมลจาก ID Token ก่อน
                 const idToken = liff.getIDToken();
                 const tokenPayload = idToken ? parseJwt(idToken) : {};
                 if (tokenPayload.email) {
@@ -2959,7 +2948,6 @@
                     localStorage.setItem('user_cache', JSON.stringify(state.user));
                     updateUserUI(state.user);
                     
-                    // ถ้ายังไม่มีอีเมล ให้พยายามดึงอีกครั้ง
                     if (!state.user.email || state.user.email === '') {
                         console.log('No email found, attempting to fetch...');
                         await tryFetchEmail();
@@ -2972,7 +2960,6 @@
                     renderRooms();
                 }
 
-                // โหลด user settings
                 loadUserSettings();
 
                 $.initLoading.classList.add('hide');
@@ -2997,7 +2984,6 @@
         }
 
         function loadUserSettings() {
-            // โหลดการตั้งค่าส่วนตัวจาก localStorage
             const saved = localStorage.getItem('user_settings_cache');
             if (saved) {
                 try {
@@ -3007,7 +2993,6 @@
                 }
             }
             
-            // อัปเดต UI
             if ($.profileNotificationsEnabled) {
                 $.profileNotificationsEnabled.checked = state.userSettings.notificationsEnabled !== false;
             }
@@ -3026,7 +3011,6 @@
                 $.profileEmail.textContent = user.email;
                 $.profileEmail.classList.remove('text-gray-500', 'cursor-pointer');
             } else {
-                // แสดงข้อความว่ากำลังโหลดอีเมลแทนปุ่มขอสิทธิ์
                 $.profileEmail.innerHTML = '<span class="text-gray-400"><i class="fas fa-spinner fa-spin mr-1"></i>กำลังโหลดอีเมล...</span>';
             }
             
@@ -3286,6 +3270,7 @@
                                         'cancelled': 'text-gray-500',
                                         'rejected': 'text-red-500'
                                     }[b.status] || 'text-gray-500';
+                                    let approvedByName = b.approvedBy || '';
                                     
                                     return `
                                         <div class="bg-[#111317] p-2 rounded-lg text-sm">
@@ -3294,7 +3279,7 @@
                                                 <span class="${statusColor}">${b.status === 'confirmed' ? 'จองแล้ว' : b.status}</span>
                                             </div>
                                             <p class="text-xs text-gray-400">${b.title}</p>
-                                            ${b.approvedBy ? `<p class="text-xs text-green-500 mt-1">✅ อนุมัติโดย: ${b.approvedBy}</p>` : ''}
+                                            ${approvedByName ? `<p class="text-xs text-green-500 mt-1">✅ อนุมัติโดย: ${approvedByName}</p>` : ''}
                                         </div>
                                     `;
                                 }).join('')}
@@ -3372,7 +3357,6 @@
             document.getElementById('booking-create-modal').classList.remove('active');
         };
 
-        // ========== CHECK AVAILABILITY (แก้ไขแล้ว) ==========
         async function checkAvailability() {
             const roomId = document.getElementById('booking-room').value;
             const startDate = $.bookingDate?.value;
@@ -3382,18 +3366,15 @@
             const attendees = parseInt($.bookingAttendees?.value) || 0;
             const editBookingId = document.getElementById('edit-booking-id')?.value;
             
-            // ถ้ายังไม่ได้เลือกห้องหรือวันที่ ให้ซ่อนสถานะ
             if (!roomId || !startDate || !endDate || !start || !end) {
                 $.availabilityStatus.classList.add('hidden');
                 $.saveBookingBtn.disabled = true;
                 return;
             }
             
-            // หาชื่อห้องที่เลือก
             const selectedRoom = state.rooms.find(r => r.roomId === roomId);
             const roomName = selectedRoom ? selectedRoom.name : 'ห้องที่เลือก';
             
-            // ตรวจสอบจำนวนผู้เข้าร่วม
             if (attendees < 1) {
                 $.availabilityStatus.innerHTML = '<span class="text-red-500">⚠️ จำนวนผู้เข้าร่วมต้องมีอย่างน้อย 1 คน</span>';
                 $.availabilityStatus.classList.remove('hidden');
@@ -3451,12 +3432,10 @@
                 return;
             }
             
-            // แสดงสถานะกำลังตรวจสอบ
             $.availabilityStatus.innerHTML = `<span class="text-yellow-500"><i class="fas fa-spinner fa-spin mr-2"></i>กำลังตรวจสอบห้องว่างสำหรับห้อง "${roomName}"...</span>`;
             $.availabilityStatus.classList.remove('hidden');
             $.saveBookingBtn.disabled = true;
             
-            // ตรวจสอบห้องว่างกับ backend
             try {
                 console.log('Checking availability for room:', roomId, roomName);
                 
@@ -3469,7 +3448,6 @@
                 
                 if (result.success) {
                     if (result.data.available) {
-                        // แสดงข้อมูลห้องที่เลือกให้ชัดเจน
                         $.availabilityStatus.innerHTML = `<span class="text-green-500">✅ ห้อง "${roomName}" ว่างในช่วงเวลาที่เลือก</span>`;
                         $.availabilityStatus.classList.remove('hidden');
                         $.saveBookingBtn.disabled = false;
@@ -3498,7 +3476,6 @@
             }
         }
 
-        // ========== SAVE BOOKING (แก้ไขแล้ว) ==========
         window.saveBooking = async function(e) {
             e.preventDefault();
             
@@ -3538,12 +3515,10 @@
                     return;
                 }
                 
-                // หาชื่อห้อง
                 const roomName = selectedRoom ? selectedRoom.name : 'ห้องที่เลือก';
                 
                 console.log('Saving booking for room:', roomId, roomName);
                 
-                // ตรวจสอบซ้ำอีกครั้งเผื่อมีการเปลี่ยนแปลง
                 const checkResult = await callGAS('booking/check-availability', {
                     roomId,
                     startTime: startDateTime.toISOString(),
@@ -3554,7 +3529,7 @@
                 if (!checkResult.success || !checkResult.data.available) {
                     showToast(`ห้อง "${roomName}" ไม่ว่างในช่วงเวลาที่เลือก`, 'error');
                     setButtonLoading(btn, false);
-                    await checkAvailability(); // อัพเดทสถานะ
+                    await checkAvailability();
                     return;
                 }
                 
@@ -3586,7 +3561,6 @@
                         loadMonthBookings(state.currentMonth.getFullYear(), state.currentMonth.getMonth())
                     ]);
                     
-                    // ส่ง Flex Message ทันทีเมื่อจองสำเร็จ
                     if (!id && result.data?.bookingData) {
                         setTimeout(async () => {
                             const bookingData = {
@@ -3614,9 +3588,6 @@
 
         window.shareBookingViaPicker = async function(bookingId) {
             try {
-                // ตรวจสอบการแจ้งเตือนก่อนแชร์ (การแชร์ไม่นับเป็นการแจ้งเตือน)
-                // ดังนั้นไม่ต้องตรวจสอบ areNotificationsEnabled()
-                
                 if (!liff.isInClient()) {
                     showToast('กรุณาเปิดใน LINE', 'warning');
                     return;
@@ -3702,6 +3673,8 @@
                     'rejected': 'ปฏิเสธ'
                 }[b.status] || b.status;
                 
+                let approvedByName = b.approvedBy || '';
+                
                 return `
                 <div class="bg-[#1a1d24] p-4 rounded-xl border border-[#2a2e36] cursor-pointer" onclick="showBookingDetail('${b.bookingId}')">
                     <div class="flex justify-between items-start mb-2">
@@ -3713,7 +3686,7 @@
                         <i class="far fa-calendar mr-1"></i> ${formatDateShort(b.startTime)} - ${formatDateShort(b.endTime)}<br>
                         <i class="far fa-clock mr-1"></i> ${formatTime(b.startTime)} - ${formatTime(b.endTime)}
                     </p>
-                    ${b.approvedBy ? `<p class="text-xs text-green-500 mb-2">✅ อนุมัติโดย: ${b.approvedBy}</p>` : ''}
+                    ${approvedByName ? `<p class="text-xs text-green-500 mb-2">✅ อนุมัติโดย: ${approvedByName}</p>` : ''}
                     <div class="flex justify-between items-center text-xs">
                         <span class="text-gray-500"><i class="fas fa-users mr-1"></i> ${b.attendees || 0} คน</span>
                         ${b.meetingLink ? '<span class="text-blue-500"><i class="fas fa-video mr-1"></i> มีลิงค์</span>' : ''}
@@ -4110,6 +4083,9 @@
                     'rejected': 'badge-rejected'
                 }[b.status] || 'badge-pending';
                 
+                let approvedByName = b.approvedBy || '';
+                let rejectedByName = b.rejectedBy || '';
+                
                 return `
                 <div class="bg-[#1a1d24] p-3 rounded-lg border border-[#2a2e36] flex justify-between items-center">
                     <div class="flex-1">
@@ -4124,8 +4100,8 @@
                             <span><i class="far fa-user mr-1"></i> ${b.userName}</span>
                             <span><i class="far fa-clock mr-1"></i> ${formatDateShort(b.startTime)} - ${formatDateShort(b.endTime)}</span>
                         </div>
-                        ${b.approvedBy ? `<p class="text-xs text-green-500 mt-1">✅ อนุมัติโดย: ${b.approvedBy}</p>` : ''}
-                        ${b.rejectedBy ? `<p class="text-xs text-red-500 mt-1">❌ ปฏิเสธโดย: ${b.rejectedBy}</p>` : ''}
+                        ${approvedByName ? `<p class="text-xs text-green-500 mt-1">✅ อนุมัติโดย: ${approvedByName}</p>` : ''}
+                        ${rejectedByName ? `<p class="text-xs text-red-500 mt-1">❌ ปฏิเสธโดย: ${rejectedByName}</p>` : ''}
                     </div>
                     <button class="text-[#06c755] text-xs ml-2" onclick="shareBookingViaPicker('${b.bookingId}'); event.stopPropagation();">
                         <i class="fas fa-share-alt mr-1"></i>แชร์
@@ -4592,7 +4568,6 @@
             document.getElementById('profile-phone').value = state.user?.phone || '';
             document.getElementById('profile-department').value = state.user?.department || '';
             
-            // ตั้งค่าสถานะการแจ้งเตือน
             if ($.profileNotificationsEnabled) {
                 $.profileNotificationsEnabled.checked = state.userSettings.notificationsEnabled !== false;
             }
@@ -4610,7 +4585,6 @@
             const saveBtn = e.submitter;
             setButtonLoading(saveBtn, true);
 
-            // บันทึกการตั้งค่าการแจ้งเตือน
             if ($.profileNotificationsEnabled) {
                 state.userSettings.notificationsEnabled = $.profileNotificationsEnabled.checked;
                 saveUserSettings();
