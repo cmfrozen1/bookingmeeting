@@ -2176,7 +2176,7 @@
         }
 
         // ========== FLEX MESSAGE ==========
-        function createBookingFlexMessage(bookingData) {
+        async function createBookingFlexMessage(bookingData) {
             const { 
                 title, 
                 roomName, 
@@ -2261,6 +2261,24 @@
                 statusEmoji = '🗑️';
                 statusText = 'ลบผู้ใช้';
                 statusThai = '🗑️ ลบผู้ใช้ออกจากระบบ';
+            }
+            
+            // Get proper names for approvers/rejecters/cancellers if they are userIds
+            let approvedByName = approvedBy;
+            let rejectedByName = rejectedBy;
+            let cancelledByName = cancelledBy;
+            
+            // Check if these are userIds (long strings without spaces)
+            if (approvedBy && approvedBy.length > 20 && !approvedBy.includes(' ')) {
+                approvedByName = await getUserNameFromCache(approvedBy);
+            }
+            
+            if (rejectedBy && rejectedBy.length > 20 && !rejectedBy.includes(' ')) {
+                rejectedByName = await getUserNameFromCache(rejectedBy);
+            }
+            
+            if (cancelledBy && cancelledBy.length > 20 && !cancelledBy.includes(' ')) {
+                cancelledByName = await getUserNameFromCache(cancelledBy);
             }
             
             const flexMessage = {
@@ -2488,7 +2506,7 @@
             };
             
             // เพิ่มข้อมูลผู้อนุมัติ/ผู้ดำเนินการ (แสดงชื่อ LINE)
-            if (approvedBy) {
+            if (approvedByName) {
                 flexMessage.contents.body.contents.push({
                     type: 'box',
                     layout: 'vertical',
@@ -2507,7 +2525,7 @@
                         },
                         {
                             type: 'text',
-                            text: approvedBy,  // ชื่อ LINE ของผู้อนุมัติ
+                            text: approvedByName,  // ชื่อ LINE ของผู้อนุมัติ
                             size: 'sm',
                             color: '#1b5e20',
                             weight: 'bold',
@@ -2524,7 +2542,7 @@
                 });
             }
             
-            if (rejectedBy) {
+            if (rejectedByName) {
                 flexMessage.contents.body.contents.push({
                     type: 'box',
                     layout: 'vertical',
@@ -2543,7 +2561,7 @@
                         },
                         {
                             type: 'text',
-                            text: rejectedBy,  // ชื่อ LINE ของผู้ปฏิเสธ
+                            text: rejectedByName,  // ชื่อ LINE ของผู้ปฏิเสธ
                             size: 'sm',
                             color: '#b71c1c',
                             weight: 'bold',
@@ -2553,7 +2571,7 @@
                 });
             }
             
-            if (cancelledBy) {
+            if (cancelledByName) {
                 flexMessage.contents.body.contents.push({
                     type: 'box',
                     layout: 'vertical',
@@ -2572,7 +2590,7 @@
                         },
                         {
                             type: 'text',
-                            text: cancelledBy,  // ชื่อ LINE ของผู้ยกเลิก
+                            text: cancelledByName,  // ชื่อ LINE ของผู้ยกเลิก
                             size: 'sm',
                             color: '#424242',
                             weight: 'bold',
@@ -2697,7 +2715,7 @@
                     return false;
                 }
                 
-                const flexMessage = createBookingFlexMessage(bookingData);
+                const flexMessage = await createBookingFlexMessage(bookingData);
                 await liff.sendMessages([flexMessage]);
                 console.log('Flex message sent successfully');
                 showToast('ส่งข้อมูลการจองไปยังแชทเรียบร้อย');
@@ -3673,7 +3691,7 @@
                 }
 
                 const booking = result.data;
-                const flexMessage = createBookingFlexMessage(booking);
+                const flexMessage = await createBookingFlexMessage(booking);
 
                 await liff.shareTargetPicker([flexMessage]);
                 showToast('แชร์การจองสำเร็จ');
