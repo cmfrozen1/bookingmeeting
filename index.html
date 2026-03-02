@@ -2135,58 +2135,97 @@
                 attendees, 
                 description, 
                 meetingLink,
-                action 
+                action,
+                approvedBy,      // ชื่อผู้อนุมัติ
+                approvedAt,       // วันที่อนุมัติ
+                rejectedBy,       // ผู้ปฏิเสธ
+                cancelledBy,      // ผู้ยกเลิก
+                createdAt,        // วันที่จอง
+                bookingId         // รหัสการจอง
             } = bookingData;
             
             let statusColor = '#f7c50f';
             let statusEmoji = '📝';
-            let statusText = 'ข้อมูลการจอง';
+            let statusText = 'รออนุมัติ';
+            let statusThai = '⏳ รอการอนุมัติ';
             
-            if (action === 'cancelled') {
+            if (status === 'confirmed' || action === 'approved') {
+                statusColor = '#06c755';
+                statusEmoji = '✅';
+                statusText = 'อนุมัติแล้ว';
+                statusThai = '✅ อนุมัติแล้ว';
+            } else if (status === 'pending') {
+                statusColor = '#f7c50f';
+                statusEmoji = '📝';
+                statusText = 'รออนุมัติ';
+                statusThai = '⏳ รออนุมัติ';
+            } else if (status === 'cancelled' || action === 'cancelled') {
                 statusColor = '#9ca3af';
                 statusEmoji = '❌';
                 statusText = 'ยกเลิก';
-            } else if (action === 'rejected') {
+                statusThai = '❌ ยกเลิกการจอง';
+            } else if (status === 'rejected' || action === 'rejected') {
                 statusColor = '#ef4444';
                 statusEmoji = '❌';
                 statusText = 'ปฏิเสธ';
+                statusThai = '❌ ปฏิเสธการจอง';
+            }
+            
+            // กำหนด action text
+            if (action === 'created') {
+                statusEmoji = '📅';
+                statusText = 'จองใหม่';
+                statusThai = '📅 จองห้องประชุมใหม่';
+            } else if (action === 'cancelled') {
+                statusEmoji = '❌';
+                statusText = 'ยกเลิก';
+                statusThai = '❌ ยกเลิกการจอง';
+            } else if (action === 'rejected') {
+                statusEmoji = '❌';
+                statusText = 'ปฏิเสธ';
+                statusThai = '❌ ปฏิเสธการจอง';
             } else if (action === 'deleted') {
                 statusColor = '#ef4444';
                 statusEmoji = '🗑️';
                 statusText = 'ลบ';
+                statusThai = '🗑️ ลบการจอง';
             } else if (action === 'approved') {
                 statusColor = '#06c755';
                 statusEmoji = '✅';
                 statusText = 'อนุมัติ';
+                statusThai = '✅ อนุมัติการจอง';
             } else if (action === 'role_updated') {
                 statusColor = '#3b82f6';
                 statusEmoji = '🔑';
                 statusText = 'อัปเดตสิทธิ์';
+                statusThai = '🔑 อัปเดตสิทธิ์ผู้ใช้';
             } else if (action === 'settings_updated') {
                 statusColor = '#f59e0b';
                 statusEmoji = '⚙️';
                 statusText = 'อัปเดตการตั้งค่า';
+                statusThai = '⚙️ อัปเดตการตั้งค่าระบบ';
             } else if (action === 'user_deleted') {
                 statusColor = '#ef4444';
                 statusEmoji = '🗑️';
                 statusText = 'ลบผู้ใช้';
+                statusThai = '🗑️ ลบผู้ใช้ออกจากระบบ';
             }
             
             const flexMessage = {
                 type: 'flex',
-                altText: `${statusEmoji} ${statusText} - ${title}`,
+                altText: `${statusEmoji} ${statusText} - ${title || 'การจองห้องประชุม'}`,
                 contents: {
                     type: 'bubble',
                     header: {
                         type: 'box',
                         layout: 'vertical',
                         backgroundColor: statusColor,
-                        spacing: 'none',
+                        paddingAll: '12px',
                         contents: [
                             {
                                 type: 'text',
-                                text: `${statusEmoji} ${statusText}`,
-                                size: 'xl',
+                                text: `${statusEmoji} ${statusThai}`,
+                                size: 'lg',
                                 weight: 'bold',
                                 color: '#ffffff',
                                 align: 'center'
@@ -2197,18 +2236,25 @@
                         type: 'box',
                         layout: 'vertical',
                         spacing: 'md',
+                        paddingAll: '16px',
                         contents: [
                             {
                                 type: 'text',
-                                text: title || 'ไม่ระบุหัวข้อ',
+                                text: title || 'ไม่ระบุหัวข้อการประชุม',
                                 size: 'xl',
                                 weight: 'bold',
-                                wrap: true
+                                wrap: true,
+                                color: '#000000'
+                            },
+                            {
+                                type: 'separator',
+                                margin: 'md'
                             },
                             {
                                 type: 'box',
                                 layout: 'vertical',
                                 spacing: 'sm',
+                                margin: 'md',
                                 contents: [
                                     {
                                         type: 'box',
@@ -2218,15 +2264,23 @@
                                             {
                                                 type: 'text',
                                                 text: '🏢',
-                                                size: 'sm',
+                                                size: 'md',
                                                 flex: 0
+                                            },
+                                            {
+                                                type: 'text',
+                                                text: 'ห้องประชุม:',
+                                                size: 'sm',
+                                                color: '#8c8c8c',
+                                                flex: 2
                                             },
                                             {
                                                 type: 'text',
                                                 text: roomName || 'ไม่ระบุห้อง',
                                                 size: 'sm',
                                                 color: '#06c755',
-                                                flex: 5,
+                                                weight: 'bold',
+                                                flex: 4,
                                                 wrap: true
                                             }
                                         ]
@@ -2239,14 +2293,22 @@
                                             {
                                                 type: 'text',
                                                 text: '👤',
-                                                size: 'sm',
+                                                size: 'md',
                                                 flex: 0
+                                            },
+                                            {
+                                                type: 'text',
+                                                text: 'ผู้จอง:',
+                                                size: 'sm',
+                                                color: '#8c8c8c',
+                                                flex: 2
                                             },
                                             {
                                                 type: 'text',
                                                 text: userName || 'ไม่ระบุชื่อ',
                                                 size: 'sm',
-                                                flex: 5,
+                                                weight: 'bold',
+                                                flex: 4,
                                                 wrap: true
                                             }
                                         ]
@@ -2259,14 +2321,21 @@
                                             {
                                                 type: 'text',
                                                 text: '📅',
-                                                size: 'sm',
+                                                size: 'md',
                                                 flex: 0
+                                            },
+                                            {
+                                                type: 'text',
+                                                text: 'วันที่:',
+                                                size: 'sm',
+                                                color: '#8c8c8c',
+                                                flex: 2
                                             },
                                             {
                                                 type: 'text',
                                                 text: formatDateShort(startTime) || 'ไม่ระบุวันที่',
                                                 size: 'sm',
-                                                flex: 5
+                                                flex: 4
                                             }
                                         ]
                                     },
@@ -2278,14 +2347,21 @@
                                             {
                                                 type: 'text',
                                                 text: '⏰',
-                                                size: 'sm',
+                                                size: 'md',
                                                 flex: 0
+                                            },
+                                            {
+                                                type: 'text',
+                                                text: 'เวลา:',
+                                                size: 'sm',
+                                                color: '#8c8c8c',
+                                                flex: 2
                                             },
                                             {
                                                 type: 'text',
                                                 text: (formatTime(startTime) || 'ไม่ระบุ') + ' - ' + (formatTime(endTime) || 'ไม่ระบุ'),
                                                 size: 'sm',
-                                                flex: 5
+                                                flex: 4
                                             }
                                         ]
                                     },
@@ -2297,18 +2373,55 @@
                                             {
                                                 type: 'text',
                                                 text: '👥',
-                                                size: 'sm',
+                                                size: 'md',
                                                 flex: 0
+                                            },
+                                            {
+                                                type: 'text',
+                                                text: 'ผู้เข้าร่วม:',
+                                                size: 'sm',
+                                                color: '#8c8c8c',
+                                                flex: 2
                                             },
                                             {
                                                 type: 'text',
                                                 text: (attendees || 0) + ' คน',
                                                 size: 'sm',
-                                                flex: 5
+                                                flex: 4
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        type: 'box',
+                                        layout: 'baseline',
+                                        spacing: 'sm',
+                                        contents: [
+                                            {
+                                                type: 'text',
+                                                text: '🆔',
+                                                size: 'md',
+                                                flex: 0
+                                            },
+                                            {
+                                                type: 'text',
+                                                text: 'รหัสการจอง:',
+                                                size: 'sm',
+                                                color: '#8c8c8c',
+                                                flex: 2
+                                            },
+                                            {
+                                                type: 'text',
+                                                text: bookingId?.substring(0, 8) + '...' || 'ไม่ระบุ',
+                                                size: 'sm',
+                                                flex: 4
                                             }
                                         ]
                                     }
                                 ]
+                            },
+                            {
+                                type: 'separator',
+                                margin: 'md'
                             }
                         ]
                     },
@@ -2316,47 +2429,126 @@
                         type: 'box',
                         layout: 'vertical',
                         spacing: 'sm',
+                        paddingAll: '16px',
                         contents: []
                     }
                 }
             };
             
-            if (meetingLink) {
-                flexMessage.contents.footer.contents.push({
-                    type: 'button',
-                    action: {
-                        type: 'uri',
-                        label: '🔗 เข้าร่วมประชุม',
-                        uri: meetingLink
-                    },
-                    style: 'primary',
-                    color: '#06c755'
-                });
-            }
-            
-            if (action === 'rejected' && reason) {
+            // เพิ่มข้อมูลผู้อนุมัติ/ผู้ดำเนินการ
+            if (approvedBy) {
                 flexMessage.contents.body.contents.push({
                     type: 'box',
                     layout: 'vertical',
                     spacing: 'sm',
                     margin: 'md',
-                    paddingAll: 'md',
-                    backgroundColor: '#fef2f2',
-                    borderColor: '#ef4444',
-                    borderWidth: '1px',
+                    backgroundColor: '#e8f5e9',
+                    paddingAll: '12px',
+                    cornerRadius: '8px',
                     contents: [
                         {
                             type: 'text',
-                            text: '📝 เหตุผลที่ปฏิเสธ:',
+                            text: '✅ อนุมัติโดย:',
                             size: 'sm',
                             weight: 'bold',
-                            color: '#ef4444'
+                            color: '#2e7d32'
+                        },
+                        {
+                            type: 'text',
+                            text: approvedBy,
+                            size: 'sm',
+                            color: '#1b5e20',
+                            wrap: true
+                        },
+                        {
+                            type: 'text',
+                            text: approvedAt ? formatDateTime(approvedAt) : '',
+                            size: 'xs',
+                            color: '#4caf50',
+                            margin: 'xs'
+                        }
+                    ]
+                });
+            }
+            
+            if (rejectedBy) {
+                flexMessage.contents.body.contents.push({
+                    type: 'box',
+                    layout: 'vertical',
+                    spacing: 'sm',
+                    margin: 'md',
+                    backgroundColor: '#ffebee',
+                    paddingAll: '12px',
+                    cornerRadius: '8px',
+                    contents: [
+                        {
+                            type: 'text',
+                            text: '❌ ปฏิเสธโดย:',
+                            size: 'sm',
+                            weight: 'bold',
+                            color: '#c62828'
+                        },
+                        {
+                            type: 'text',
+                            text: rejectedBy,
+                            size: 'sm',
+                            color: '#b71c1c',
+                            wrap: true
+                        }
+                    ]
+                });
+            }
+            
+            if (cancelledBy) {
+                flexMessage.contents.body.contents.push({
+                    type: 'box',
+                    layout: 'vertical',
+                    spacing: 'sm',
+                    margin: 'md',
+                    backgroundColor: '#f5f5f5',
+                    paddingAll: '12px',
+                    cornerRadius: '8px',
+                    contents: [
+                        {
+                            type: 'text',
+                            text: '❌ ยกเลิกโดย:',
+                            size: 'sm',
+                            weight: 'bold',
+                            color: '#616161'
+                        },
+                        {
+                            type: 'text',
+                            text: cancelledBy,
+                            size: 'sm',
+                            color: '#424242',
+                            wrap: true
+                        }
+                    ]
+                });
+            }
+            
+            if (reason) {
+                flexMessage.contents.body.contents.push({
+                    type: 'box',
+                    layout: 'vertical',
+                    spacing: 'sm',
+                    margin: 'md',
+                    backgroundColor: '#fff3e0',
+                    paddingAll: '12px',
+                    cornerRadius: '8px',
+                    contents: [
+                        {
+                            type: 'text',
+                            text: '📝 เหตุผล:',
+                            size: 'sm',
+                            weight: 'bold',
+                            color: '#e65100'
                         },
                         {
                             type: 'text',
                             text: reason,
                             size: 'sm',
-                            color: '#666666',
+                            color: '#bf360c',
                             wrap: true
                         }
                     ]
@@ -2369,12 +2561,13 @@
                     layout: 'vertical',
                     spacing: 'sm',
                     margin: 'md',
-                    paddingAll: 'md',
                     backgroundColor: '#f5f5f5',
+                    paddingAll: '12px',
+                    cornerRadius: '8px',
                     contents: [
                         {
                             type: 'text',
-                            text: '📄 รายละเอียด:',
+                            text: '📄 รายละเอียดเพิ่มเติม:',
                             size: 'sm',
                             weight: 'bold'
                         },
@@ -2382,17 +2575,65 @@
                             type: 'text',
                             text: description,
                             size: 'sm',
-                            color: '#666666',
+                            color: '#424242',
                             wrap: true
                         }
                     ]
                 });
             }
             
+            // วันที่สร้างการจอง
+            if (createdAt) {
+                flexMessage.contents.body.contents.push({
+                    type: 'box',
+                    layout: 'vertical',
+                    spacing: 'sm',
+                    margin: 'md',
+                    contents: [
+                        {
+                            type: 'text',
+                            text: '📌 จองเมื่อ: ' + formatDateTime(createdAt),
+                            size: 'xs',
+                            color: '#9e9e9e',
+                            align: 'center'
+                        }
+                    ]
+                });
+            }
+            
+            // ปุ่มลิงค์ประชุม
+            if (meetingLink) {
+                flexMessage.contents.footer.contents.push({
+                    type: 'button',
+                    action: {
+                        type: 'uri',
+                        label: '🔗 เข้าร่วมประชุม',
+                        uri: meetingLink
+                    },
+                    style: 'primary',
+                    color: '#06c755',
+                    margin: 'sm'
+                });
+            }
+            
+            // ปุ่มดูรายละเอียด (ถ้ามี bookingId)
+            if (bookingId && liff.isInClient()) {
+                flexMessage.contents.footer.contents.push({
+                    type: 'button',
+                    action: {
+                        type: 'uri',
+                        label: '📋 ดูรายละเอียดการจอง',
+                        uri: `https://liff.line.me/${CONFIG.LIFF_ID}?bookingId=${bookingId}`
+                    },
+                    style: 'secondary',
+                    margin: 'sm'
+                });
+            }
+            
             return flexMessage;
         }
         
-        // แก้ไขฟังก์ชัน sendBookingToChat ให้ตรวจสอบการแจ้งเตือนก่อนส่ง
+        // ส่ง Flex Message ไปยังแชท
         async function sendBookingToChat(bookingData) {
             try {
                 // ตรวจสอบว่าปิดการแจ้งเตือนหรือไม่ (เฉพาะ user คนนั้นๆ)
@@ -3340,9 +3581,16 @@
                         loadMonthBookings(state.currentMonth.getFullYear(), state.currentMonth.getMonth())
                     ]);
                     
+                    // ส่ง Flex Message ทันทีเมื่อจองสำเร็จ
                     if (!id && result.data?.bookingData) {
                         setTimeout(async () => {
-                            await sendBookingToChat(result.data.bookingData);
+                            const bookingData = {
+                                ...result.data.bookingData,
+                                action: 'created',
+                                createdAt: new Date().toISOString(),
+                                bookingId: result.data.bookingData.bookingId || result.data.bookingData.id
+                            };
+                            await sendBookingToChat(bookingData);
                         }, 500);
                     }
                 } else {
@@ -3555,6 +3803,29 @@
                         </div>
                     ` : ''}
                     
+                    ${b.approvedBy ? `
+                        <div class="mb-4 p-3 bg-green-900/20 rounded-lg">
+                            <p class="text-sm text-gray-400 mb-1">✅ อนุมัติโดย</p>
+                            <p class="font-semibold">${b.approvedBy}</p>
+                            <p class="text-xs text-gray-500">${b.approvedAt ? formatDateTime(b.approvedAt) : ''}</p>
+                        </div>
+                    ` : ''}
+                    
+                    ${b.rejectedBy ? `
+                        <div class="mb-4 p-3 bg-red-900/20 rounded-lg">
+                            <p class="text-sm text-gray-400 mb-1">❌ ปฏิเสธโดย</p>
+                            <p class="font-semibold">${b.rejectedBy}</p>
+                            ${b.rejectReason ? `<p class="text-sm mt-1">เหตุผล: ${b.rejectReason}</p>` : ''}
+                        </div>
+                    ` : ''}
+                    
+                    ${b.cancelledBy ? `
+                        <div class="mb-4 p-3 bg-gray-800 rounded-lg">
+                            <p class="text-sm text-gray-400 mb-1">❌ ยกเลิกโดย</p>
+                            <p class="font-semibold">${b.cancelledBy}</p>
+                        </div>
+                    ` : ''}
+                    
                     <div class="text-xs text-gray-500 border-t border-[#2a2e36] pt-3">
                         <p>จองโดย: ${b.userName}</p>
                         <p class="mt-1">${formatDateTime(b.createdAt)}</p>
@@ -3614,6 +3885,7 @@
                         attendees: booking.attendees,
                         description: booking.description,
                         meetingLink: booking.meetingLink,
+                        cancelledBy: state.user.displayName,
                         action: 'cancelled'
                     });
                     closeBookingDetailModal();
@@ -3709,7 +3981,10 @@
         window.approveBooking = async function(bookingId, btn) {
             setButtonLoading(btn, true);
             
-            const result = await callGAS('booking/approve', { bookingId });
+            const result = await callGAS('booking/approve', { 
+                bookingId,
+                lineUserId: state.user.lineUserId
+            });
             
             if (result.success) {
                 showToast('อนุมัติการจองสำเร็จ');
@@ -3723,6 +3998,8 @@
                     attendees: booking.attendees,
                     description: booking.description,
                     meetingLink: booking.meetingLink,
+                    approvedBy: state.user.displayName,
+                    approvedAt: new Date().toISOString(),
                     action: 'approved'
                 });
                 await Promise.all([
@@ -3756,7 +4033,8 @@
             if (result.isConfirmed) {
                 const apiResult = await callGAS('booking/reject', { 
                     bookingId,
-                    reason: result.value || 'ไม่ระบุเหตุผล'
+                    reason: result.value || 'ไม่ระบุเหตุผล',
+                    lineUserId: state.user.lineUserId
                 });
                 
                 if (apiResult.success) {
@@ -3771,6 +4049,7 @@
                         attendees: booking.attendees,
                         description: booking.description,
                         meetingLink: booking.meetingLink,
+                        rejectedBy: state.user.displayName,
                         reason: result.value || 'ไม่ระบุเหตุผล',
                         action: 'rejected'
                     });
