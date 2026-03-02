@@ -2136,10 +2136,10 @@
                 description, 
                 meetingLink,
                 action,
-                approvedBy,      // ชื่อผู้อนุมัติ
+                approvedBy,      // ชื่อ LINE ของผู้อนุมัติ
                 approvedAt,       // วันที่อนุมัติ
-                rejectedBy,       // ผู้ปฏิเสธ
-                cancelledBy,      // ผู้ยกเลิก
+                rejectedBy,       // ชื่อ LINE ของผู้ปฏิเสธ
+                cancelledBy,      // ชื่อ LINE ของผู้ยกเลิก
                 createdAt,        // วันที่จอง
                 bookingId         // รหัสการจอง
             } = bookingData;
@@ -2435,7 +2435,7 @@
                 }
             };
             
-            // เพิ่มข้อมูลผู้อนุมัติ/ผู้ดำเนินการ
+            // เพิ่มข้อมูลผู้อนุมัติ/ผู้ดำเนินการ (แสดงชื่อ LINE)
             if (approvedBy) {
                 flexMessage.contents.body.contents.push({
                     type: 'box',
@@ -2455,9 +2455,10 @@
                         },
                         {
                             type: 'text',
-                            text: approvedBy,
+                            text: approvedBy,  // ชื่อ LINE ของผู้อนุมัติ
                             size: 'sm',
                             color: '#1b5e20',
+                            weight: 'bold',
                             wrap: true
                         },
                         {
@@ -2490,9 +2491,10 @@
                         },
                         {
                             type: 'text',
-                            text: rejectedBy,
+                            text: rejectedBy,  // ชื่อ LINE ของผู้ปฏิเสธ
                             size: 'sm',
                             color: '#b71c1c',
+                            weight: 'bold',
                             wrap: true
                         }
                     ]
@@ -2518,9 +2520,10 @@
                         },
                         {
                             type: 'text',
-                            text: cancelledBy,
+                            text: cancelledBy,  // ชื่อ LINE ของผู้ยกเลิก
                             size: 'sm',
                             color: '#424242',
+                            weight: 'bold',
                             wrap: true
                         }
                     ]
@@ -2835,6 +2838,7 @@
                             </div>
                             <div class="date-booking-title">${b.title}</div>
                             <div class="date-booking-room">${b.roomName} | โดย: ${b.userName}</div>
+                            ${b.approvedBy ? `<div class="text-xs text-green-500 mt-1">✅ อนุมัติโดย: ${b.approvedBy}</div>` : ''}
                         </div>
                     `;
                 }).join('');
@@ -3290,6 +3294,7 @@
                                                 <span class="${statusColor}">${b.status === 'confirmed' ? 'จองแล้ว' : b.status}</span>
                                             </div>
                                             <p class="text-xs text-gray-400">${b.title}</p>
+                                            ${b.approvedBy ? `<p class="text-xs text-green-500 mt-1">✅ อนุมัติโดย: ${b.approvedBy}</p>` : ''}
                                         </div>
                                     `;
                                 }).join('')}
@@ -3588,7 +3593,10 @@
                                 ...result.data.bookingData,
                                 action: 'created',
                                 createdAt: new Date().toISOString(),
-                                bookingId: result.data.bookingData.bookingId || result.data.bookingData.id
+                                bookingId: result.data.bookingData.bookingId || result.data.bookingData.id,
+                                approvedBy: result.data.bookingData.approvedBy,
+                                rejectedBy: result.data.bookingData.rejectedBy,
+                                cancelledBy: result.data.bookingData.cancelledBy
                             };
                             await sendBookingToChat(bookingData);
                         }, 500);
@@ -3705,6 +3713,7 @@
                         <i class="far fa-calendar mr-1"></i> ${formatDateShort(b.startTime)} - ${formatDateShort(b.endTime)}<br>
                         <i class="far fa-clock mr-1"></i> ${formatTime(b.startTime)} - ${formatTime(b.endTime)}
                     </p>
+                    ${b.approvedBy ? `<p class="text-xs text-green-500 mb-2">✅ อนุมัติโดย: ${b.approvedBy}</p>` : ''}
                     <div class="flex justify-between items-center text-xs">
                         <span class="text-gray-500"><i class="fas fa-users mr-1"></i> ${b.attendees || 0} คน</span>
                         ${b.meetingLink ? '<span class="text-blue-500"><i class="fas fa-video mr-1"></i> มีลิงค์</span>' : ''}
@@ -3806,7 +3815,7 @@
                     ${b.approvedBy ? `
                         <div class="mb-4 p-3 bg-green-900/20 rounded-lg">
                             <p class="text-sm text-gray-400 mb-1">✅ อนุมัติโดย</p>
-                            <p class="font-semibold">${b.approvedBy}</p>
+                            <p class="font-semibold text-green-500">${b.approvedBy}</p>
                             <p class="text-xs text-gray-500">${b.approvedAt ? formatDateTime(b.approvedAt) : ''}</p>
                         </div>
                     ` : ''}
@@ -3814,7 +3823,7 @@
                     ${b.rejectedBy ? `
                         <div class="mb-4 p-3 bg-red-900/20 rounded-lg">
                             <p class="text-sm text-gray-400 mb-1">❌ ปฏิเสธโดย</p>
-                            <p class="font-semibold">${b.rejectedBy}</p>
+                            <p class="font-semibold text-red-500">${b.rejectedBy}</p>
                             ${b.rejectReason ? `<p class="text-sm mt-1">เหตุผล: ${b.rejectReason}</p>` : ''}
                         </div>
                     ` : ''}
@@ -3822,7 +3831,7 @@
                     ${b.cancelledBy ? `
                         <div class="mb-4 p-3 bg-gray-800 rounded-lg">
                             <p class="text-sm text-gray-400 mb-1">❌ ยกเลิกโดย</p>
-                            <p class="font-semibold">${b.cancelledBy}</p>
+                            <p class="font-semibold text-gray-400">${b.cancelledBy}</p>
                         </div>
                     ` : ''}
                     
@@ -3998,7 +4007,7 @@
                     attendees: booking.attendees,
                     description: booking.description,
                     meetingLink: booking.meetingLink,
-                    approvedBy: state.user.displayName,
+                    approvedBy: state.user.displayName,  // ส่งชื่อ LINE ของผู้อนุมัติ
                     approvedAt: new Date().toISOString(),
                     action: 'approved'
                 });
@@ -4049,7 +4058,7 @@
                         attendees: booking.attendees,
                         description: booking.description,
                         meetingLink: booking.meetingLink,
-                        rejectedBy: state.user.displayName,
+                        rejectedBy: state.user.displayName,  // ส่งชื่อ LINE ของผู้ปฏิเสธ
                         reason: result.value || 'ไม่ระบุเหตุผล',
                         action: 'rejected'
                     });
@@ -4115,6 +4124,8 @@
                             <span><i class="far fa-user mr-1"></i> ${b.userName}</span>
                             <span><i class="far fa-clock mr-1"></i> ${formatDateShort(b.startTime)} - ${formatDateShort(b.endTime)}</span>
                         </div>
+                        ${b.approvedBy ? `<p class="text-xs text-green-500 mt-1">✅ อนุมัติโดย: ${b.approvedBy}</p>` : ''}
+                        ${b.rejectedBy ? `<p class="text-xs text-red-500 mt-1">❌ ปฏิเสธโดย: ${b.rejectedBy}</p>` : ''}
                     </div>
                     <button class="text-[#06c755] text-xs ml-2" onclick="shareBookingViaPicker('${b.bookingId}'); event.stopPropagation();">
                         <i class="fas fa-share-alt mr-1"></i>แชร์
