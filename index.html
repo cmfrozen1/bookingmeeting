@@ -28,11 +28,6 @@
     <!-- SweetAlert2 -->
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     
-    <!-- Flatpickr -->
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
-    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
-    <script src="https://npmcdn.com/flatpickr/dist/l10n/th.js"></script>
-    
     <style>
         /* (CSS เดิมทั้งหมดเหมือนเดิม) */
         * {
@@ -1181,6 +1176,86 @@
         .auto-cancel-badge i {
             font-size: 10px;
         }
+
+        /* Quick date/time selection buttons */
+        .quick-datetime-btn {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 8px 12px;
+            font-size: 12px;
+            color: var(--text);
+            cursor: pointer;
+            transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+        
+        .quick-datetime-btn:hover {
+            border-color: var(--primary);
+            color: var(--primary);
+        }
+        
+        .quick-datetime-btn i {
+            font-size: 12px;
+            color: var(--primary);
+        }
+        
+        .datetime-presets {
+            display: flex;
+            gap: 8px;
+            overflow-x: auto;
+            padding: 8px 0 12px;
+            margin-bottom: 8px;
+            -webkit-overflow-scrolling: touch;
+        }
+        
+        .datetime-presets::-webkit-scrollbar {
+            display: none;
+        }
+        
+        .datetime-preset {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            padding: 8px 16px;
+            font-size: 13px;
+            white-space: nowrap;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .datetime-preset:hover,
+        .datetime-preset.active {
+            border-color: var(--primary);
+            background: rgba(6,199,85,0.1);
+            color: var(--primary);
+        }
+        
+        /* Loading skeleton optimization */
+        .skeleton-room {
+            background: linear-gradient(90deg, var(--bg-card) 25%, #252930 50%, var(--bg-card) 75%);
+            background-size: 200% 100%;
+            animation: loading 1.2s infinite ease-in-out;
+            border-radius: 20px;
+            height: 200px;
+        }
+        
+        @keyframes loading {
+            0% { background-position: 200% 0; }
+            100% { background-position: -200% 0; }
+        }
+        
+        /* Cache indicator */
+        .cache-badge {
+            background: rgba(6,199,85,0.1);
+            color: var(--primary);
+            font-size: 10px;
+            padding: 2px 6px;
+            border-radius: 12px;
+            margin-left: 8px;
+        }
     </style>
 </head>
 <body>
@@ -1298,9 +1373,9 @@
 
             <!-- Rooms List -->
             <div id="rooms-list" class="rooms-grid">
-                <div class="skeleton-card"></div>
-                <div class="skeleton-card"></div>
-                <div class="skeleton-card"></div>
+                <div class="skeleton-room"></div>
+                <div class="skeleton-room"></div>
+                <div class="skeleton-room"></div>
             </div>
         </div>
 
@@ -1503,7 +1578,7 @@
             </div>
         </div>
 
-        <!-- Create/Edit Booking Modal -->
+        <!-- Create/Edit Booking Modal - ปรับปรุงให้ใช้งานง่ายบน Android -->
         <div class="modal" id="booking-create-modal">
             <div class="modal-content">
                 <div class="modal-header">
@@ -1513,6 +1588,25 @@
                     </button>
                 </div>
                 <div class="modal-body">
+                    <!-- Quick date/time presets -->
+                    <div class="datetime-presets" id="datetime-presets">
+                        <button class="datetime-preset active" onclick="setQuickDateTime('now')">
+                            <i class="fas fa-clock mr-1"></i>เดี๋ยวนี้
+                        </button>
+                        <button class="datetime-preset" onclick="setQuickDateTime('1hour')">
+                            <i class="fas fa-hourglass-start mr-1"></i>+1 ชม.
+                        </button>
+                        <button class="datetime-preset" onclick="setQuickDateTime('2hour')">
+                            <i class="fas fa-hourglass-half mr-1"></i>+2 ชม.
+                        </button>
+                        <button class="datetime-preset" onclick="setQuickDateTime('today')">
+                            <i class="fas fa-sun mr-1"></i>วันนี้
+                        </button>
+                        <button class="datetime-preset" onclick="setQuickDateTime('tomorrow')">
+                            <i class="fas fa-calendar-day mr-1"></i>พรุ่งนี้
+                        </button>
+                    </div>
+                    
                     <form id="booking-form" onsubmit="saveBooking(event)">
                         <input type="hidden" id="edit-booking-id">
                         <select id="booking-room" class="input-field" required>
@@ -1523,32 +1617,58 @@
                         
                         <input type="text" id="booking-meeting-link" placeholder="ลิงค์ประชุม (Zoom, Teams, etc.)" class="input-field">
                         
+                        <!-- ใช้อินพุตแบบ native ของ HTML5 แทน Flatpickr -->
                         <div class="grid grid-cols-2 gap-2">
                             <div>
                                 <label class="text-xs text-gray-400 mb-1 block">วันที่เริ่ม</label>
-                                <input type="text" id="booking-date" class="input-field" placeholder="เลือกวันที่เริ่ม" required readonly>
+                                <input type="date" id="booking-date" class="input-field" required 
+                                       min="<?php echo date('Y-m-d'); ?>" 
+                                       onchange="validateBookingForm(); checkAvailability();">
                             </div>
                             <div>
                                 <label class="text-xs text-gray-400 mb-1 block">วันที่สิ้นสุด</label>
-                                <input type="text" id="booking-end-date" class="input-field" placeholder="เลือกวันที่สิ้นสุด" required readonly>
+                                <input type="date" id="booking-end-date" class="input-field" required 
+                                       min="<?php echo date('Y-m-d'); ?>"
+                                       onchange="validateBookingForm(); checkAvailability();">
                             </div>
                         </div>
                         
                         <div class="grid grid-cols-2 gap-2">
                             <div>
                                 <label class="text-xs text-gray-400 mb-1 block">เวลาเริ่ม</label>
-                                <input type="text" id="booking-start" class="input-field" placeholder="เลือกเวลา" required readonly>
+                                <input type="time" id="booking-start" class="input-field" required 
+                                       min="08:00" max="20:00" step="900"
+                                       onchange="validateBookingForm(); checkAvailability();">
+                                <div class="flex gap-1 mt-1">
+                                    <button type="button" class="quick-datetime-btn" onclick="adjustTime('start', -30)">
+                                        <i class="fas fa-minus"></i>-30น.
+                                    </button>
+                                    <button type="button" class="quick-datetime-btn" onclick="adjustTime('start', 30)">
+                                        <i class="fas fa-plus"></i>+30น.
+                                    </button>
+                                </div>
                             </div>
                             <div>
                                 <label class="text-xs text-gray-400 mb-1 block">เวลาสิ้นสุด</label>
-                                <input type="text" id="booking-end" class="input-field" placeholder="เลือกเวลา" required readonly>
+                                <input type="time" id="booking-end" class="input-field" required 
+                                       min="08:15" max="20:00" step="900"
+                                       onchange="validateBookingForm(); checkAvailability();">
+                                <div class="flex gap-1 mt-1">
+                                    <button type="button" class="quick-datetime-btn" onclick="adjustTime('end', -30)">
+                                        <i class="fas fa-minus"></i>-30น.
+                                    </button>
+                                    <button type="button" class="quick-datetime-btn" onclick="adjustTime('end', 30)">
+                                        <i class="fas fa-plus"></i>+30น.
+                                    </button>
+                                </div>
                             </div>
                         </div>
                         
                         <div class="grid grid-cols-2 gap-2">
                             <div>
                                 <label class="text-xs text-gray-400 mb-1 block">จำนวนผู้เข้าร่วม</label>
-                                <input type="number" id="booking-attendees" class="input-field" placeholder="จำนวน" min="1" value="4" required>
+                                <input type="number" id="booking-attendees" class="input-field" placeholder="จำนวน" min="1" value="4" required
+                                       oninput="validateBookingForm(); checkAvailability();">
                             </div>
                         </div>
                         
@@ -1708,7 +1828,9 @@
         const CONFIG = {
             GAS_URL: 'https://script.google.com/macros/s/AKfycbwEkTSINEvnyBdapUWbJ8djVpdLt6rN7NlaXn5cKMow7RJtY3gI19-RSMyFHsWBxII-vA/exec',
             LIFF_ID: '2009198981-GsqxkwIK',
-            PAGE_SIZE: 20
+            PAGE_SIZE: 20,
+            CACHE_TTL: 5 * 60 * 1000, // 5 นาที
+            MAX_RETRY: 3
         };
 
         // ========== STATE ==========
@@ -1738,7 +1860,6 @@
                 notificationsEnabled: true
             },
             initialized: false,
-            flatpickrInstances: {},
             emailFetchAttempted: false,
             // Cache for user names by lineUserId
             userNamesCache: {},
@@ -1749,6 +1870,17 @@
             autoCancelStats: {
                 today: 0,
                 lastRun: null
+            },
+            // Loading state
+            loading: {
+                rooms: false,
+                bookings: false,
+                users: false
+            },
+            // Cache timestamps
+            cacheTimestamps: {
+                rooms: localStorage.getItem('rooms_cache_timestamp'),
+                settings: localStorage.getItem('settings_cache_timestamp')
             }
         };
 
@@ -1828,7 +1960,9 @@
             autoCancelTime: document.getElementById('auto-cancel-time'),
             adminAutoCancelStats: document.getElementById('admin-auto-cancel-stats'),
             autoCancelToday: document.getElementById('auto-cancel-today'),
-            autoCancelLastRun: document.getElementById('auto-cancel-last-run')
+            autoCancelLastRun: document.getElementById('auto-cancel-last-run'),
+            // New elements
+            datetimePresets: document.querySelectorAll('.datetime-preset')
         };
 
         // ========== UTILS ==========
@@ -1917,6 +2051,13 @@
             return `${year}-${month}-${day}`;
         }
 
+        function formatTimeForInput(date) {
+            const d = new Date(date);
+            const hours = String(d.getHours()).padStart(2, '0');
+            const minutes = String(d.getMinutes()).padStart(2, '0');
+            return `${hours}:${minutes}`;
+        }
+
         function formatMonthThai(date) {
             return date.toLocaleDateString('th-TH', { 
                 month: 'long', 
@@ -1930,9 +2071,21 @@
             $.navbarAppName.textContent = name;
         }
 
+        // ========== CACHE MANAGEMENT ==========
+        function isCacheValid(cacheKey, maxAge = CONFIG.CACHE_TTL) {
+            const timestamp = localStorage.getItem(`${cacheKey}_timestamp`);
+            if (!timestamp) return false;
+            
+            const age = Date.now() - parseInt(timestamp);
+            return age < maxAge;
+        }
+
+        function updateCacheTimestamp(cacheKey) {
+            localStorage.setItem(`${cacheKey}_timestamp`, Date.now().toString());
+        }
+
         // ========== AUTO CANCEL FUNCTIONS ==========
         async function autoCancelOverdueBookings() {
-            // ป้องกันการทำงานซ้อน
             if (state.autoCancelRunning) return;
             
             try {
@@ -1952,7 +2105,6 @@
                     if (result.data.cancelledCount > 0) {
                         console.log(`✅ ยกเลิกการจองที่เลยเวลาแล้ว ${result.data.cancelledCount} รายการ`);
                         
-                        // อัปเดตสถิติวันนี้
                         const todayStr = formatDateForInput(now);
                         if (state.autoCancelStats.lastRunDate !== todayStr) {
                             state.autoCancelStats.today = 0;
@@ -1960,19 +2112,15 @@
                         }
                         state.autoCancelStats.today += result.data.cancelledCount;
                         
-                        // แจ้งเตือน管理者 (manager/admin) ผ่าน UI
                         showToast(`ระบบยกเลิกการจองที่เลยเวลา ${result.data.cancelledCount} รายการ`, 'warning');
                         
-                        // ส่งแจ้งเตือน LINE ถ้ามี管理者 online
                         if (state.isManager && areNotificationsEnabled()) {
                             const cancelledBookings = result.data.bookings || [];
                             if (cancelledBookings.length > 0) {
-                                // ส่งข้อความรวม
                                 await sendAutoCancelNotification(cancelledBookings);
                             }
                         }
                         
-                        // รีโหลดข้อมูลที่เกี่ยวข้อง
                         await Promise.all([
                             loadPendingBookings(),
                             loadMyBookings(),
@@ -1985,7 +2133,6 @@
                         }
                     }
                     
-                    // อัปเดต UI สถานะการทำงาน
                     updateAutoCancelUI();
                 }
             } catch (error) {
@@ -2000,7 +2147,6 @@
                 if (!liff.isInClient() || !areNotificationsEnabled()) return;
                 
                 const count = cancelledBookings.length;
-                const firstBooking = cancelledBookings[0];
                 
                 const flexMessage = {
                     type: 'flex',
@@ -2078,7 +2224,6 @@
                     }
                 };
                 
-                // เพิ่มรายการที่ถูกยกเลิก (จำกัด 5 รายการ)
                 const displayBookings = cancelledBookings.slice(0, 5);
                 displayBookings.forEach((b, index) => {
                     flexMessage.contents.body.contents[2].contents.push({
@@ -2145,16 +2290,14 @@
         }
 
         function startAutoCancelInterval() {
-            // ตรวจสอบทุก 5 นาที
             if (state.autoCancelInterval) {
                 clearInterval(state.autoCancelInterval);
             }
             
             state.autoCancelInterval = setInterval(() => {
                 autoCancelOverdueBookings();
-            }, 5 * 60 * 1000); // 5 นาที
+            }, 5 * 60 * 1000);
             
-            // เรียกครั้งแรกหลังจากโหลดเสร็จ 1 นาที
             setTimeout(() => {
                 autoCancelOverdueBookings();
             }, 60 * 1000);
@@ -2184,18 +2327,15 @@
         async function getUserNameFromCache(userId) {
             if (!userId) return '';
             
-            // Check if we already have it in state cache
             if (state.userNamesCache[userId]) {
                 return state.userNamesCache[userId];
             }
             
-            // Check if it's the current user
             if (state.user && state.user.lineUserId === userId) {
                 state.userNamesCache[userId] = state.user.displayName || 'Unknown User';
                 return state.userNamesCache[userId];
             }
             
-            // Try to find in users list
             if (state.users && state.users.length > 0) {
                 const foundUser = state.users.find(u => u.lineUserId === userId);
                 if (foundUser) {
@@ -2204,7 +2344,6 @@
                 }
             }
             
-            // Try to find in bookings
             if (state.bookings && state.bookings.length > 0) {
                 const foundBooking = state.bookings.find(b => b.userId === userId);
                 if (foundBooking && foundBooking.userName) {
@@ -2221,7 +2360,6 @@
                 }
             }
             
-            // If not found, try to fetch from API
             try {
                 const result = await callGAS('user/get-name', { userId });
                 if (result.success && result.data.name) {
@@ -2232,7 +2370,6 @@
                 console.error('Error fetching user name:', error);
             }
             
-            // Return userId if all else fails
             return userId.substring(0, 8) + '...';
         }
 
@@ -2326,69 +2463,102 @@
             return null;
         }
 
-        // ========== FLATPICKR INIT ==========
-        function initFlatpickr() {
-            if (typeof flatpickr === 'undefined') {
-                setTimeout(initFlatpickr, 100);
+        // ========== QUICK DATETIME FUNCTIONS ==========
+        window.setQuickDateTime = function(type) {
+            const now = new Date();
+            let startDate = new Date(now);
+            let endDate = new Date(now);
+            
+            // อัปเดต active state ของปุ่ม
+            $.datetimePresets.forEach(btn => {
+                btn.classList.remove('active');
+                if (btn.getAttribute('onclick')?.includes(type)) {
+                    btn.classList.add('active');
+                }
+            });
+            
+            switch(type) {
+                case 'now':
+                    startDate = new Date(now);
+                    startDate.setMinutes(Math.ceil(now.getMinutes() / 15) * 15);
+                    endDate = new Date(startDate);
+                    endDate.setHours(startDate.getHours() + 1);
+                    break;
+                    
+                case '1hour':
+                    startDate = new Date(now);
+                    startDate.setHours(now.getHours() + 1);
+                    startDate.setMinutes(0);
+                    endDate = new Date(startDate);
+                    endDate.setHours(startDate.getHours() + 1);
+                    break;
+                    
+                case '2hour':
+                    startDate = new Date(now);
+                    startDate.setHours(now.getHours() + 2);
+                    startDate.setMinutes(0);
+                    endDate = new Date(startDate);
+                    endDate.setHours(startDate.getHours() + 1);
+                    break;
+                    
+                case 'today':
+                    startDate = new Date(now);
+                    startDate.setHours(14, 0, 0, 0); // 14:00 น.
+                    endDate = new Date(startDate);
+                    endDate.setHours(15, 0, 0, 0); // 15:00 น.
+                    break;
+                    
+                case 'tomorrow':
+                    startDate = new Date(now);
+                    startDate.setDate(now.getDate() + 1);
+                    startDate.setHours(9, 0, 0, 0); // 09:00 น.
+                    endDate = new Date(startDate);
+                    endDate.setHours(10, 0, 0, 0); // 10:00 น.
+                    break;
+            }
+            
+            if ($.bookingDate) {
+                $.bookingDate.value = formatDateForInput(startDate);
+            }
+            
+            if ($.bookingEndDate) {
+                $.bookingEndDate.value = formatDateForInput(endDate);
+            }
+            
+            if ($.bookingStart) {
+                $.bookingStart.value = formatTimeForInput(startDate);
+            }
+            
+            if ($.bookingEnd) {
+                $.bookingEnd.value = formatTimeForInput(endDate);
+            }
+            
+            validateBookingForm();
+            checkAvailability();
+        };
+
+        window.adjustTime = function(target, minutes) {
+            const timeInput = target === 'start' ? $.bookingStart : $.bookingEnd;
+            if (!timeInput || !timeInput.value) return;
+            
+            const [hours, mins] = timeInput.value.split(':').map(Number);
+            const date = new Date();
+            date.setHours(hours, mins + minutes);
+            
+            // ตรวจสอบว่าเวลาอยู่ในช่วงที่กำหนด
+            const newHours = date.getHours();
+            const newMins = date.getMinutes();
+            
+            if (newHours < 8 || newHours > 20 || (newHours === 20 && newMins > 0)) {
+                showToast('เวลาต้องอยู่ในช่วง 08:00 - 20:00 น.', 'warning');
                 return;
             }
-
-            if ($.bookingDate && !state.flatpickrInstances.bookingDate) {
-                state.flatpickrInstances.bookingDate = flatpickr($.bookingDate, {
-                    locale: 'th',
-                    dateFormat: 'Y-m-d',
-                    minDate: 'today',
-                    onChange: function() {
-                        validateBookingForm();
-                        checkAvailability();
-                    }
-                });
-            }
-
-            if ($.bookingEndDate && !state.flatpickrInstances.bookingEndDate) {
-                state.flatpickrInstances.bookingEndDate = flatpickr($.bookingEndDate, {
-                    locale: 'th',
-                    dateFormat: 'Y-m-d',
-                    minDate: 'today',
-                    onChange: function() {
-                        validateBookingForm();
-                        checkAvailability();
-                    }
-                });
-            }
-
-            if ($.bookingStart && !state.flatpickrInstances.bookingStart) {
-                state.flatpickrInstances.bookingStart = flatpickr($.bookingStart, {
-                    enableTime: true,
-                    noCalendar: true,
-                    dateFormat: 'H:i',
-                    time_24hr: true,
-                    minTime: '08:00',
-                    maxTime: '20:00',
-                    minuteIncrement: 15,
-                    onChange: function() {
-                        validateBookingForm();
-                        checkAvailability();
-                    }
-                });
-            }
-
-            if ($.bookingEnd && !state.flatpickrInstances.bookingEnd) {
-                state.flatpickrInstances.bookingEnd = flatpickr($.bookingEnd, {
-                    enableTime: true,
-                    noCalendar: true,
-                    dateFormat: 'H:i',
-                    time_24hr: true,
-                    minTime: '08:15',
-                    maxTime: '20:00',
-                    minuteIncrement: 15,
-                    onChange: function() {
-                        validateBookingForm();
-                        checkAvailability();
-                    }
-                });
-            }
-        }
+            
+            timeInput.value = formatTimeForInput(date);
+            
+            validateBookingForm();
+            checkAvailability();
+        };
 
         // ========== VALIDATE BOOKING FORM ==========
         function validateBookingForm() {
@@ -2427,9 +2597,12 @@
             return true;
         }
 
-        // ========== API CALL ==========
-        async function callGAS(path, data = {}) {
+        // ========== API CALL WITH RETRY ==========
+        async function callGAS(path, data = {}, retryCount = 0) {
             try {
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 15000);
+
                 const formData = new FormData();
                 formData.append('path', path);
                 if (state.user?.lineUserId) formData.append('lineUserId', state.user.lineUserId);
@@ -2439,9 +2612,6 @@
                         formData.append(key, data[key]);
                     }
                 });
-
-                const controller = new AbortController();
-                const timeoutId = setTimeout(() => controller.abort(), 15000);
 
                 const res = await fetch(CONFIG.GAS_URL, { 
                     method: 'POST', 
@@ -2455,6 +2625,14 @@
                 return JSON.parse(text);
             } catch (error) {
                 console.error('API Error:', error);
+                
+                // Retry logic
+                if (retryCount < CONFIG.MAX_RETRY) {
+                    console.log(`Retrying... (${retryCount + 1}/${CONFIG.MAX_RETRY})`);
+                    await new Promise(resolve => setTimeout(resolve, 1000 * (retryCount + 1)));
+                    return callGAS(path, data, retryCount + 1);
+                }
+                
                 return { success: false, message: 'connection error' };
             }
         }
@@ -2552,12 +2730,10 @@
                 statusThai = '🗑️ ลบผู้ใช้ออกจากระบบ';
             }
             
-            // Get proper names for approvers/rejecters/cancellers if they are userIds
             let approvedByName = approvedBy;
             let rejectedByName = rejectedBy;
             let cancelledByName = cancelledBy;
             
-            // Check if these are userIds (long strings without spaces)
             if (approvedBy && approvedBy.length > 20 && !approvedBy.includes(' ')) {
                 approvedByName = await getUserNameFromCache(approvedBy);
             }
@@ -2794,7 +2970,6 @@
                 }
             };
             
-            // เพิ่มข้อมูลผู้อนุมัติ/ผู้ดำเนินการ (แสดงชื่อ LINE)
             if (approvedByName) {
                 flexMessage.contents.body.contents.push({
                     type: 'box',
@@ -2814,7 +2989,7 @@
                         },
                         {
                             type: 'text',
-                            text: approvedByName,  // ชื่อ LINE ของผู้อนุมัติ
+                            text: approvedByName,
                             size: 'sm',
                             color: '#1b5e20',
                             weight: 'bold',
@@ -2850,7 +3025,7 @@
                         },
                         {
                             type: 'text',
-                            text: rejectedByName,  // ชื่อ LINE ของผู้ปฏิเสธ
+                            text: rejectedByName,
                             size: 'sm',
                             color: '#b71c1c',
                             weight: 'bold',
@@ -2879,7 +3054,7 @@
                         },
                         {
                             type: 'text',
-                            text: cancelledByName,  // ชื่อ LINE ของผู้ยกเลิก
+                            text: cancelledByName,
                             size: 'sm',
                             color: '#424242',
                             weight: 'bold',
@@ -3184,11 +3359,9 @@
                 
                 $.selectedDateTitle.textContent = `📅 การจองวันที่ ${dateThai}`;
                 
-                // Process each booking to get approver names
                 const processedBookings = await Promise.all(bookings.map(async (b) => {
                     let approvedByName = b.approvedBy;
                     
-                    // If approvedBy is a userId (looks like a LINE userId), try to get the name
                     if (approvedByName && approvedByName.length > 20 && !approvedByName.includes(' ')) {
                         approvedByName = await getUserNameFromCache(approvedByName);
                     }
@@ -3279,9 +3452,14 @@
                     state.role = state.user.role || 'user';
                     updateRoleFlags();
                     updateUserUI(state.user);
-                    if (state.rooms.length > 0) {
+                    
+                    // ใช้ข้อมูลจาก cache ถ้ายัง valid
+                    if (isCacheValid('rooms') && state.rooms.length > 0) {
                         renderRooms();
                         $.initLoading.classList.add('hide');
+                    } else {
+                        // แสดง skeleton ขณะโหลด
+                        renderSkeletonRooms();
                     }
                 }
 
@@ -3317,6 +3495,7 @@
                     console.log('Email from ID Token:', tokenPayload.email);
                 }
 
+                // โหลดข้อมูลพร้อมกันเพื่อลดเวลา
                 const [userResult, roomsResult] = await Promise.all([
                     callGAS('user/profile', userData),
                     callGAS('rooms')
@@ -3331,13 +3510,15 @@
                     
                     if (!state.user.email || state.user.email === '') {
                         console.log('No email found, attempting to fetch...');
-                        await tryFetchEmail();
+                        // ไม่ต้อง await เพื่อไม่ให้ช้า
+                        tryFetchEmail().catch(console.warn);
                     }
                 }
 
                 if (roomsResult.success) {
                     state.rooms = roomsResult.data;
                     localStorage.setItem('rooms_cache', JSON.stringify(state.rooms));
+                    updateCacheTimestamp('rooms');
                     renderRooms();
                 }
 
@@ -3346,7 +3527,7 @@
                 $.initLoading.classList.add('hide');
                 state.initialized = true;
 
-                initFlatpickr();
+                // ไม่ต้อง initFlatpickr แล้ว
 
                 loadSettings().then(s => {
                     if(s.success) localStorage.setItem('settings_cache', JSON.stringify(state.settings));
@@ -3358,7 +3539,6 @@
                     loadManagerData();
                 }
 
-                // เริ่มระบบยกเลิกอัตโนมัติ
                 startAutoCancelInterval();
                 
             } catch (error) {
@@ -3366,6 +3546,15 @@
                 $.initLoading.classList.add('hide');
                 if (!state.user) showToast('ไม่สามารถเชื่อมต่อ LINE ได้', 'error');
             }
+        }
+
+        function renderSkeletonRooms() {
+            if (!$.roomsList) return;
+            $.roomsList.innerHTML = `
+                <div class="skeleton-room"></div>
+                <div class="skeleton-room"></div>
+                <div class="skeleton-room"></div>
+            `;
         }
 
         function loadUserSettings() {
@@ -3438,7 +3627,6 @@
                 if ($.quickBookBtn) $.quickBookBtn.classList.remove('hidden');
             }
             
-            // อัปเดต UI สถานะ auto-cancel
             updateAutoCancelUI();
         }
 
@@ -3453,9 +3641,9 @@
                 
                 await Promise.all([roomsPromise, calendarPromise, statsPromise]);
                 
+                // โหลด my bookings แบบ async ไม่ต้องรอ
                 loadMyBookings().catch(console.warn);
                 
-                // เรียก auto-cancel ครั้งแรก
                 setTimeout(() => autoCancelOverdueBookings(), 5000);
                 
             } catch (error) {
@@ -3478,10 +3666,18 @@
         // ========== ROOMS ==========
         async function loadRooms() {
             try {
+                // ถ้ามี cache และยังไม่หมดอายุ ให้ใช้ cache
+                if (isCacheValid('rooms') && state.rooms.length > 0) {
+                    renderRooms();
+                    return;
+                }
+
                 const result = await callGAS('rooms');
                 
                 if (result.success) {
                     state.rooms = result.data || [];
+                    localStorage.setItem('rooms_cache', JSON.stringify(state.rooms));
+                    updateCacheTimestamp('rooms');
                     renderRooms();
                 }
             } catch (error) {
@@ -3718,29 +3914,16 @@
                 roomSelect.appendChild(option);
             });
             
-            const now = new Date();
-            const nextHour = new Date(now);
-            nextHour.setHours(now.getHours() + 1, 0, 0, 0);
+            // ตั้งค่าเริ่มต้นด้วยปุ่ม "เดี๋ยวนี้"
+            setQuickDateTime('now');
             
-            const endTime = new Date(nextHour);
-            endTime.setHours(nextHour.getHours() + 1, 0, 0, 0);
-            
-            if (state.flatpickrInstances.bookingDate) {
-                state.flatpickrInstances.bookingDate.setDate(formatDateForInput(nextHour), true);
-            }
-            if (state.flatpickrInstances.bookingEndDate) {
-                state.flatpickrInstances.bookingEndDate.setDate(formatDateForInput(nextHour), true);
-            }
-            if (state.flatpickrInstances.bookingStart) {
-                state.flatpickrInstances.bookingStart.setDate(nextHour.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' }), true);
-            }
-            if (state.flatpickrInstances.bookingEnd) {
-                state.flatpickrInstances.bookingEnd.setDate(endTime.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' }), true);
-            }
-            
-            setTimeout(() => {
-                validateBookingForm();
-            }, 100);
+            // เปิด active state ที่ปุ่ม "เดี๋ยวนี้"
+            $.datetimePresets.forEach(btn => {
+                btn.classList.remove('active');
+                if (btn.getAttribute('onclick')?.includes('now')) {
+                    btn.classList.add('active');
+                }
+            });
             
             document.getElementById('booking-create-modal').classList.add('active');
         };
@@ -4050,13 +4233,10 @@
                 return;
             }
 
-            // Process each booking to get approver names
             const processedBookings = filtered.map(b => {
                 let approvedByName = b.approvedBy;
                 
-                // If approvedBy is a userId (looks like a LINE userId), try to get the name
                 if (approvedByName && approvedByName.length > 20 && !approvedByName.includes(' ')) {
-                    // We'll use the cached name if available, otherwise show a placeholder
                     approvedByName = state.userNamesCache[approvedByName] || approvedByName.substring(0, 8) + '...';
                 }
                 
@@ -4136,7 +4316,6 @@
                     'rejected': 'ปฏิเสธ'
                 }[b.status] || b.status;
 
-                // Get approver name if it's a userId
                 let approvedByName = b.approvedBy;
                 if (approvedByName && approvedByName.length > 20 && !approvedByName.includes(' ')) {
                     approvedByName = await getUserNameFromCache(approvedByName);
@@ -4316,7 +4495,6 @@
                     $.adminBookings.textContent = result.data.bookings || 0;
                     $.adminPending.textContent = result.data.pending || 0;
                     
-                    // อัปเดตสถิติ auto-cancel
                     if (result.data.autoCancel) {
                         state.autoCancelStats.today = result.data.autoCancel.today || 0;
                         state.autoCancelStats.lastRun = result.data.autoCancel.lastRun || null;
@@ -4410,7 +4588,7 @@
                     attendees: booking.attendees,
                     description: booking.description,
                     meetingLink: booking.meetingLink,
-                    approvedBy: state.user.displayName,  // ส่งชื่อ LINE ของผู้อนุมัติ
+                    approvedBy: state.user.displayName,
                     approvedAt: new Date().toISOString(),
                     action: 'approved'
                 });
@@ -4461,7 +4639,7 @@
                         attendees: booking.attendees,
                         description: booking.description,
                         meetingLink: booking.meetingLink,
-                        rejectedBy: state.user.displayName,  // ส่งชื่อ LINE ของผู้ปฏิเสธ
+                        rejectedBy: state.user.displayName,
                         reason: result.value || 'ไม่ระบุเหตุผล',
                         action: 'rejected'
                     });
@@ -4505,7 +4683,6 @@
                 return;
             }
 
-            // Process each booking to get approver names
             const processedBookings = filtered.map(b => {
                 let approvedByName = b.approvedBy;
                 if (approvedByName && approvedByName.length > 20 && !approvedByName.includes(' ')) {
@@ -4562,7 +4739,6 @@
                 const result = await callGAS('admin/users');
                 if (result.success) {
                     state.users = result.data || [];
-                    // Update user names cache
                     state.users.forEach(u => {
                         if (u.lineUserId && u.displayName) {
                             state.userNamesCache[u.lineUserId] = u.displayName;
@@ -4896,6 +5072,12 @@
         // ========== SETTINGS ==========
         async function loadSettings() {
             try {
+                // ใช้ cache ถ้ายัง valid
+                if (isCacheValid('settings') && state.settings) {
+                    updateAppName(state.settings.appName);
+                    return;
+                }
+
                 const result = await callGAS('admin/settings/get');
                 
                 if (result.success) {
@@ -4904,6 +5086,9 @@
                         requireApproval: 'true',
                         reminderMinutes: '30'
                     };
+                    
+                    localStorage.setItem('settings_cache', JSON.stringify(state.settings));
+                    updateCacheTimestamp('settings');
                     
                     document.getElementById('setting-app-name').value = state.settings.appName || 'Meeting Room';
                     
@@ -4920,7 +5105,6 @@
                         }
                         
                         $.settingRequireApproval.checked = isChecked;
-                        console.log('Setting requireApproval:', requireApproval, '->', isChecked);
                     }
                     
                     if ($.settingReminderMinutes) {
