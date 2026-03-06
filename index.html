@@ -1578,7 +1578,7 @@
             </div>
         </div>
 
-        <!-- Create/Edit Booking Modal - ปรับปรุงให้ใช้งานง่ายบน Android -->
+        <!-- Create/Edit Booking Modal - ปรับปรุงให้ใช้งานง่ายบน Android (Dropdown time) -->
         <div class="modal" id="booking-create-modal">
             <div class="modal-content">
                 <div class="modal-header">
@@ -1633,12 +1633,11 @@
                             </div>
                         </div>
                         
+                        <!-- เปลี่ยนจาก input time เป็น dropdown -->
                         <div class="grid grid-cols-2 gap-2">
                             <div>
                                 <label class="text-xs text-gray-400 mb-1 block">เวลาเริ่ม</label>
-                                <input type="time" id="booking-start" class="input-field" required 
-                                       min="08:00" max="20:00" step="900"
-                                       onchange="validateBookingForm(); checkAvailability();">
+                                <select id="booking-start" class="input-field" required onchange="validateBookingForm(); checkAvailability();"></select>
                                 <div class="flex gap-1 mt-1">
                                     <button type="button" class="quick-datetime-btn" onclick="adjustTime('start', -30)">
                                         <i class="fas fa-minus"></i>-30น.
@@ -1650,9 +1649,7 @@
                             </div>
                             <div>
                                 <label class="text-xs text-gray-400 mb-1 block">เวลาสิ้นสุด</label>
-                                <input type="time" id="booking-end" class="input-field" required 
-                                       min="08:15" max="20:00" step="900"
-                                       onchange="validateBookingForm(); checkAvailability();">
+                                <select id="booking-end" class="input-field" required onchange="validateBookingForm(); checkAvailability();"></select>
                                 <div class="flex gap-1 mt-1">
                                     <button type="button" class="quick-datetime-btn" onclick="adjustTime('end', -30)">
                                         <i class="fas fa-minus"></i>-30น.
@@ -2084,7 +2081,7 @@
             localStorage.setItem(`${cacheKey}_timestamp`, Date.now().toString());
         }
 
-        // ========== AUTO CANCEL FUNCTIONS ==========
+        // ========== AUTO CANCEL FUNCTIONS (unchanged, runs every 5 min) ==========
         async function autoCancelOverdueBookings() {
             if (state.autoCancelRunning) return;
             
@@ -2463,7 +2460,62 @@
             return null;
         }
 
-        // ========== QUICK DATETIME FUNCTIONS ==========
+        // ========== TIME SELECT DROPDOWN HELPERS ==========
+        function populateTimeSelects() {
+            const startSelect = document.getElementById('booking-start');
+            const endSelect = document.getElementById('booking-end');
+            if (!startSelect || !endSelect) return;
+            
+            // Clear existing options
+            startSelect.innerHTML = '';
+            endSelect.innerHTML = '';
+            
+            const startHour = 8;
+            const endHour = 20;
+            const stepMinutes = 15;
+            
+            for (let hour = startHour; hour <= endHour; hour++) {
+                for (let minute = 0; minute < 60; minute += stepMinutes) {
+                    if (hour === endHour && minute > 0) continue; // stop at 20:00
+                    const time = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
+                    const option = new Option(time, time);
+                    startSelect.add(option.cloneNode(true));
+                    endSelect.add(option.cloneNode(true));
+                }
+            }
+        }
+
+        // ตั้งค่าเริ่มต้นของเวลา (ใช้กับปุ่ม quick preset)
+        function setDefaultTimeSelects() {
+            const now = new Date();
+            const startSelect = document.getElementById('booking-start');
+            const endSelect = document.getElementById('booking-end');
+            if (!startSelect || !endSelect) return;
+            
+            // ปัดเป็น 15 นาทีถัดไป
+            const minutes = now.getMinutes();
+            const roundedMinutes = Math.ceil(minutes / 15) * 15;
+            now.setMinutes(roundedMinutes, 0, 0);
+            
+            const startTime = formatTimeForInput(now);
+            const endDateTime = new Date(now.getTime() + 60 * 60 * 1000); // +1 ชม.
+            const endTime = formatTimeForInput(endDateTime);
+            
+            // หาค่าที่มีใน dropdown
+            if ([...startSelect.options].some(opt => opt.value === startTime)) {
+                startSelect.value = startTime;
+            } else {
+                startSelect.value = '08:00'; // fallback
+            }
+            
+            if ([...endSelect.options].some(opt => opt.value === endTime)) {
+                endSelect.value = endTime;
+            } else {
+                endSelect.value = '09:00';
+            }
+        }
+
+        // ========== QUICK DATETIME FUNCTIONS (updated for dropdown) ==========
         window.setQuickDateTime = function(type) {
             const now = new Date();
             let startDate = new Date(now);
@@ -2525,12 +2577,18 @@
                 $.bookingEndDate.value = formatDateForInput(endDate);
             }
             
-            if ($.bookingStart) {
-                $.bookingStart.value = formatTimeForInput(startDate);
-            }
+            // set dropdown values
+            const startTime = formatTimeForInput(startDate);
+            const endTime = formatTimeForInput(endDate);
             
-            if ($.bookingEnd) {
-                $.bookingEnd.value = formatTimeForInput(endDate);
+            const startSelect = document.getElementById('booking-start');
+            const endSelect = document.getElementById('booking-end');
+            
+            if (startSelect && [...startSelect.options].some(opt => opt.value === startTime)) {
+                startSelect.value = startTime;
+            }
+            if (endSelect && [...endSelect.options].some(opt => opt.value === endTime)) {
+                endSelect.value = endTime;
             }
             
             validateBookingForm();
@@ -2538,10 +2596,10 @@
         };
 
         window.adjustTime = function(target, minutes) {
-            const timeInput = target === 'start' ? $.bookingStart : $.bookingEnd;
-            if (!timeInput || !timeInput.value) return;
+            const select = target === 'start' ? document.getElementById('booking-start') : document.getElementById('booking-end');
+            if (!select || !select.value) return;
             
-            const [hours, mins] = timeInput.value.split(':').map(Number);
+            const [hours, mins] = select.value.split(':').map(Number);
             const date = new Date();
             date.setHours(hours, mins + minutes);
             
@@ -2554,7 +2612,22 @@
                 return;
             }
             
-            timeInput.value = formatTimeForInput(date);
+            // ปัดเป็น 15 นาทีที่ใกล้ที่สุด (ขึ้น)
+            const roundedMins = Math.ceil(newMins / 15) * 15;
+            date.setMinutes(roundedMins);
+            if (date.getMinutes() >= 60) {
+                date.setHours(date.getHours() + 1, 0);
+            }
+            
+            const newTime = formatTimeForInput(date);
+            
+            // ตรวจสอบว่ามีใน dropdown หรือไม่
+            if ([...select.options].some(opt => opt.value === newTime)) {
+                select.value = newTime;
+            } else {
+                showToast('เวลาไม่อยู่ในตัวเลือก', 'warning');
+                return;
+            }
             
             validateBookingForm();
             checkAvailability();
@@ -2654,8 +2727,8 @@
                 approvedBy,      
                 approvedAt,       
                 rejectedBy,       
-                cancelledBy,      
-                createdAt,        
+                cancelledBy,       
+                createdAt,         
                 bookingId         
             } = bookingData;
             
@@ -3516,7 +3589,7 @@
                 }
 
                 if (roomsResult.success) {
-                    state.rooms = roomsResult.data;
+                    state.rooms = roomsResult.data || [];
                     localStorage.setItem('rooms_cache', JSON.stringify(state.rooms));
                     updateCacheTimestamp('rooms');
                     renderRooms();
@@ -3527,8 +3600,9 @@
                 $.initLoading.classList.add('hide');
                 state.initialized = true;
 
-                // ไม่ต้อง initFlatpickr แล้ว
-
+                // เตรียม dropdown เวลา (จะ populate เมื่อ modal เปิด)
+                populateTimeSelects();
+                
                 loadSettings().then(s => {
                     if(s.success) localStorage.setItem('settings_cache', JSON.stringify(state.settings));
                 }).catch(console.warn);
@@ -3904,6 +3978,9 @@
             document.getElementById('availability-status').classList.add('hidden');
             document.getElementById('save-booking-btn').disabled = true;
             
+            // เตรียม dropdown เวลา (อาจเรียกซ้ำได้ แต่ปลอดภัย)
+            populateTimeSelects();
+            
             const roomSelect = document.getElementById('booking-room');
             roomSelect.innerHTML = '<option value="">เลือกห้องประชุม</option>';
             state.rooms.forEach(r => {
@@ -4051,6 +4128,47 @@
             }
         }
 
+        // === แก้ไข approveBooking ให้รับ skipNotification ===
+        window.approveBooking = async function(bookingId, btn, skipNotification = false) {
+            setButtonLoading(btn, true);
+            
+            const result = await callGAS('booking/approve', { 
+                bookingId,
+                lineUserId: state.user.lineUserId
+            });
+            
+            if (result.success) {
+                showToast('อนุมัติการจองสำเร็จ');
+                const booking = state.pendingBookings.find(b => b.bookingId === bookingId) || {};
+                if (!skipNotification) {
+                    await sendBookingToChat({
+                        title: booking.title,
+                        roomName: booking.roomName,
+                        userName: booking.userName,
+                        startTime: booking.startTime,
+                        endTime: booking.endTime,
+                        attendees: booking.attendees,
+                        description: booking.description,
+                        meetingLink: booking.meetingLink,
+                        approvedBy: state.user.displayName,
+                        approvedAt: new Date().toISOString(),
+                        action: 'approved'
+                    });
+                }
+                await Promise.all([
+                    loadPendingBookings(), 
+                    loadAdminStats(), 
+                    loadTodayStats(),
+                    loadAllBookings(),
+                    loadMonthBookings(state.currentMonth.getFullYear(), state.currentMonth.getMonth())
+                ]);
+            } else {
+                showToast(result.message || 'อนุมัติไม่สำเร็จ', 'error');
+            }
+            
+            setButtonLoading(btn, false);
+        };
+
         window.saveBooking = async function(e) {
             e.preventDefault();
             
@@ -4127,6 +4245,28 @@
                 if (result.success) {
                     showToast(id ? 'แก้ไขการจองสำเร็จ' : 'จองห้องสำเร็จ');
                     
+                    // ถ้าเป็นแอดมินและเป็นการจองใหม่ → อนุมัติทันที (ไม่แจ้งเตือน)
+                    if (!id && state.isAdmin && result.data?.bookingData?.bookingId) {
+                        // เรียก approve โดยไม่ส่ง notification
+                        await approveBooking(result.data.bookingData.bookingId, null, true);
+                    } else {
+                        // ถ้าไม่ใช่แอดมิน หรือเป็นการแก้ไข ส่งแจ้งเตือนตามปกติ
+                        if (!id && result.data?.bookingData && !state.isAdmin) {
+                            setTimeout(async () => {
+                                const bookingData = {
+                                    ...result.data.bookingData,
+                                    action: 'created',
+                                    createdAt: new Date().toISOString(),
+                                    bookingId: result.data.bookingData.bookingId || result.data.bookingData.id,
+                                    approvedBy: result.data.bookingData.approvedBy,
+                                    rejectedBy: result.data.bookingData.rejectedBy,
+                                    cancelledBy: result.data.bookingData.cancelledBy
+                                };
+                                await sendBookingToChat(bookingData);
+                            }, 500);
+                        }
+                    }
+                    
                     closeBookingCreateModal();
                     
                     await Promise.all([
@@ -4135,21 +4275,6 @@
                         loadTodayStats(),
                         loadMonthBookings(state.currentMonth.getFullYear(), state.currentMonth.getMonth())
                     ]);
-                    
-                    if (!id && result.data?.bookingData) {
-                        setTimeout(async () => {
-                            const bookingData = {
-                                ...result.data.bookingData,
-                                action: 'created',
-                                createdAt: new Date().toISOString(),
-                                bookingId: result.data.bookingData.bookingId || result.data.bookingData.id,
-                                approvedBy: result.data.bookingData.approvedBy,
-                                rejectedBy: result.data.bookingData.rejectedBy,
-                                cancelledBy: result.data.bookingData.cancelledBy
-                            };
-                            await sendBookingToChat(bookingData);
-                        }, 500);
-                    }
                 } else {
                     showToast(result.message || 'เกิดข้อผิดพลาด', 'error');
                 }
@@ -4567,44 +4692,6 @@
                 </div>
             `).join('');
         }
-
-        window.approveBooking = async function(bookingId, btn) {
-            setButtonLoading(btn, true);
-            
-            const result = await callGAS('booking/approve', { 
-                bookingId,
-                lineUserId: state.user.lineUserId
-            });
-            
-            if (result.success) {
-                showToast('อนุมัติการจองสำเร็จ');
-                const booking = state.pendingBookings.find(b => b.bookingId === bookingId) || {};
-                await sendBookingToChat({
-                    title: booking.title,
-                    roomName: booking.roomName,
-                    userName: booking.userName,
-                    startTime: booking.startTime,
-                    endTime: booking.endTime,
-                    attendees: booking.attendees,
-                    description: booking.description,
-                    meetingLink: booking.meetingLink,
-                    approvedBy: state.user.displayName,
-                    approvedAt: new Date().toISOString(),
-                    action: 'approved'
-                });
-                await Promise.all([
-                    loadPendingBookings(), 
-                    loadAdminStats(), 
-                    loadTodayStats(),
-                    loadAllBookings(),
-                    loadMonthBookings(state.currentMonth.getFullYear(), state.currentMonth.getMonth())
-                ]);
-            } else {
-                showToast(result.message || 'อนุมัติไม่สำเร็จ', 'error');
-            }
-            
-            setButtonLoading(btn, false);
-        };
 
         window.rejectBooking = async function(bookingId, btn) {
             setButtonLoading(btn, true);
