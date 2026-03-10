@@ -6,45 +6,30 @@
     <title id="page-title">Meeting Room · LINE</title>
     <link rel="shortcut icon" href="https://cdn-icons-png.flaticon.com/512/1040/1040244.png">
     
-    <!-- Preconnect - เพิ่มเพื่อลด latency -->
+    <!-- Preconnect -->
     <link rel="preconnect" href="https://static.line-scdn.net">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="preconnect" href="https://cdn.jsdelivr.net">
     <link rel="preconnect" href="https://cdnjs.cloudflare.com">
     
-    <!-- Preload ไฟล์สำคัญที่จำเป็นต้องใช้ทันที -->
-    <link rel="preload" href="https://static.line-scdn.net/liff/edge/2.1/sdk.js" as="script">
-    <link rel="preload" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@300;400;500;600;700&display=swap" as="style">
-    
-    <!-- Tailwind CSS - โหลดแบบปกติ (จำเป็นต้องใช้ทันที) -->
+    <!-- Tailwind CSS -->
     <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
     
-    <!-- Fonts - โหลดแบบปกติ -->
+    <!-- Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     
-    <!-- LINE LIFF - โหลดแบบ async เพื่อไม่บล็อกการแสดงผล -->
-    <script src="https://static.line-scdn.net/liff/edge/2.1/sdk.js" async></script>
+    <!-- LINE LIFF -->
+    <script src="https://static.line-scdn.net/liff/edge/2.1/sdk.js"></script>
     
-    <!-- Font Awesome - ใช้ preload แล้วโหลดแบบ async -->
-    <link rel="preload" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" as="style" onload="this.onload=null;this.rel='stylesheet'">
-    <noscript><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"></noscript>
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
-    <!-- SweetAlert2 - โหลดแบบ async -->
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11" async></script>
-    
-    <!-- Intersection Observer polyfill (สำหรับ browser เก่า) -->
-    <script>
-        // ตรวจสอบและโหลด Intersection Observer ถ้าจำเป็น
-        if (!window.IntersectionObserver) {
-            var script = document.createElement('script');
-            script.src = 'https://polyfill.io/v3/polyfill.min.js?features=IntersectionObserver';
-            document.head.appendChild(script);
-        }
-    </script>
+    <!-- SweetAlert2 -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     
     <style>
-        /* CSS เดิมทั้งหมดเหมือนเดิม - ครบถ้วนสมบูรณ์ */
+        /* (CSS เดิมทั้งหมดเหมือนเดิม) */
         * {
             font-family: 'IBM Plex Sans Thai', sans-serif;
             margin: 0;
@@ -1322,7 +1307,7 @@
         <div id="tab-home" class="tab-content active">
             <!-- Profile Header -->
             <div class="profile-header" id="profile-header">
-                <img id="profile-avatar" src="https://via.placeholder.com/60/2a2e36/06c755?text=..." alt="avatar" class="profile-avatar" loading="lazy">
+                <img id="profile-avatar" src="https://via.placeholder.com/60/2a2e36/06c755?text=..." alt="avatar" class="profile-avatar">
                 <div class="flex-1">
                     <h2 id="profile-name" class="text-lg font-bold">กำลังโหลด...</h2>
                     <p id="profile-email" class="text-sm text-gray-400"></p>
@@ -1615,7 +1600,7 @@
             </div>
         </div>
 
-        <!-- Create/Edit Booking Modal -->
+        <!-- Create/Edit Booking Modal - ปรับปรุงให้ใช้งานง่ายบน Android (Dropdown time) -->
         <div class="modal" id="booking-create-modal">
             <div class="modal-content">
                 <div class="modal-header">
@@ -1654,6 +1639,7 @@
                         
                         <input type="text" id="booking-meeting-link" placeholder="ลิงค์ประชุม (Zoom, Teams, etc.)" class="input-field">
                         
+                        <!-- ใช้อินพุตแบบ native ของ HTML5 แทน Flatpickr -->
                         <div class="grid grid-cols-2 gap-2">
                             <div>
                                 <label class="text-xs text-gray-400 mb-1 block">วันที่เริ่ม</label>
@@ -1669,6 +1655,7 @@
                             </div>
                         </div>
                         
+                        <!-- เปลี่ยนจาก input time เป็น dropdown -->
                         <div class="grid grid-cols-2 gap-2">
                             <div>
                                 <label class="text-xs text-gray-400 mb-1 block">เวลาเริ่ม</label>
@@ -1769,6 +1756,7 @@
                             <input type="text" id="profile-department" placeholder="เช่น ไอที, ฝ่ายขาย" class="input-field" maxlength="50">
                         </div>
                         
+                        <!-- Notification Settings moved here -->
                         <div class="settings-item">
                             <div>
                                 <div class="settings-item-label">การแจ้งเตือน LINE</div>
@@ -1892,7 +1880,9 @@
             },
             initialized: false,
             emailFetchAttempted: false,
+            // Cache for user names by lineUserId
             userNamesCache: {},
+            // Auto-cancel state
             autoCancelRunning: false,
             autoCancelLastRun: null,
             autoCancelInterval: null,
@@ -1900,11 +1890,13 @@
                 today: 0,
                 lastRun: null
             },
+            // Loading state
             loading: {
                 rooms: false,
                 bookings: false,
                 users: false
             },
+            // Cache timestamps
             cacheTimestamps: {
                 rooms: localStorage.getItem('rooms_cache_timestamp'),
                 settings: localStorage.getItem('settings_cache_timestamp')
@@ -1982,11 +1974,13 @@
             saveBookingBtn: document.getElementById('save-booking-btn'),
             availabilityStatus: document.getElementById('availability-status'),
             userRoleBadge: document.getElementById('user-role-badge'),
+            // Auto-cancel elements
             autoCancelStatus: document.getElementById('auto-cancel-status'),
             autoCancelTime: document.getElementById('auto-cancel-time'),
             adminAutoCancelStats: document.getElementById('admin-auto-cancel-stats'),
             autoCancelToday: document.getElementById('auto-cancel-today'),
             autoCancelLastRun: document.getElementById('auto-cancel-last-run'),
+            // New elements
             datetimePresets: document.querySelectorAll('.datetime-preset')
         };
 
@@ -2109,7 +2103,7 @@
             localStorage.setItem(`${cacheKey}_timestamp`, Date.now().toString());
         }
 
-        // ========== AUTO CANCEL FUNCTIONS ==========
+        // ========== AUTO CANCEL FUNCTIONS (ไม่แจ้งเตือน) ==========
         async function autoCancelOverdueBookings() {
             if (state.autoCancelRunning) return;
             
@@ -2120,7 +2114,7 @@
                 
                 const result = await callGAS('admin/auto-cancel-overdue', {
                     lineUserId: state.user?.lineUserId || 'system',
-                    silentMode: true
+                    silentMode: true // เพิ่ม flag ให้ไม่ส่งแจ้งเตือน
                 });
                 
                 if (result.success) {
@@ -2137,6 +2131,8 @@
                             state.autoCancelStats.lastRunDate = todayStr;
                         }
                         state.autoCancelStats.today += result.data.cancelledCount;
+                        
+                        // ไม่แจ้งเตือนผู้ใช้ ไม่ showToast
                         
                         await Promise.all([
                             loadPendingBookings(),
@@ -2362,6 +2358,7 @@
             const endSelect = document.getElementById('booking-end');
             if (!startSelect || !endSelect) return;
             
+            // Clear existing options
             startSelect.innerHTML = '';
             endSelect.innerHTML = '';
             
@@ -2371,7 +2368,7 @@
             
             for (let hour = startHour; hour <= endHour; hour++) {
                 for (let minute = 0; minute < 60; minute += stepMinutes) {
-                    if (hour === endHour && minute > 0) continue;
+                    if (hour === endHour && minute > 0) continue; // stop at 20:00
                     const time = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
                     const option = new Option(time, time);
                     startSelect.add(option.cloneNode(true));
@@ -2380,24 +2377,27 @@
             }
         }
 
+        // ตั้งค่าเริ่มต้นของเวลา (ใช้กับปุ่ม quick preset)
         function setDefaultTimeSelects() {
             const now = new Date();
             const startSelect = document.getElementById('booking-start');
             const endSelect = document.getElementById('booking-end');
             if (!startSelect || !endSelect) return;
             
+            // ปัดเป็น 15 นาทีถัดไป
             const minutes = now.getMinutes();
             const roundedMinutes = Math.ceil(minutes / 15) * 15;
             now.setMinutes(roundedMinutes, 0, 0);
             
             const startTime = formatTimeForInput(now);
-            const endDateTime = new Date(now.getTime() + 60 * 60 * 1000);
+            const endDateTime = new Date(now.getTime() + 60 * 60 * 1000); // +1 ชม.
             const endTime = formatTimeForInput(endDateTime);
             
+            // หาค่าที่มีใน dropdown
             if ([...startSelect.options].some(opt => opt.value === startTime)) {
                 startSelect.value = startTime;
             } else {
-                startSelect.value = '08:00';
+                startSelect.value = '08:00'; // fallback
             }
             
             if ([...endSelect.options].some(opt => opt.value === endTime)) {
@@ -2407,12 +2407,13 @@
             }
         }
 
-        // ========== QUICK DATETIME FUNCTIONS ==========
+        // ========== QUICK DATETIME FUNCTIONS (updated for dropdown) ==========
         window.setQuickDateTime = function(type) {
             const now = new Date();
             let startDate = new Date(now);
             let endDate = new Date(now);
             
+            // อัปเดต active state ของปุ่ม
             $.datetimePresets.forEach(btn => {
                 btn.classList.remove('active');
                 if (btn.getAttribute('onclick')?.includes(type)) {
@@ -2446,17 +2447,17 @@
                     
                 case 'today':
                     startDate = new Date(now);
-                    startDate.setHours(14, 0, 0, 0);
+                    startDate.setHours(14, 0, 0, 0); // 14:00 น.
                     endDate = new Date(startDate);
-                    endDate.setHours(15, 0, 0, 0);
+                    endDate.setHours(15, 0, 0, 0); // 15:00 น.
                     break;
                     
                 case 'tomorrow':
                     startDate = new Date(now);
                     startDate.setDate(now.getDate() + 1);
-                    startDate.setHours(9, 0, 0, 0);
+                    startDate.setHours(9, 0, 0, 0); // 09:00 น.
                     endDate = new Date(startDate);
-                    endDate.setHours(10, 0, 0, 0);
+                    endDate.setHours(10, 0, 0, 0); // 10:00 น.
                     break;
             }
             
@@ -2468,6 +2469,7 @@
                 $.bookingEndDate.value = formatDateForInput(endDate);
             }
             
+            // set dropdown values
             const startTime = formatTimeForInput(startDate);
             const endTime = formatTimeForInput(endDate);
             
@@ -2493,6 +2495,7 @@
             const date = new Date();
             date.setHours(hours, mins + minutes);
             
+            // ตรวจสอบว่าเวลาอยู่ในช่วงที่กำหนด
             const newHours = date.getHours();
             const newMins = date.getMinutes();
             
@@ -2501,6 +2504,7 @@
                 return;
             }
             
+            // ปัดเป็น 15 นาทีที่ใกล้ที่สุด (ขึ้น)
             const roundedMins = Math.ceil(newMins / 15) * 15;
             date.setMinutes(roundedMins);
             if (date.getMinutes() >= 60) {
@@ -2509,6 +2513,7 @@
             
             const newTime = formatTimeForInput(date);
             
+            // ตรวจสอบว่ามีใน dropdown หรือไม่
             if ([...select.options].some(opt => opt.value === newTime)) {
                 select.value = newTime;
             } else {
@@ -2586,6 +2591,7 @@
             } catch (error) {
                 console.error('API Error:', error);
                 
+                // Retry logic
                 if (retryCount < CONFIG.MAX_RETRY) {
                     console.log(`Retrying... (${retryCount + 1}/${CONFIG.MAX_RETRY})`);
                     await new Promise(resolve => setTimeout(resolve, 1000 * (retryCount + 1)));
@@ -3186,7 +3192,7 @@
             }
         };
 
-        // ========== CALENDAR FUNCTIONS ==========
+        // ========== CALENDAR FUNCTIONS (รองรับการจองข้ามวัน) ==========
         async function loadMonthBookings(year, month) {
             try {
                 const startDate = new Date(year, month, 1);
@@ -3199,16 +3205,18 @@
                     startDate: startStr,
                     endDate: endStr,
                     showPast: 'true',
-                    includeMultiDay: 'true'
+                    includeMultiDay: 'true' // ขอข้อมูลการจองข้ามวัน
                 });
                 
                 if (result.success) {
                     state.dateBookings = {};
                     
+                    // จัดกลุ่มการจองตามวันที่ (รวมถึงการจองข้ามวัน)
                     result.data.bookings.forEach(booking => {
                         const startDateObj = new Date(booking.startTime);
                         const endDateObj = new Date(booking.endTime);
                         
+                        // วนลูปทุกวันที่การจองนี้ครอบคลุม
                         let currentDate = new Date(startDateObj);
                         while (currentDate <= endDateObj) {
                             const dateStr = formatDateForInput(currentDate);
@@ -3217,6 +3225,7 @@
                                 state.dateBookings[dateStr] = [];
                             }
                             
+                            // เพิ่มข้อมูลว่าเป็นการจองข้ามวันหรือไม่
                             const isMultiDay = formatDateForInput(startDateObj) !== formatDateForInput(endDateObj);
                             
                             state.dateBookings[dateStr].push({
@@ -3226,6 +3235,7 @@
                                 originalEndDate: endDateObj
                             });
                             
+                            // ขยับไปวันถัดไป
                             currentDate.setDate(currentDate.getDate() + 1);
                             currentDate.setHours(0, 0, 0, 0);
                         }
@@ -3349,6 +3359,7 @@
                         approvedByName = await getUserNameFromCache(approvedByName);
                     }
                     
+                    // ตรวจสอบว่าเป็นการจองข้ามวันหรือไม่
                     const startDate = new Date(b.startTime);
                     const endDate = new Date(b.endTime);
                     const isMultiDay = formatDateForInput(startDate) !== formatDateForInput(endDate);
@@ -3448,10 +3459,12 @@
                     updateRoleFlags();
                     updateUserUI(state.user);
                     
+                    // ใช้ข้อมูลจาก cache ถ้ายัง valid
                     if (isCacheValid('rooms') && state.rooms.length > 0) {
                         renderRooms();
                         $.initLoading.classList.add('hide');
                     } else {
+                        // แสดง skeleton ขณะโหลด
                         renderSkeletonRooms();
                     }
                 }
@@ -3488,6 +3501,7 @@
                     console.log('Email from ID Token:', tokenPayload.email);
                 }
 
+                // โหลดข้อมูลพร้อมกันเพื่อลดเวลา
                 const [userResult, roomsResult] = await Promise.all([
                     callGAS('user/profile', userData),
                     callGAS('rooms')
@@ -3502,6 +3516,7 @@
                     
                     if (!state.user.email || state.user.email === '') {
                         console.log('No email found, attempting to fetch...');
+                        // ไม่ต้อง await เพื่อไม่ให้ช้า
                         tryFetchEmail().catch(console.warn);
                     }
                 }
@@ -3518,6 +3533,7 @@
                 $.initLoading.classList.add('hide');
                 state.initialized = true;
 
+                // เตรียม dropdown เวลา (จะ populate เมื่อ modal เปิด)
                 populateTimeSelects();
                 
                 loadSettings().then(s => {
@@ -3632,6 +3648,7 @@
                 
                 await Promise.all([roomsPromise, calendarPromise, statsPromise]);
                 
+                // โหลด my bookings แบบ async ไม่ต้องรอ
                 loadMyBookings().catch(console.warn);
                 
                 setTimeout(() => autoCancelOverdueBookings(), 5000);
@@ -3656,6 +3673,7 @@
         // ========== ROOMS ==========
         async function loadRooms() {
             try {
+                // ถ้ามี cache และยังไม่หมดอายุ ให้ใช้ cache
                 if (isCacheValid('rooms') && state.rooms.length > 0) {
                     renderRooms();
                     return;
@@ -3896,6 +3914,7 @@
             document.getElementById('availability-status').classList.add('hidden');
             document.getElementById('save-booking-btn').disabled = true;
             
+            // เตรียม dropdown เวลา (อาจเรียกซ้ำได้ แต่ปลอดภัย)
             populateTimeSelects();
             
             const roomSelect = document.getElementById('booking-room');
@@ -3908,8 +3927,10 @@
                 roomSelect.appendChild(option);
             });
             
+            // ตั้งค่าเริ่มต้นด้วยปุ่ม "เดี๋ยวนี้"
             setQuickDateTime('now');
             
+            // เปิด active state ที่ปุ่ม "เดี๋ยวนี้"
             $.datetimePresets.forEach(btn => {
                 btn.classList.remove('active');
                 if (btn.getAttribute('onclick')?.includes('now')) {
@@ -4043,6 +4064,7 @@
             }
         }
 
+        // === แก้ไข approveBooking ให้รับ skipNotification ===
         window.approveBooking = async function(bookingId, btn, skipNotification = false) {
             setButtonLoading(btn, true);
             
@@ -4159,9 +4181,12 @@
                 if (result.success) {
                     showToast(id ? 'แก้ไขการจองสำเร็จ' : 'จองห้องสำเร็จ');
                     
+                    // ถ้าเป็นแอดมินและเป็นการจองใหม่ → อนุมัติทันที (ไม่แจ้งเตือน)
                     if (!id && state.isAdmin && result.data?.bookingData?.bookingId) {
+                        // เรียก approve โดยไม่ส่ง notification
                         await approveBooking(result.data.bookingData.bookingId, null, true);
                     } else {
+                        // ถ้าไม่ใช่แอดมิน หรือเป็นการแก้ไข ส่งแจ้งเตือนตามปกติ
                         if (!id && result.data?.bookingData && !state.isAdmin) {
                             setTimeout(async () => {
                                 const bookingData = {
@@ -5077,6 +5102,7 @@
         // ========== SETTINGS ==========
         async function loadSettings() {
             try {
+                // ใช้ cache ถ้ายัง valid
                 if (isCacheValid('settings') && state.settings) {
                     updateAppName(state.settings.appName);
                     return;
