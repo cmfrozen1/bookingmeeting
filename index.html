@@ -245,6 +245,12 @@
             border: 1px solid rgba(239,68,68,0.3);
         }
         
+        .badge-auto-cancelled {
+            background: rgba(245,158,11,0.15);
+            color: #f59e0b;
+            border: 1px solid rgba(245,158,11,0.3);
+        }
+        
         .btn-primary {
             background: var(--primary);
             color: white;
@@ -931,6 +937,11 @@
             border-left-color: var(--warning);
         }
         
+        .date-booking-item.auto-cancelled {
+            border-left-color: #f59e0b;
+            opacity: 0.8;
+        }
+        
         .date-booking-time {
             font-size: 12px;
             color: var(--text-secondary);
@@ -1256,6 +1267,16 @@
             border-radius: 12px;
             margin-left: 8px;
         }
+
+        /* Multi-day booking indicator */
+        .multi-day-badge {
+            background: rgba(245,158,11,0.2);
+            color: #f59e0b;
+            font-size: 9px;
+            padding: 2px 4px;
+            border-radius: 4px;
+            margin-left: 4px;
+        }
     </style>
 </head>
 <body>
@@ -1394,6 +1415,7 @@
                 <button class="filter-btn" data-booking-filter="pending">รออนุมัติ</button>
                 <button class="filter-btn" data-booking-filter="cancelled">ยกเลิก</button>
                 <button class="filter-btn" data-booking-filter="rejected">ปฏิเสธ</button>
+                <button class="filter-btn" data-booking-filter="auto_cancelled">ระบบยกเลิก</button>
             </div>
             
             <div id="my-bookings-list" class="my-bookings-grid"></div>
@@ -2081,7 +2103,7 @@
             localStorage.setItem(`${cacheKey}_timestamp`, Date.now().toString());
         }
 
-        // ========== AUTO CANCEL FUNCTIONS (unchanged, runs every 5 min) ==========
+        // ========== AUTO CANCEL FUNCTIONS (ไม่แจ้งเตือน) ==========
         async function autoCancelOverdueBookings() {
             if (state.autoCancelRunning) return;
             
@@ -2091,7 +2113,8 @@
                 console.log('🔄 ตรวจสอบการจองที่เลยเวลา...', new Date().toLocaleString('th-TH'));
                 
                 const result = await callGAS('admin/auto-cancel-overdue', {
-                    lineUserId: state.user?.lineUserId || 'system'
+                    lineUserId: state.user?.lineUserId || 'system',
+                    silentMode: true // เพิ่ม flag ให้ไม่ส่งแจ้งเตือน
                 });
                 
                 if (result.success) {
@@ -2100,7 +2123,7 @@
                     state.autoCancelStats.lastRun = now;
                     
                     if (result.data.cancelledCount > 0) {
-                        console.log(`✅ ยกเลิกการจองที่เลยเวลาแล้ว ${result.data.cancelledCount} รายการ`);
+                        console.log(`✅ ยกเลิกการจองที่เลยเวลาแล้ว ${result.data.cancelledCount} รายการ (ไม่แจ้งเตือน)`);
                         
                         const todayStr = formatDateForInput(now);
                         if (state.autoCancelStats.lastRunDate !== todayStr) {
@@ -2109,14 +2132,7 @@
                         }
                         state.autoCancelStats.today += result.data.cancelledCount;
                         
-                        showToast(`ระบบยกเลิกการจองที่เลยเวลา ${result.data.cancelledCount} รายการ`, 'warning');
-                        
-                        if (state.isManager && areNotificationsEnabled()) {
-                            const cancelledBookings = result.data.bookings || [];
-                            if (cancelledBookings.length > 0) {
-                                await sendAutoCancelNotification(cancelledBookings);
-                            }
-                        }
+                        // ไม่แจ้งเตือนผู้ใช้ ไม่ showToast
                         
                         await Promise.all([
                             loadPendingBookings(),
@@ -2136,130 +2152,6 @@
                 console.error('Auto-cancel error:', error);
             } finally {
                 state.autoCancelRunning = false;
-            }
-        }
-
-        async function sendAutoCancelNotification(cancelledBookings) {
-            try {
-                if (!liff.isInClient() || !areNotificationsEnabled()) return;
-                
-                const count = cancelledBookings.length;
-                
-                const flexMessage = {
-                    type: 'flex',
-                    altText: `🤖 ระบบยกเลิกการจองที่เลยเวลา ${count} รายการ`,
-                    contents: {
-                        type: 'bubble',
-                        header: {
-                            type: 'box',
-                            layout: 'vertical',
-                            backgroundColor: '#f59e0b',
-                            paddingAll: '12px',
-                            contents: [
-                                {
-                                    type: 'text',
-                                    text: `🤖 ระบบยกเลิกอัตโนมัติ`,
-                                    size: 'lg',
-                                    weight: 'bold',
-                                    color: '#ffffff',
-                                    align: 'center'
-                                }
-                            ]
-                        },
-                        body: {
-                            type: 'box',
-                            layout: 'vertical',
-                            spacing: 'md',
-                            paddingAll: '16px',
-                            contents: [
-                                {
-                                    type: 'text',
-                                    text: `ยกเลิกการจองที่เลยเวลาแล้ว ${count} รายการ`,
-                                    size: 'xl',
-                                    weight: 'bold',
-                                    wrap: true,
-                                    color: '#000000'
-                                },
-                                {
-                                    type: 'separator',
-                                    margin: 'md'
-                                },
-                                {
-                                    type: 'box',
-                                    layout: 'vertical',
-                                    spacing: 'sm',
-                                    margin: 'md',
-                                    contents: [
-                                        {
-                                            type: 'text',
-                                            text: '📋 รายการที่ถูกยกเลิก:',
-                                            size: 'sm',
-                                            weight: 'bold'
-                                        }
-                                    ]
-                                }
-                            ]
-                        },
-                        footer: {
-                            type: 'box',
-                            layout: 'vertical',
-                            spacing: 'sm',
-                            paddingAll: '16px',
-                            contents: [
-                                {
-                                    type: 'button',
-                                    action: {
-                                        type: 'uri',
-                                        label: '📋 ดูรายละเอียด',
-                                        uri: `https://liff.line.me/${CONFIG.LIFF_ID}`
-                                    },
-                                    style: 'primary',
-                                    color: '#06c755'
-                                }
-                            ]
-                        }
-                    }
-                };
-                
-                const displayBookings = cancelledBookings.slice(0, 5);
-                displayBookings.forEach((b, index) => {
-                    flexMessage.contents.body.contents[2].contents.push({
-                        type: 'box',
-                        layout: 'horizontal',
-                        spacing: 'sm',
-                        margin: index > 0 ? 'md' : 'none',
-                        contents: [
-                            {
-                                type: 'text',
-                                text: `•`,
-                                size: 'sm',
-                                flex: 1
-                            },
-                            {
-                                type: 'text',
-                                text: `${b.title || 'ไม่ระบุ'} (${formatTime(b.startTime)})`,
-                                size: 'sm',
-                                flex: 9,
-                                wrap: true
-                            }
-                        ]
-                    });
-                });
-                
-                if (cancelledBookings.length > 5) {
-                    flexMessage.contents.body.contents[2].contents.push({
-                        type: 'text',
-                        text: `และอื่นๆ อีก ${cancelledBookings.length - 5} รายการ`,
-                        size: 'xs',
-                        color: '#9ca3af',
-                        margin: 'md',
-                        align: 'center'
-                    });
-                }
-                
-                await liff.sendMessages([flexMessage]);
-            } catch (error) {
-                console.error('Error sending auto-cancel notification:', error);
             }
         }
 
@@ -2757,7 +2649,7 @@
                 statusEmoji = '❌';
                 statusText = 'ปฏิเสธ';
                 statusThai = '❌ ปฏิเสธการจอง';
-            } else if (action === 'auto_cancelled') {
+            } else if (action === 'auto_cancelled' || status === 'auto_cancelled') {
                 statusColor = '#f59e0b';
                 statusEmoji = '🤖';
                 statusText = 'ระบบยกเลิกอัตโนมัติ';
@@ -3300,7 +3192,7 @@
             }
         };
 
-        // ========== CALENDAR FUNCTIONS ==========
+        // ========== CALENDAR FUNCTIONS (รองรับการจองข้ามวัน) ==========
         async function loadMonthBookings(year, month) {
             try {
                 const startDate = new Date(year, month, 1);
@@ -3312,17 +3204,41 @@
                 const result = await callGAS('bookings', {
                     startDate: startStr,
                     endDate: endStr,
-                    showPast: 'true'
+                    showPast: 'true',
+                    includeMultiDay: 'true' // ขอข้อมูลการจองข้ามวัน
                 });
                 
                 if (result.success) {
                     state.dateBookings = {};
+                    
+                    // จัดกลุ่มการจองตามวันที่ (รวมถึงการจองข้ามวัน)
                     result.data.bookings.forEach(booking => {
-                        const date = new Date(booking.startTime).toISOString().split('T')[0];
-                        if (!state.dateBookings[date]) {
-                            state.dateBookings[date] = [];
+                        const startDateObj = new Date(booking.startTime);
+                        const endDateObj = new Date(booking.endTime);
+                        
+                        // วนลูปทุกวันที่การจองนี้ครอบคลุม
+                        let currentDate = new Date(startDateObj);
+                        while (currentDate <= endDateObj) {
+                            const dateStr = formatDateForInput(currentDate);
+                            
+                            if (!state.dateBookings[dateStr]) {
+                                state.dateBookings[dateStr] = [];
+                            }
+                            
+                            // เพิ่มข้อมูลว่าเป็นการจองข้ามวันหรือไม่
+                            const isMultiDay = formatDateForInput(startDateObj) !== formatDateForInput(endDateObj);
+                            
+                            state.dateBookings[dateStr].push({
+                                ...booking,
+                                isPartOfMultiDay: isMultiDay,
+                                originalStartDate: startDateObj,
+                                originalEndDate: endDateObj
+                            });
+                            
+                            // ขยับไปวันถัดไป
+                            currentDate.setDate(currentDate.getDate() + 1);
+                            currentDate.setHours(0, 0, 0, 0);
                         }
-                        state.dateBookings[date].push(booking);
                     });
                     
                     renderCalendar();
@@ -3353,11 +3269,12 @@
                 const day = prevMonthLastDay - i;
                 const date = new Date(year, month - 1, day);
                 const dateStr = formatDateForInput(date);
-                const hasBooking = state.dateBookings[dateStr]?.length > 0;
-                const bookingCount = state.dateBookings[dateStr]?.length || 0;
+                const bookings = state.dateBookings[dateStr] || [];
+                const hasBooking = bookings.length > 0;
+                const hasMultiDayBooking = bookings.some(b => b.isPartOfMultiDay);
                 const isToday = isSameDay(date, new Date());
                 
-                html += renderCalendarDay(day, true, hasBooking, isToday, dateStr, bookingCount);
+                html += renderCalendarDay(day, true, hasBooking, isToday, dateStr, bookings.length, false, hasMultiDayBooking);
             }
             
             for (let day = 1; day <= totalDays; day++) {
@@ -3365,11 +3282,11 @@
                 const dateStr = formatDateForInput(date);
                 const bookings = state.dateBookings[dateStr] || [];
                 const hasBooking = bookings.length > 0;
-                const bookingCount = bookings.length;
+                const hasMultiDayBooking = bookings.some(b => b.isPartOfMultiDay);
                 const isToday = isSameDay(date, new Date());
                 const isSelected = isSameDay(date, state.selectedDate);
                 
-                html += renderCalendarDay(day, false, hasBooking, isToday, dateStr, bookingCount, isSelected);
+                html += renderCalendarDay(day, false, hasBooking, isToday, dateStr, bookings.length, isSelected, hasMultiDayBooking);
             }
             
             const totalCells = 42;
@@ -3377,23 +3294,24 @@
             for (let day = 1; day <= remainingCells; day++) {
                 const date = new Date(year, month + 1, day);
                 const dateStr = formatDateForInput(date);
-                const hasBooking = state.dateBookings[dateStr]?.length > 0;
-                const bookingCount = state.dateBookings[dateStr]?.length || 0;
+                const bookings = state.dateBookings[dateStr] || [];
+                const hasBooking = bookings.length > 0;
+                const hasMultiDayBooking = bookings.some(b => b.isPartOfMultiDay);
                 
-                html += renderCalendarDay(day, true, hasBooking, false, dateStr, bookingCount);
+                html += renderCalendarDay(day, true, hasBooking, false, dateStr, bookings.length, false, hasMultiDayBooking);
             }
             
             $.calendarDays.innerHTML = html;
         }
 
-        function renderCalendarDay(day, isOtherMonth, hasBooking, isToday, dateStr, bookingCount = 0, isSelected = false) {
+        function renderCalendarDay(day, isOtherMonth, hasBooking, isToday, dateStr, bookingCount = 0, isSelected = false, hasMultiDayBooking = false) {
             let classes = 'calendar-day';
             if (isOtherMonth) classes += ' other-month';
             if (isToday) classes += ' today';
             if (isSelected) classes += ' selected';
             if (hasBooking) {
                 classes += ' has-booking';
-                if (bookingCount > 1) {
+                if (bookingCount > 1 || hasMultiDayBooking) {
                     classes += ' multiple';
                 }
             }
@@ -3401,6 +3319,7 @@
             return `
                 <div class="${classes}" onclick="selectDate('${dateStr}')">
                     ${day}
+                    ${hasMultiDayBooking ? '<span class="multi-day-badge">📅</span>' : ''}
                 </div>
             `;
         }
@@ -3417,7 +3336,8 @@
             
             const result = await callGAS('bookings', {
                 date: dateStr,
-                showPast: 'true'
+                showPast: 'true',
+                includeMultiDay: 'true'
             });
             
             if (result.success && result.data.bookings.length > 0) {
@@ -3439,24 +3359,37 @@
                         approvedByName = await getUserNameFromCache(approvedByName);
                     }
                     
+                    // ตรวจสอบว่าเป็นการจองข้ามวันหรือไม่
+                    const startDate = new Date(b.startTime);
+                    const endDate = new Date(b.endTime);
+                    const isMultiDay = formatDateForInput(startDate) !== formatDateForInput(endDate);
+                    
                     return {
                         ...b,
-                        approvedByName
+                        approvedByName,
+                        isMultiDay,
+                        multiDayInfo: isMultiDay ? `${formatDateShort(b.startTime)} - ${formatDateShort(b.endTime)}` : null
                     };
                 }));
                 
                 $.selectedDateBookingsList.innerHTML = processedBookings.map(b => {
-                    const statusClass = b.status === 'confirmed' ? '' : 'pending';
+                    let statusClass = '';
+                    if (b.status === 'confirmed') statusClass = '';
+                    else if (b.status === 'pending') statusClass = 'pending';
+                    else if (b.status === 'auto_cancelled') statusClass = 'auto-cancelled';
                     
                     return `
                         <div class="date-booking-item ${statusClass}" onclick="showBookingDetail('${b.bookingId}')">
                             <div class="date-booking-time">
                                 <i class="far fa-clock mr-1"></i> ${formatTime(b.startTime)} - ${formatTime(b.endTime)}
+                                ${b.isMultiDay ? '<span class="ml-2 text-yellow-500">📅 ข้ามวัน</span>' : ''}
                             </div>
                             <div class="date-booking-title">${b.title}</div>
                             <div class="date-booking-room">${b.roomName} | โดย: ${b.userName}</div>
                             ${b.approvedByName ? `<div class="text-xs text-green-500 mt-1">✅ อนุมัติโดย: ${b.approvedByName}</div>` : ''}
+                            ${b.status === 'auto_cancelled' ? '<div class="text-xs text-yellow-500 mt-1">🤖 ระบบยกเลิกอัตโนมัติ (เลยเวลา)</div>' : ''}
                             ${b.status === 'cancelled' && b.cancelledBy === 'system' ? '<div class="text-xs text-yellow-500 mt-1">🤖 ระบบยกเลิกอัตโนมัติ (เลยเวลา)</div>' : ''}
+                            ${b.multiDayInfo ? `<div class="text-xs text-yellow-500 mt-1">📅 ${b.multiDayInfo}</div>` : ''}
                         </div>
                     `;
                 }).join('');
@@ -3883,7 +3816,8 @@
                 const bookingsResult = await callGAS('bookings', { 
                     roomId, 
                     date: dateStr,
-                    showPast: 'false'
+                    showPast: 'false',
+                    includeMultiDay: 'true'
                 });
                 
                 const todayBookings = bookingsResult.success ? bookingsResult.data.bookings : [];
@@ -3929,7 +3863,8 @@
                                         'confirmed': 'text-green-500',
                                         'pending': 'text-yellow-500',
                                         'cancelled': 'text-gray-500',
-                                        'rejected': 'text-red-500'
+                                        'rejected': 'text-red-500',
+                                        'auto_cancelled': 'text-yellow-500'
                                     }[b.status] || 'text-gray-500';
                                     let approvedByName = b.approvedBy || '';
                                     
@@ -3941,6 +3876,7 @@
                                             </div>
                                             <p class="text-xs text-gray-400">${b.title}</p>
                                             ${approvedByName ? `<p class="text-xs text-green-500 mt-1">✅ อนุมัติโดย: ${approvedByName}</p>` : ''}
+                                            ${b.status === 'auto_cancelled' ? '<p class="text-xs text-yellow-500 mt-1">🤖 ระบบยกเลิกอัตโนมัติ (เลยเวลา)</p>' : ''}
                                             ${b.status === 'cancelled' && b.cancelledBy === 'system' ? '<p class="text-xs text-yellow-500 mt-1">🤖 ระบบยกเลิกอัตโนมัติ (เลยเวลา)</p>' : ''}
                                         </div>
                                     `;
@@ -4340,7 +4276,7 @@
 
             const now = new Date();
             filtered = filtered.filter(b => {
-                if (b.status === 'pending') return true;
+                if (b.status === 'pending' || b.status === 'auto_cancelled') return true;
                 const endTime = new Date(b.endTime);
                 return endTime >= now;
             });
@@ -4376,14 +4312,16 @@
                     'confirmed': 'badge-confirmed',
                     'pending': 'badge-pending',
                     'cancelled': 'badge-cancelled',
-                    'rejected': 'badge-rejected'
+                    'rejected': 'badge-rejected',
+                    'auto_cancelled': 'badge-auto-cancelled'
                 }[b.status] || 'badge-pending';
                 
                 const statusText = {
                     'confirmed': 'อนุมัติแล้ว',
                     'pending': 'รออนุมัติ',
                     'cancelled': 'ยกเลิก',
-                    'rejected': 'ปฏิเสธ'
+                    'rejected': 'ปฏิเสธ',
+                    'auto_cancelled': 'ระบบยกเลิก'
                 }[b.status] || b.status;
                 
                 return `
@@ -4398,6 +4336,7 @@
                         <i class="far fa-clock mr-1"></i> ${formatTime(b.startTime)} - ${formatTime(b.endTime)}
                     </p>
                     ${b.approvedByName ? `<p class="text-xs text-green-500 mb-2">✅ อนุมัติโดย: ${b.approvedByName}</p>` : ''}
+                    ${b.status === 'auto_cancelled' ? '<p class="text-xs text-yellow-500 mb-2">🤖 ระบบยกเลิกอัตโนมัติ (เลยเวลา)</p>' : ''}
                     ${b.status === 'cancelled' && b.cancelledBy === 'system' ? '<p class="text-xs text-yellow-500 mb-2">🤖 ระบบยกเลิกอัตโนมัติ (เลยเวลา)</p>' : ''}
                     <div class="flex justify-between items-center text-xs">
                         <span class="text-gray-500"><i class="fas fa-users mr-1"></i> ${b.attendees || 0} คน</span>
@@ -4431,14 +4370,16 @@
                     'confirmed': 'badge-confirmed',
                     'pending': 'badge-pending',
                     'cancelled': 'badge-cancelled',
-                    'rejected': 'badge-rejected'
+                    'rejected': 'badge-rejected',
+                    'auto_cancelled': 'badge-auto-cancelled'
                 }[b.status] || 'badge-pending';
                 
                 const statusText = {
                     'confirmed': 'อนุมัติแล้ว',
                     'pending': 'รออนุมัติ',
                     'cancelled': 'ยกเลิก',
-                    'rejected': 'ปฏิเสธ'
+                    'rejected': 'ปฏิเสธ',
+                    'auto_cancelled': 'ระบบยกเลิกอัตโนมัติ'
                 }[b.status] || b.status;
 
                 let approvedByName = b.approvedBy;
@@ -4793,7 +4734,8 @@
                     'confirmed': 'badge-confirmed',
                     'pending': 'badge-pending',
                     'cancelled': 'badge-cancelled',
-                    'rejected': 'badge-rejected'
+                    'rejected': 'badge-rejected',
+                    'auto_cancelled': 'badge-auto-cancelled'
                 }[b.status] || 'badge-pending';
                 
                 return `
@@ -4812,6 +4754,7 @@
                         </div>
                         ${b.approvedByName ? `<p class="text-xs text-green-500 mt-1">✅ อนุมัติโดย: ${b.approvedByName}</p>` : ''}
                         ${b.rejectedByName ? `<p class="text-xs text-red-500 mt-1">❌ ปฏิเสธโดย: ${b.rejectedByName}</p>` : ''}
+                        ${b.status === 'auto_cancelled' ? '<p class="text-xs text-yellow-500 mt-1">🤖 ระบบยกเลิกอัตโนมัติ (เลยเวลา)</p>' : ''}
                         ${b.status === 'cancelled' && b.cancelledBy === 'system' ? '<p class="text-xs text-yellow-500 mt-1">🤖 ระบบยกเลิกอัตโนมัติ (เลยเวลา)</p>' : ''}
                     </div>
                     <button class="text-[#06c755] text-xs ml-2" onclick="shareBookingViaPicker('${b.bookingId}'); event.stopPropagation();">
