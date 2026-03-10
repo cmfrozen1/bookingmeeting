@@ -2103,7 +2103,7 @@
             localStorage.setItem(`${cacheKey}_timestamp`, Date.now().toString());
         }
 
-        // ========== AUTO CANCEL FUNCTIONS (ไม่แจ้งเตือน) ==========
+        // ========== AUTO CANCEL FUNCTIONS (ไม่แจ้งเตือน และอัปเดต UI) ==========
         async function autoCancelOverdueBookings() {
             if (state.autoCancelRunning) return;
             
@@ -2114,7 +2114,7 @@
                 
                 const result = await callGAS('admin/auto-cancel-overdue', {
                     lineUserId: state.user?.lineUserId || 'system',
-                    silentMode: true // เพิ่ม flag ให้ไม่ส่งแจ้งเตือน
+                    silentMode: true // ไม่ส่งแจ้งเตือน
                 });
                 
                 if (result.success) {
@@ -2123,7 +2123,7 @@
                     state.autoCancelStats.lastRun = now;
                     
                     if (result.data.cancelledCount > 0) {
-                        console.log(`✅ ยกเลิกการจองที่เลยเวลาแล้ว ${result.data.cancelledCount} รายการ (ไม่แจ้งเตือน)`);
+                        console.log(`✅ ยกเลิกการจองที่เลยเวลาแล้ว ${result.data.cancelledCount} รายการ`);
                         
                         const todayStr = formatDateForInput(now);
                         if (state.autoCancelStats.lastRunDate !== todayStr) {
@@ -2132,8 +2132,7 @@
                         }
                         state.autoCancelStats.today += result.data.cancelledCount;
                         
-                        // ไม่แจ้งเตือนผู้ใช้ ไม่ showToast
-                        
+                        // โหลดข้อมูลทั้งหมดใหม่เพื่ออัปเดต UI
                         await Promise.all([
                             loadPendingBookings(),
                             loadMyBookings(),
@@ -2141,8 +2140,10 @@
                             loadMonthBookings(state.currentMonth.getFullYear(), state.currentMonth.getMonth())
                         ]);
                         
+                        // โหลดข้อมูลสำหรับ manager ด้วย
                         if (state.isManager) {
                             await loadAllBookings();
+                            await loadAdminStats();
                         }
                     }
                     
@@ -2183,10 +2184,12 @@
                 clearInterval(state.autoCancelInterval);
             }
             
+            // ตรวจสอบทุก 5 นาที
             state.autoCancelInterval = setInterval(() => {
                 autoCancelOverdueBookings();
-            }, 5 * 60 * 1000);
+            }, 5 * 60 * 1000); // 5 นาที
             
+            // ตรวจสอบครั้งแรกหลังจาก 1 นาที
             setTimeout(() => {
                 autoCancelOverdueBookings();
             }, 60 * 1000);
