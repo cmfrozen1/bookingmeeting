@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>จองห้องประชุม · LINE</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/booking.css"> <!-- CSS เฉพาะหน้าจอง -->
+</head>
+<body>
+    <div id="app">
+        <div id="navbar-container"></div>
+        
+        <main class="container">
+            <h1 class="page-title">จองห้องประชุม</h1>
+            
+            <form id="booking-form">
+                <select id="booking-room" class="input-field" required>
+                    <option value="">เลือกห้องประชุม</option>
+                </select>
+                
+                <input type="text" id="booking-title" placeholder="หัวข้อการประชุม" required>
+                
+                <div class="datetime-group">
+                    <input type="date" id="booking-date" required>
+                    <input type="date" id="booking-end-date" required>
+                </div>
+                
+                <div class="time-group">
+                    <select id="booking-start" required></select>
+                    <select id="booking-end" required></select>
+                </div>
+                
+                <button type="submit" class="btn-primary" id="save-booking-btn">จอง</button>
+            </form>
+        </main>
+        
+        <div id="bottom-nav-container"></div>
+    </div>
+    
+    <script src="js/config.js"></script>
+    <script src="js/cache.js"></script>
+    <script src="js/api.js"></script>
+    <script src="js/booking.js"></script>
+</body>
+</html>
