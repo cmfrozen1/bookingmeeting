@@ -937,9 +937,8 @@
             border-left-color: var(--warning);
         }
         
-        .date-booking-item.auto-cancelled {
-            border-left-color: #f59e0b;
-            opacity: 0.8;
+        .date-booking-item.cancelled {
+            border-left-color: #ef4444;
         }
         
         .date-booking-time {
@@ -3195,6 +3194,12 @@
                     state.dateBookings = {};
                     
                     result.data.bookings.forEach(booking => {
+                        // กรองเฉพาะการจองที่ต้องการแสดงในปฏิทิน (confirmed และ pending เท่านั้น)
+                        // ไม่แสดง auto_cancelled, rejected, cancelled
+                        if (booking.status !== 'confirmed' && booking.status !== 'pending') {
+                            return;
+                        }
+                        
                         const startDateObj = new Date(booking.startTime);
                         const endDateObj = new Date(booking.endTime);
                         
@@ -3352,12 +3357,24 @@
                 
                 $.selectedDateBookingsList.innerHTML = processedBookings.map(b => {
                     let statusClass = '';
-                    if (b.status === 'confirmed') statusClass = '';
-                    else if (b.status === 'pending') statusClass = 'pending';
-                    else if (b.status === 'auto_cancelled') statusClass = 'auto-cancelled';
+                    let borderColor = 'var(--primary)';
+                    
+                    if (b.status === 'pending') {
+                        statusClass = 'pending';
+                        borderColor = 'var(--warning)';
+                    } else if (b.status === 'confirmed') {
+                        statusClass = '';
+                        borderColor = 'var(--primary)';
+                    } else if (b.status === 'cancelled' || b.status === 'rejected') {
+                        statusClass = 'cancelled';
+                        borderColor = '#ef4444';
+                    } else if (b.status === 'auto_cancelled') {
+                        statusClass = 'auto-cancelled';
+                        borderColor = '#f59e0b';
+                    }
                     
                     return `
-                        <div class="date-booking-item ${statusClass}" onclick="showBookingDetail('${b.bookingId}')">
+                        <div class="date-booking-item ${statusClass}" style="border-left-color: ${borderColor}" onclick="showBookingDetail('${b.bookingId}')">
                             <div class="date-booking-time">
                                 <i class="far fa-clock mr-1"></i> ${formatTime(b.startTime)} - ${formatTime(b.endTime)}
                                 ${b.isMultiDay ? '<span class="ml-2 text-yellow-500">📅 ข้ามวัน</span>' : ''}
@@ -3368,6 +3385,7 @@
                             ${b.status === 'auto_cancelled' ? '<div class="text-xs text-yellow-500 mt-1">🤖 ระบบยกเลิกอัตโนมัติ (เลยเวลา)</div>' : ''}
                             ${b.status === 'cancelled' && b.cancelledBy === 'system' ? '<div class="text-xs text-yellow-500 mt-1">🤖 ระบบยกเลิกอัตโนมัติ (เลยเวลา)</div>' : ''}
                             ${b.status === 'cancelled' && b.cancelledBy === 'admin' ? '<div class="text-xs text-red-500 mt-1">🔴 ผู้ดูแลยกเลิก (ส่งแจ้งเตือน)</div>' : ''}
+                            ${b.status === 'rejected' ? '<div class="text-xs text-red-500 mt-1">❌ ปฏิเสธการจอง</div>' : ''}
                             ${b.multiDayInfo ? `<div class="text-xs text-yellow-500 mt-1">📅 ${b.multiDayInfo}</div>` : ''}
                         </div>
                     `;
