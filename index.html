@@ -29,6 +29,7 @@
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     
     <style>
+        /* (CSS เดิมทั้งหมดเหมือนเดิม) */
         * {
             font-family: 'IBM Plex Sans Thai', sans-serif;
             margin: 0;
@@ -936,8 +937,9 @@
             border-left-color: var(--warning);
         }
         
-        .date-booking-item.cancelled {
-            border-left-color: #ef4444;
+        .date-booking-item.auto-cancelled {
+            border-left-color: #f59e0b;
+            opacity: 0.8;
         }
         
         .date-booking-time {
@@ -1088,6 +1090,7 @@
             font-size: 16px;
         }
 
+        /* Toggle Switch */
         .toggle-switch {
             position: relative;
             display: inline-block;
@@ -1168,6 +1171,7 @@
             margin-top: 4px;
         }
 
+        /* Auto-cancel notification */
         .auto-cancel-badge {
             background: rgba(245,158,11,0.15);
             color: #f59e0b;
@@ -1184,6 +1188,7 @@
             font-size: 10px;
         }
 
+        /* Quick date/time selection buttons */
         .quick-datetime-btn {
             background: var(--bg-card);
             border: 1px solid var(--border);
@@ -1239,6 +1244,7 @@
             color: var(--primary);
         }
         
+        /* Loading skeleton optimization */
         .skeleton-room {
             background: linear-gradient(90deg, var(--bg-card) 25%, #252930 50%, var(--bg-card) 75%);
             background-size: 200% 100%;
@@ -1247,6 +1253,12 @@
             height: 200px;
         }
         
+        @keyframes loading {
+            0% { background-position: 200% 0; }
+            100% { background-position: -200% 0; }
+        }
+        
+        /* Cache indicator */
         .cache-badge {
             background: rgba(6,199,85,0.1);
             color: var(--primary);
@@ -1256,6 +1268,7 @@
             margin-left: 8px;
         }
 
+        /* Multi-day booking indicator */
         .multi-day-badge {
             background: rgba(245,158,11,0.2);
             color: #f59e0b;
@@ -2663,6 +2676,11 @@
                 statusEmoji = '🗑️';
                 statusText = 'ลบผู้ใช้';
                 statusThai = '🗑️ ลบผู้ใช้ออกจากระบบ';
+            } else if (action === 'admin_cancelled') {
+                statusColor = '#ef4444';
+                statusEmoji = '🔴';
+                statusText = 'ผู้ดูแลยกเลิก';
+                statusThai = '🔴 ผู้ดูแลระบบยกเลิกการจอง';
             }
             
             let approvedByName = approvedBy;
@@ -3182,12 +3200,6 @@
                     state.dateBookings = {};
                     
                     result.data.bookings.forEach(booking => {
-                        // กรองเฉพาะการจองที่ต้องการแสดงในปฏิทิน (confirmed เท่านั้น)
-                        // ไม่แสดง pending, auto_cancelled, rejected, cancelled
-                        if (booking.status !== 'confirmed') {
-                            return;
-                        }
-                        
                         const startDateObj = new Date(booking.startTime);
                         const endDateObj = new Date(booking.endTime);
                         
@@ -3313,60 +3325,60 @@
             });
             
             if (result.success && result.data.bookings.length > 0) {
-                // กรองเฉพาะการจองที่ confirmed และไม่แสดงสถานะอื่น
-                const confirmedBookings = result.data.bookings.filter(b => b.status === 'confirmed');
+                const bookings = result.data.bookings;
+                const dateObj = new Date(dateStr);
+                const dateThai = dateObj.toLocaleDateString('th-TH', { 
+                    weekday: 'long', 
+                    day: 'numeric', 
+                    month: 'long', 
+                    year: 'numeric' 
+                });
                 
-                if (confirmedBookings.length > 0) {
-                    const dateObj = new Date(dateStr);
-                    const dateThai = dateObj.toLocaleDateString('th-TH', { 
-                        weekday: 'long', 
-                        day: 'numeric', 
-                        month: 'long', 
-                        year: 'numeric' 
-                    });
+                $.selectedDateTitle.textContent = `📅 การจองวันที่ ${dateThai}`;
+                
+                const processedBookings = await Promise.all(bookings.map(async (b) => {
+                    let approvedByName = b.approvedBy;
                     
-                    $.selectedDateTitle.textContent = `✅ การจองวันที่ ${dateThai}`;
+                    if (approvedByName && approvedByName.length > 20 && !approvedByName.includes(' ')) {
+                        approvedByName = await getUserNameFromCache(approvedByName);
+                    }
                     
-                    const processedBookings = await Promise.all(confirmedBookings.map(async (b) => {
-                        let approvedByName = b.approvedBy;
-                        
-                        if (approvedByName && approvedByName.length > 20 && !approvedByName.includes(' ')) {
-                            approvedByName = await getUserNameFromCache(approvedByName);
-                        }
-                        
-                        const startDate = new Date(b.startTime);
-                        const endDate = new Date(b.endTime);
-                        const isMultiDay = formatDateForInput(startDate) !== formatDateForInput(endDate);
-                        
-                        return {
-                            ...b,
-                            approvedByName,
-                            isMultiDay,
-                            multiDayInfo: isMultiDay ? `${formatDateShort(b.startTime)} - ${formatDateShort(b.endTime)}` : null
-                        };
-                    }));
+                    const startDate = new Date(b.startTime);
+                    const endDate = new Date(b.endTime);
+                    const isMultiDay = formatDateForInput(startDate) !== formatDateForInput(endDate);
                     
-                    $.selectedDateBookingsList.innerHTML = processedBookings.map(b => {
-                        // สีเขียวสำหรับการจองที่ confirmed
-                        return `
-                            <div class="date-booking-item" style="border-left-color: var(--primary)" onclick="showBookingDetail('${b.bookingId}')">
-                                <div class="date-booking-time">
-                                    <i class="far fa-clock mr-1"></i> ${formatTime(b.startTime)} - ${formatTime(b.endTime)}
-                                    ${b.isMultiDay ? '<span class="ml-2 text-yellow-500">📅 ข้ามวัน</span>' : ''}
-                                </div>
-                                <div class="date-booking-title">${b.title}</div>
-                                <div class="date-booking-room">${b.roomName} | โดย: ${b.userName}</div>
-                                ${b.approvedByName ? `<div class="text-xs text-green-500 mt-1">✅ อนุมัติโดย: ${b.approvedByName}</div>` : ''}
-                                ${b.multiDayInfo ? `<div class="text-xs text-yellow-500 mt-1">📅 ${b.multiDayInfo}</div>` : ''}
+                    return {
+                        ...b,
+                        approvedByName,
+                        isMultiDay,
+                        multiDayInfo: isMultiDay ? `${formatDateShort(b.startTime)} - ${formatDateShort(b.endTime)}` : null
+                    };
+                }));
+                
+                $.selectedDateBookingsList.innerHTML = processedBookings.map(b => {
+                    let statusClass = '';
+                    if (b.status === 'confirmed') statusClass = '';
+                    else if (b.status === 'pending') statusClass = 'pending';
+                    else if (b.status === 'auto_cancelled') statusClass = 'auto-cancelled';
+                    
+                    return `
+                        <div class="date-booking-item ${statusClass}" onclick="showBookingDetail('${b.bookingId}')">
+                            <div class="date-booking-time">
+                                <i class="far fa-clock mr-1"></i> ${formatTime(b.startTime)} - ${formatTime(b.endTime)}
+                                ${b.isMultiDay ? '<span class="ml-2 text-yellow-500">📅 ข้ามวัน</span>' : ''}
                             </div>
-                        `;
-                    }).join('');
-                    
-                    $.selectedDateBookings.classList.remove('hidden');
-                } else {
-                    // ไม่มีการจองที่ confirmed
-                    $.selectedDateBookings.classList.add('hidden');
-                }
+                            <div class="date-booking-title">${b.title}</div>
+                            <div class="date-booking-room">${b.roomName} | โดย: ${b.userName}</div>
+                            ${b.approvedByName ? `<div class="text-xs text-green-500 mt-1">✅ อนุมัติโดย: ${b.approvedByName}</div>` : ''}
+                            ${b.status === 'auto_cancelled' ? '<div class="text-xs text-yellow-500 mt-1">🤖 ระบบยกเลิกอัตโนมัติ (เลยเวลา)</div>' : ''}
+                            ${b.status === 'cancelled' && b.cancelledBy === 'system' ? '<div class="text-xs text-yellow-500 mt-1">🤖 ระบบยกเลิกอัตโนมัติ (เลยเวลา)</div>' : ''}
+                            ${b.status === 'cancelled' && b.cancelledBy === 'admin' ? '<div class="text-xs text-red-500 mt-1">🔴 ผู้ดูแลยกเลิก (ส่งแจ้งเตือน)</div>' : ''}
+                            ${b.multiDayInfo ? `<div class="text-xs text-yellow-500 mt-1">📅 ${b.multiDayInfo}</div>` : ''}
+                        </div>
+                    `;
+                }).join('');
+                
+                $.selectedDateBookings.classList.remove('hidden');
             } else {
                 $.selectedDateBookings.classList.add('hidden');
             }
@@ -3785,9 +3797,7 @@
                     includeMultiDay: 'true'
                 });
                 
-                // กรองเฉพาะการจองที่ confirmed เท่านั้น
-                const todayBookings = bookingsResult.success ? 
-                    bookingsResult.data.bookings.filter(b => b.status === 'confirmed') : [];
+                const todayBookings = bookingsResult.success ? bookingsResult.data.bookings : [];
 
                 const imageHtml = room.imageUrl ? 
                     `<img src="${room.imageUrl}" class="w-full max-h-80 object-cover rounded-xl mb-4" loading="lazy" onerror="this.style.display='none';">` : 
@@ -3823,19 +3833,29 @@
                     
                     ${todayBookings.length > 0 ? `
                         <div class="mt-4 pt-4 border-t border-[#2a2e36]">
-                            <p class="text-sm text-gray-400 mb-2"><i class="fas fa-clock mr-2"></i> การจองวันนี้ (อนุมัติแล้ว)</p>
+                            <p class="text-sm text-gray-400 mb-2"><i class="fas fa-clock mr-2"></i> การจองวันนี้</p>
                             <div class="space-y-2">
                                 ${todayBookings.map(b => {
+                                    const statusColor = {
+                                        'confirmed': 'text-green-500',
+                                        'pending': 'text-yellow-500',
+                                        'cancelled': 'text-gray-500',
+                                        'rejected': 'text-red-500',
+                                        'auto_cancelled': 'text-yellow-500'
+                                    }[b.status] || 'text-gray-500';
                                     let approvedByName = b.approvedBy || '';
                                     
                                     return `
                                         <div class="bg-[#111317] p-2 rounded-lg text-sm">
                                             <div class="flex justify-between">
                                                 <span class="font-semibold">${formatTime(b.startTime)} - ${formatTime(b.endTime)}</span>
-                                                <span class="text-green-500">อนุมัติแล้ว</span>
+                                                <span class="${statusColor}">${b.status === 'confirmed' ? 'จองแล้ว' : b.status}</span>
                                             </div>
                                             <p class="text-xs text-gray-400">${b.title}</p>
                                             ${approvedByName ? `<p class="text-xs text-green-500 mt-1">✅ อนุมัติโดย: ${approvedByName}</p>` : ''}
+                                            ${b.status === 'auto_cancelled' ? '<p class="text-xs text-yellow-500 mt-1">🤖 ระบบยกเลิกอัตโนมัติ (เลยเวลา)</p>' : ''}
+                                            ${b.status === 'cancelled' && b.cancelledBy === 'system' ? '<p class="text-xs text-yellow-500 mt-1">🤖 ระบบยกเลิกอัตโนมัติ (เลยเวลา)</p>' : ''}
+                                            ${b.status === 'cancelled' && b.cancelledBy === 'admin' ? '<p class="text-xs text-red-500 mt-1">🔴 ผู้ดูแลยกเลิก (ส่งแจ้งเตือน)</p>' : ''}
                                         </div>
                                     `;
                                 }).join('')}
@@ -3997,20 +4017,10 @@
                     } else {
                         let message = `❌ ห้อง "${roomName}" ไม่ว่างในช่วงเวลาที่เลือก`;
                         if (result.data.conflictingBookings && result.data.conflictingBookings.length > 0) {
-                            // กรองเฉพาะการจองที่ confirmed เท่านั้น
-                            const confirmedConflicts = result.data.conflictingBookings.filter(c => c.status === 'confirmed');
-                            if (confirmedConflicts.length > 0) {
-                                const times = confirmedConflicts.map(c => 
-                                    `${formatTime(c.startTime)}-${formatTime(c.endTime)}`
-                                ).join(', ');
-                                message = `❌ ห้อง "${roomName}" มีการจองแล้วในช่วงเวลา: ${times}`;
-                            } else {
-                                // ถ้ามีแต่ pending หรือ cancelled ให้ถือว่าว่าง
-                                message = `✅ ห้อง "${roomName}" ว่างในช่วงเวลาที่เลือก (มีการจองที่รออนุมัติ/ยกเลิก)`;
-                                $.availabilityStatus.innerHTML = `<span class="text-green-500">${message}</span>`;
-                                $.saveBookingBtn.disabled = false;
-                                return;
-                            }
+                            const times = result.data.conflictingBookings.map(c => 
+                                `${formatTime(c.startTime)}-${formatTime(c.endTime)}`
+                            ).join(', ');
+                            message = `❌ ห้อง "${roomName}" มีการจองแล้วในช่วงเวลา: ${times}`;
                         }
                         $.availabilityStatus.innerHTML = `<span class="text-red-500">${message}</span>`;
                         $.availabilityStatus.classList.remove('hidden');
@@ -4074,6 +4084,7 @@
             setButtonLoading(btn, true);
             
             try {
+                // ดึงข้อมูลการจองก่อน
                 const bookingInfo = await callGAS('booking', { bookingId });
                 
                 if (!bookingInfo.success) {
@@ -4084,6 +4095,7 @@
                 
                 const booking = bookingInfo.data;
                 
+                // ยืนยันการยกเลิก
                 const result = await Swal.fire({
                     title: 'ยกเลิกการจอง (ส่งแจ้งเตือน)',
                     text: `คุณแน่ใจหรือไม่ต้องการยกเลิกการจอง "${booking.title}"? (ระบบจะส่งแจ้งเตือนไปยังผู้จอง)`,
@@ -4098,12 +4110,13 @@
                     const apiResult = await callGAS('booking/admin-cancel', { 
                         bookingId,
                         lineUserId: state.user.lineUserId,
-                        skipNotification: false
+                        skipNotification: false // ส่ง flag ให้ส่งแจ้งเตือน
                     });
                     
                     if (apiResult.success) {
                         showToast('ยกเลิกการจองสำเร็จ (ส่งแจ้งเตือนไปยังผู้จองแล้ว)');
                         
+                        // ส่งแจ้งเตือนไปยังแชท
                         await sendBookingToChat({
                             title: booking.title,
                             roomName: booking.roomName,
@@ -4118,10 +4131,12 @@
                             action: 'admin_cancelled'
                         });
                         
+                        // ปิด modal ถ้าเปิดอยู่
                         if (state.currentBooking && state.currentBooking.bookingId === bookingId) {
                             closeBookingDetailModal();
                         }
                         
+                        // โหลดข้อมูลใหม่
                         await Promise.all([
                             loadPendingBookings(), 
                             loadAdminStats(), 
@@ -4130,6 +4145,7 @@
                             loadMonthBookings(state.currentMonth.getFullYear(), state.currentMonth.getMonth())
                         ]);
                         
+                        // ถ้าอยู่ในหน้า my bookings ให้โหลดใหม่ด้วย
                         if (document.getElementById('tab-my').classList.contains('active')) {
                             await loadMyBookings();
                         }
@@ -4196,20 +4212,11 @@
                     bookingId: id || undefined
                 });
                 
-                if (!checkResult.success) {
-                    showToast('ไม่สามารถตรวจสอบห้องว่างได้', 'error');
+                if (!checkResult.success || !checkResult.data.available) {
+                    showToast(`ห้อง "${roomName}" ไม่ว่างในช่วงเวลาที่เลือก`, 'error');
                     setButtonLoading(btn, false);
+                    await checkAvailability();
                     return;
-                }
-                
-                if (!checkResult.data.available) {
-                    const conflictingConfirmed = checkResult.data.conflictingBookings?.filter(c => c.status === 'confirmed') || [];
-                    if (conflictingConfirmed.length > 0) {
-                        showToast(`ห้อง "${roomName}" ไม่ว่างในช่วงเวลาที่เลือก`, 'error');
-                        setButtonLoading(btn, false);
-                        await checkAvailability();
-                        return;
-                    }
                 }
                 
                 const data = {
@@ -4274,6 +4281,7 @@
             setButtonLoading(btn, true);
             
             try {
+                // ดึงข้อมูลการจองก่อนเพื่อตรวจสอบเวลา
                 const bookingInfo = await callGAS('booking', { bookingId });
                 
                 if (!bookingInfo.success) {
@@ -4284,10 +4292,12 @@
                 
                 const booking = bookingInfo.data;
                 
+                // ตรวจสอบว่าการจองเลยเวลาหรือไม่
                 const now = new Date();
                 const endTime = new Date(booking.endTime);
                 const isPastBooking = endTime < now;
                 
+                // ถ้าเป็นการจองที่เลยเวลาไปแล้ว ให้แจ้งเตือนและไม่ต้องส่งข้อความ
                 if (isPastBooking) {
                     const result = await Swal.fire({
                         title: 'ปฏิเสธการจองที่เลยเวลา',
@@ -4310,7 +4320,7 @@
                         bookingId,
                         reason,
                         lineUserId: state.user.lineUserId,
-                        skipNotification: true
+                        skipNotification: true // ส่ง flag ให้ไม่ต้องส่งแจ้งเตือน
                     });
                     
                     if (apiResult.success) {
@@ -4331,6 +4341,7 @@
                     return;
                 }
                 
+                // ถ้าเป็นการจองที่ยังไม่เลยเวลา ให้ใช้流程ปกติ (มีการแจ้งเตือน)
                 const result = await Swal.fire({
                     title: 'ปฏิเสธการจอง',
                     input: 'textarea',
@@ -4357,6 +4368,7 @@
                     if (apiResult.success) {
                         showToast('ปฏิเสธการจองสำเร็จ');
                         
+                        // ส่งแจ้งเตือนเฉพาะเมื่อเป็นการจองที่ยังไม่เลยเวลา
                         await sendBookingToChat({
                             title: booking.title,
                             roomName: booking.roomName,
@@ -4657,6 +4669,7 @@
                 const endTime = new Date(b.endTime);
                 const canCancel = b.status === 'confirmed' && endTime > now;
                 
+                // สร้างปุ่มใน footer
                 let footerButtons = '';
                 
                 if (canCancel && b.userId === state.user.lineUserId) {
@@ -4667,6 +4680,7 @@
                     `;
                 }
                 
+                // เพิ่มปุ่มสำหรับ admin/manager ให้ยกเลิกแบบส่งแจ้งเตือน
                 if (state.isManager && b.status === 'confirmed' && endTime > now) {
                     footerButtons += `
                         <button class="btn-danger flex-1" onclick="adminCancelBooking('${b.bookingId}', this)">
@@ -4819,19 +4833,23 @@
             `).join('');
         }
 
-        // ========== LOAD ALL BOOKINGS ==========
+        // ========== LOAD ALL BOOKINGS (ปรับปรุง - แสดงเฉพาะปัจจุบันและอนาคต) ==========
         async function loadAllBookings() {
             try {
                 const result = await callGAS('admin/all-bookings');
                 if (result.success) {
                     const now = new Date();
                     
+                    // กรองเอาเฉพาะการจองที่สิ้นสุดแล้วหรือยังไม่เริ่ม (รวมถึงปัจจุบัน)
+                    // และเรียงลำดับตามเวลาเริ่ม (ใกล้ที่สุดขึ้นก่อน)
                     state.allBookings = (result.data || [])
                         .filter(booking => {
                             const endTime = new Date(booking.endTime);
-                            return endTime >= now;
+                            // แสดงเฉพาะการจองที่สิ้นสุดแล้วหรือยังไม่เริ่ม (รวมถึงปัจจุบัน)
+                            return endTime >= now || booking.status === 'pending' || booking.status === 'confirmed';
                         })
                         .sort((a, b) => {
+                            // เรียงตามเวลาเริ่ม (ใกล้ที่สุดขึ้นก่อน)
                             return new Date(a.startTime) - new Date(b.startTime);
                         });
                     
@@ -4894,7 +4912,7 @@
                                 <span class="font-semibold text-sm">${b.title}</span>
                                 <span class="text-xs text-gray-400 ml-2">${b.roomName}</span>
                             </div>
-                            <span class="badge ${statusClass} text-xs">${b.status === 'confirmed' ? 'อนุมัติแล้ว' : b.status}</span>
+                            <span class="badge ${statusClass} text-xs">${b.status}</span>
                         </div>
                         <div class="flex justify-between text-xs text-gray-400">
                             <span><i class="far fa-user mr-1"></i> ${b.userName}</span>
