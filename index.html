@@ -2632,6 +2632,11 @@
                 statusEmoji = '🤖';
                 statusText = 'ระบบยกเลิกอัตโนมัติ';
                 statusThai = '🤖 ระบบยกเลิกอัตโนมัติ (เลยเวลา)';
+            } else if (action === 'admin_cancelled') {
+                statusColor = '#ef4444';
+                statusEmoji = '🔴';
+                statusText = 'ผู้ดูแลยกเลิก';
+                statusThai = '🔴 ผู้ดูแลระบบยกเลิกการจอง';
             }
             
             if (action === 'created') {
@@ -2671,6 +2676,11 @@
                 statusEmoji = '🗑️';
                 statusText = 'ลบผู้ใช้';
                 statusThai = '🗑️ ลบผู้ใช้ออกจากระบบ';
+            } else if (action === 'admin_cancelled') {
+                statusColor = '#ef4444';
+                statusEmoji = '🔴';
+                statusText = 'ผู้ดูแลยกเลิก';
+                statusThai = '🔴 ผู้ดูแลระบบยกเลิกการจอง';
             }
             
             let approvedByName = approvedBy;
@@ -3362,6 +3372,7 @@
                             ${b.approvedByName ? `<div class="text-xs text-green-500 mt-1">✅ อนุมัติโดย: ${b.approvedByName}</div>` : ''}
                             ${b.status === 'auto_cancelled' ? '<div class="text-xs text-yellow-500 mt-1">🤖 ระบบยกเลิกอัตโนมัติ (เลยเวลา)</div>' : ''}
                             ${b.status === 'cancelled' && b.cancelledBy === 'system' ? '<div class="text-xs text-yellow-500 mt-1">🤖 ระบบยกเลิกอัตโนมัติ (เลยเวลา)</div>' : ''}
+                            ${b.status === 'cancelled' && b.cancelledBy === 'admin' ? '<div class="text-xs text-red-500 mt-1">🔴 ผู้ดูแลยกเลิก (ส่งแจ้งเตือน)</div>' : ''}
                             ${b.multiDayInfo ? `<div class="text-xs text-yellow-500 mt-1">📅 ${b.multiDayInfo}</div>` : ''}
                         </div>
                     `;
@@ -3844,6 +3855,7 @@
                                             ${approvedByName ? `<p class="text-xs text-green-500 mt-1">✅ อนุมัติโดย: ${approvedByName}</p>` : ''}
                                             ${b.status === 'auto_cancelled' ? '<p class="text-xs text-yellow-500 mt-1">🤖 ระบบยกเลิกอัตโนมัติ (เลยเวลา)</p>' : ''}
                                             ${b.status === 'cancelled' && b.cancelledBy === 'system' ? '<p class="text-xs text-yellow-500 mt-1">🤖 ระบบยกเลิกอัตโนมัติ (เลยเวลา)</p>' : ''}
+                                            ${b.status === 'cancelled' && b.cancelledBy === 'admin' ? '<p class="text-xs text-red-500 mt-1">🔴 ผู้ดูแลยกเลิก (ส่งแจ้งเตือน)</p>' : ''}
                                         </div>
                                     `;
                                 }).join('')}
@@ -4067,7 +4079,89 @@
             setButtonLoading(btn, false);
         };
 
-        // ========== SAVE BOOKING FUNCTION (ยังคงส่งข้อความได้ปกติ) ==========
+        // ========== ADMIN CANCEL BOOKING (ส่งแจ้งเตือน) ==========
+        window.adminCancelBooking = async function(bookingId, btn) {
+            setButtonLoading(btn, true);
+            
+            try {
+                // ดึงข้อมูลการจองก่อน
+                const bookingInfo = await callGAS('booking', { bookingId });
+                
+                if (!bookingInfo.success) {
+                    showToast('ไม่พบข้อมูลการจอง', 'error');
+                    setButtonLoading(btn, false);
+                    return;
+                }
+                
+                const booking = bookingInfo.data;
+                
+                // ยืนยันการยกเลิก
+                const result = await Swal.fire({
+                    title: 'ยกเลิกการจอง (ส่งแจ้งเตือน)',
+                    text: `คุณแน่ใจหรือไม่ต้องการยกเลิกการจอง "${booking.title}"? (ระบบจะส่งแจ้งเตือนไปยังผู้จอง)`,
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonColor: '#ef4444',
+                    confirmButtonText: 'ใช่, ยกเลิก',
+                    cancelButtonText: 'ยกเลิก'
+                });
+
+                if (result.isConfirmed) {
+                    const apiResult = await callGAS('booking/admin-cancel', { 
+                        bookingId,
+                        lineUserId: state.user.lineUserId,
+                        skipNotification: false // ส่ง flag ให้ส่งแจ้งเตือน
+                    });
+                    
+                    if (apiResult.success) {
+                        showToast('ยกเลิกการจองสำเร็จ (ส่งแจ้งเตือนไปยังผู้จองแล้ว)');
+                        
+                        // ส่งแจ้งเตือนไปยังแชท
+                        await sendBookingToChat({
+                            title: booking.title,
+                            roomName: booking.roomName,
+                            userName: booking.userName,
+                            startTime: booking.startTime,
+                            endTime: booking.endTime,
+                            attendees: booking.attendees,
+                            description: booking.description,
+                            meetingLink: booking.meetingLink,
+                            cancelledBy: state.user.displayName + ' (ผู้ดูแลระบบ)',
+                            reason: 'ผู้ดูแลระบบยกเลิกการจอง',
+                            action: 'admin_cancelled'
+                        });
+                        
+                        // ปิด modal ถ้าเปิดอยู่
+                        if (state.currentBooking && state.currentBooking.bookingId === bookingId) {
+                            closeBookingDetailModal();
+                        }
+                        
+                        // โหลดข้อมูลใหม่
+                        await Promise.all([
+                            loadPendingBookings(), 
+                            loadAdminStats(), 
+                            loadTodayStats(),
+                            loadAllBookings(),
+                            loadMonthBookings(state.currentMonth.getFullYear(), state.currentMonth.getMonth())
+                        ]);
+                        
+                        // ถ้าอยู่ในหน้า my bookings ให้โหลดใหม่ด้วย
+                        if (document.getElementById('tab-my').classList.contains('active')) {
+                            await loadMyBookings();
+                        }
+                    } else {
+                        showToast(apiResult.message || 'ยกเลิกไม่สำเร็จ', 'error');
+                    }
+                }
+            } catch (error) {
+                console.error('Admin cancel booking error:', error);
+                showToast('เกิดข้อผิดพลาด', 'error');
+            } finally {
+                setButtonLoading(btn, false);
+            }
+        };
+
+        // ========== SAVE BOOKING FUNCTION ==========
         window.saveBooking = async function(e) {
             e.preventDefault();
             
@@ -4182,7 +4276,7 @@
             }
         };
 
-        // ========== REJECT BOOKING FUNCTION (ปรับปรุง - ไม่ส่งแจ้งเตือนถ้าเลยเวลา) ==========
+        // ========== REJECT BOOKING FUNCTION ==========
         window.rejectBooking = async function(bookingId, btn) {
             setButtonLoading(btn, true);
             
@@ -4424,6 +4518,7 @@
                     ${b.approvedByName ? `<p class="text-xs text-green-500 mb-2">✅ อนุมัติโดย: ${b.approvedByName}</p>` : ''}
                     ${b.status === 'auto_cancelled' ? '<p class="text-xs text-yellow-500 mb-2">🤖 ระบบยกเลิกอัตโนมัติ (เลยเวลา)</p>' : ''}
                     ${b.status === 'cancelled' && b.cancelledBy === 'system' ? '<p class="text-xs text-yellow-500 mb-2">🤖 ระบบยกเลิกอัตโนมัติ (เลยเวลา)</p>' : ''}
+                    ${b.status === 'cancelled' && b.cancelledBy === 'admin' ? '<p class="text-xs text-red-500 mb-2">🔴 ผู้ดูแลยกเลิก (ส่งแจ้งเตือน)</p>' : ''}
                     <div class="flex justify-between items-center text-xs">
                         <span class="text-gray-500"><i class="fas fa-users mr-1"></i> ${b.attendees || 0} คน</span>
                         ${b.meetingLink ? '<span class="text-blue-500"><i class="fas fa-video mr-1"></i> มีลิงค์</span>' : ''}
@@ -4559,6 +4654,7 @@
                         <div class="mb-4 p-3 bg-gray-800 rounded-lg">
                             <p class="text-sm text-gray-400 mb-1">❌ ยกเลิกโดย</p>
                             <p class="font-semibold text-gray-400">${cancelledByName}</p>
+                            ${b.cancelledBy === 'admin' ? '<p class="text-xs text-red-500 mt-1">🔴 ผู้ดูแลยกเลิก (ส่งแจ้งเตือน)</p>' : ''}
                         </div>
                     ` : ''}
                     
@@ -4573,17 +4669,34 @@
                 const endTime = new Date(b.endTime);
                 const canCancel = b.status === 'confirmed' && endTime > now;
                 
-                footer.innerHTML = `
-                    ${canCancel && b.userId === state.user.lineUserId ? `
+                // สร้างปุ่มใน footer
+                let footerButtons = '';
+                
+                if (canCancel && b.userId === state.user.lineUserId) {
+                    footerButtons += `
                         <button class="btn-danger flex-1" onclick="cancelBooking('${b.bookingId}')">
                             <i class="fas fa-times mr-2"></i>ยกเลิกการจอง
                         </button>
-                    ` : ''}
+                    `;
+                }
+                
+                // เพิ่มปุ่มสำหรับ admin/manager ให้ยกเลิกแบบส่งแจ้งเตือน
+                if (state.isManager && b.status === 'confirmed' && endTime > now) {
+                    footerButtons += `
+                        <button class="btn-danger flex-1" onclick="adminCancelBooking('${b.bookingId}', this)">
+                            <i class="fas fa-ban mr-2"></i>ยกเลิก (แจ้งเตือน)
+                        </button>
+                    `;
+                }
+                
+                footerButtons += `
                     <button class="btn-outline flex-1" onclick="shareBookingViaPicker('${b.bookingId}')">
                         <i class="fas fa-share-alt mr-2"></i>แชร์
                     </button>
                     <button class="btn-outline flex-1" onclick="closeBookingDetailModal()">ปิด</button>
                 `;
+                
+                footer.innerHTML = footerButtons;
             }
         };
 
@@ -4720,11 +4833,26 @@
             `).join('');
         }
 
+        // ========== LOAD ALL BOOKINGS (ปรับปรุง - แสดงเฉพาะปัจจุบันและอนาคต) ==========
         async function loadAllBookings() {
             try {
                 const result = await callGAS('admin/all-bookings');
                 if (result.success) {
-                    state.allBookings = result.data || [];
+                    const now = new Date();
+                    
+                    // กรองเอาเฉพาะการจองที่สิ้นสุดแล้วหรือยังไม่เริ่ม (รวมถึงปัจจุบัน)
+                    // และเรียงลำดับตามเวลาเริ่ม (ใกล้ที่สุดขึ้นก่อน)
+                    state.allBookings = (result.data || [])
+                        .filter(booking => {
+                            const endTime = new Date(booking.endTime);
+                            // แสดงเฉพาะการจองที่สิ้นสุดแล้วหรือยังไม่เริ่ม (รวมถึงปัจจุบัน)
+                            return endTime >= now || booking.status === 'pending' || booking.status === 'confirmed';
+                        })
+                        .sort((a, b) => {
+                            // เรียงตามเวลาเริ่ม (ใกล้ที่สุดขึ้นก่อน)
+                            return new Date(a.startTime) - new Date(b.startTime);
+                        });
+                    
                     renderAllBookings();
                 }
             } catch (error) {
@@ -4772,6 +4900,10 @@
                     'auto_cancelled': 'badge-auto-cancelled'
                 }[b.status] || 'badge-pending';
                 
+                const now = new Date();
+                const endTime = new Date(b.endTime);
+                const canAdminCancel = state.isManager && b.status === 'confirmed' && endTime >= now;
+                
                 return `
                 <div class="bg-[#1a1d24] p-3 rounded-lg border border-[#2a2e36] flex justify-between items-center">
                     <div class="flex-1">
@@ -4790,10 +4922,18 @@
                         ${b.rejectedByName ? `<p class="text-xs text-red-500 mt-1">❌ ปฏิเสธโดย: ${b.rejectedByName}</p>` : ''}
                         ${b.status === 'auto_cancelled' ? '<p class="text-xs text-yellow-500 mt-1">🤖 ระบบยกเลิกอัตโนมัติ (เลยเวลา)</p>' : ''}
                         ${b.status === 'cancelled' && b.cancelledBy === 'system' ? '<p class="text-xs text-yellow-500 mt-1">🤖 ระบบยกเลิกอัตโนมัติ (เลยเวลา)</p>' : ''}
+                        ${b.status === 'cancelled' && b.cancelledBy === 'admin' ? '<p class="text-xs text-red-500 mt-1">🔴 ผู้ดูแลยกเลิก (ส่งแจ้งเตือน)</p>' : ''}
                     </div>
-                    <button class="text-[#06c755] text-xs ml-2" onclick="shareBookingViaPicker('${b.bookingId}'); event.stopPropagation();">
-                        <i class="fas fa-share-alt mr-1"></i>แชร์
-                    </button>
+                    <div class="flex flex-col gap-2 ml-2">
+                        <button class="text-[#06c755] text-xs" onclick="shareBookingViaPicker('${b.bookingId}'); event.stopPropagation();">
+                            <i class="fas fa-share-alt mr-1"></i>แชร์
+                        </button>
+                        ${canAdminCancel ? `
+                            <button class="text-red-500 text-xs" onclick="adminCancelBooking('${b.bookingId}', this); event.stopPropagation();">
+                                <i class="fas fa-ban mr-1"></i>ยกเลิก
+                            </button>
+                        ` : ''}
+                    </div>
                 </div>
             `}).join('');
         }
