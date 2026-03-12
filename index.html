@@ -29,6 +29,7 @@
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     
     <style>
+        /* (CSS เดิมทั้งหมดเหมือนเดิม) */
         * {
             font-family: 'IBM Plex Sans Thai', sans-serif;
             margin: 0;
@@ -938,11 +939,6 @@
         
         .date-booking-item.cancelled {
             border-left-color: #ef4444;
-        }
-        
-        .date-booking-item.auto-cancelled {
-            border-left-color: #f59e0b;
-            opacity: 0.8;
         }
         
         .date-booking-time {
@@ -3349,16 +3345,13 @@
                     
                     const startDate = new Date(b.startTime);
                     const endDate = new Date(b.endTime);
-                    const now = new Date();
-                    const isPastBooking = endDate < now;
+                    const isMultiDay = formatDateForInput(startDate) !== formatDateForInput(endDate);
                     
                     return {
                         ...b,
                         approvedByName,
-                        isPastBooking,
-                        isMultiDay: formatDateForInput(startDate) !== formatDateForInput(endDate),
-                        multiDayInfo: formatDateForInput(startDate) !== formatDateForInput(endDate) ? 
-                            `${formatDateShort(b.startTime)} - ${formatDateShort(b.endTime)}` : null
+                        isMultiDay,
+                        multiDayInfo: isMultiDay ? `${formatDateShort(b.startTime)} - ${formatDateShort(b.endTime)}` : null
                     };
                 }));
                 
@@ -3380,10 +3373,6 @@
                         borderColor = '#f59e0b';
                     }
                     
-                    // แสดงข้อความเฉพาะการจองที่ยังไม่ผ่านมา
-                    const showAutoCancelMessage = b.status === 'auto_cancelled' && !b.isPastBooking;
-                    const showSystemCancelMessage = b.status === 'cancelled' && b.cancelledBy === 'system' && !b.isPastBooking;
-                    
                     return `
                         <div class="date-booking-item ${statusClass}" style="border-left-color: ${borderColor}" onclick="showBookingDetail('${b.bookingId}')">
                             <div class="date-booking-time">
@@ -3393,8 +3382,8 @@
                             <div class="date-booking-title">${b.title}</div>
                             <div class="date-booking-room">${b.roomName} | โดย: ${b.userName}</div>
                             ${b.approvedByName ? `<div class="text-xs text-green-500 mt-1">✅ อนุมัติโดย: ${b.approvedByName}</div>` : ''}
-                            ${showAutoCancelMessage ? '<div class="text-xs text-yellow-500 mt-1">🤖 ระบบยกเลิกอัตโนมัติ (เลยเวลา)</div>' : ''}
-                            ${showSystemCancelMessage ? '<div class="text-xs text-yellow-500 mt-1">🤖 ระบบยกเลิกอัตโนมัติ (เลยเวลา)</div>' : ''}
+                            ${b.status === 'auto_cancelled' ? '<div class="text-xs text-yellow-500 mt-1">🤖 ระบบยกเลิกอัตโนมัติ (เลยเวลา)</div>' : ''}
+                            ${b.status === 'cancelled' && b.cancelledBy === 'system' ? '<div class="text-xs text-yellow-500 mt-1">🤖 ระบบยกเลิกอัตโนมัติ (เลยเวลา)</div>' : ''}
                             ${b.status === 'cancelled' && b.cancelledBy === 'admin' ? '<div class="text-xs text-red-500 mt-1">🔴 ผู้ดูแลยกเลิก (ส่งแจ้งเตือน)</div>' : ''}
                             ${b.status === 'rejected' ? '<div class="text-xs text-red-500 mt-1">❌ ปฏิเสธการจอง</div>' : ''}
                             ${b.multiDayInfo ? `<div class="text-xs text-yellow-500 mt-1">📅 ${b.multiDayInfo}</div>` : ''}
