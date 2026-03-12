@@ -2676,11 +2676,6 @@
                 statusEmoji = '🗑️';
                 statusText = 'ลบผู้ใช้';
                 statusThai = '🗑️ ลบผู้ใช้ออกจากระบบ';
-            } else if (action === 'admin_cancelled') {
-                statusColor = '#ef4444';
-                statusEmoji = '🔴';
-                statusText = 'ผู้ดูแลยกเลิก';
-                statusThai = '🔴 ผู้ดูแลระบบยกเลิกการจอง';
             }
             
             let approvedByName = approvedBy;
@@ -4840,13 +4835,13 @@
                 if (result.success) {
                     const now = new Date();
                     
-                    // กรองเอาเฉพาะการจองที่สิ้นสุดแล้วหรือยังไม่เริ่ม (รวมถึงปัจจุบัน)
+                    // กรองเอาเฉพาะการจองที่ยังไม่ผ่านมา (รวมถึงปัจจุบัน)
                     // และเรียงลำดับตามเวลาเริ่ม (ใกล้ที่สุดขึ้นก่อน)
                     state.allBookings = (result.data || [])
                         .filter(booking => {
                             const endTime = new Date(booking.endTime);
                             // แสดงเฉพาะการจองที่สิ้นสุดแล้วหรือยังไม่เริ่ม (รวมถึงปัจจุบัน)
-                            return endTime >= now || booking.status === 'pending' || booking.status === 'confirmed';
+                            return endTime >= now;
                         })
                         .sort((a, b) => {
                             // เรียงตามเวลาเริ่ม (ใกล้ที่สุดขึ้นก่อน)
