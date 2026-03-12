@@ -29,7 +29,6 @@
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     
     <style>
-        /* (CSS เดิมทั้งหมดเหมือนเดิม) */
         * {
             font-family: 'IBM Plex Sans Thai', sans-serif;
             margin: 0;
@@ -939,6 +938,11 @@
         
         .date-booking-item.cancelled {
             border-left-color: #ef4444;
+        }
+        
+        .date-booking-item.auto-cancelled {
+            border-left-color: #f59e0b;
+            opacity: 0.8;
         }
         
         .date-booking-time {
@@ -3376,7 +3380,7 @@
                         borderColor = '#f59e0b';
                     }
                     
-                    // ไม่แสดงข้อความ "ระบบยกเลิกอัตโนมัติ (เลยเวลา)" สำหรับการจองที่ผ่านมาแล้ว
+                    // แสดงข้อความเฉพาะการจองที่ยังไม่ผ่านมา
                     const showAutoCancelMessage = b.status === 'auto_cancelled' && !b.isPastBooking;
                     const showSystemCancelMessage = b.status === 'cancelled' && b.cancelledBy === 'system' && !b.isPastBooking;
                     
