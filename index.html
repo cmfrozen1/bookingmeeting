@@ -3386,9 +3386,6 @@
                             <div class="date-booking-title">${b.title}</div>
                             <div class="date-booking-room">${b.roomName} | โดย: ${b.userName}</div>
                             ${b.approvedByName ? `<div class="text-xs text-green-500 mt-1">✅ อนุมัติโดย: ${b.approvedByName}</div>` : ''}
-                            ${b.status === 'auto_cancelled' ? '<div class="text-xs text-yellow-500 mt-1">🤖 ระบบยกเลิกอัตโนมัติ</div>' : ''}
-                            ${b.status === 'cancelled' && b.cancelledBy === 'system' ? '<div class="text-xs text-yellow-500 mt-1">🤖 ระบบยกเลิกอัตโนมัติ</div>' : ''}
-                            ${b.status === 'cancelled' && b.cancelledBy === 'admin' ? '<div class="text-xs text-red-500 mt-1">🔴 ผู้ดูแลยกเลิก (ส่งแจ้งเตือน)</div>' : ''}
                             ${b.multiDayInfo ? `<div class="text-xs text-yellow-500 mt-1">📅 ${b.multiDayInfo}</div>` : ''}
                         </div>
                     `;
@@ -3870,9 +3867,6 @@
                                             </div>
                                             <p class="text-xs text-gray-400">${b.title}</p>
                                             ${approvedByName ? `<p class="text-xs text-green-500 mt-1">✅ อนุมัติโดย: ${approvedByName}</p>` : ''}
-                                            ${b.status === 'auto_cancelled' ? '<p class="text-xs text-yellow-500 mt-1">🤖 ระบบยกเลิกอัตโนมัติ</p>' : ''}
-                                            ${b.status === 'cancelled' && b.cancelledBy === 'system' ? '<p class="text-xs text-yellow-500 mt-1">🤖 ระบบยกเลิกอัตโนมัติ</p>' : ''}
-                                            ${b.status === 'cancelled' && b.cancelledBy === 'admin' ? '<p class="text-xs text-red-500 mt-1">🔴 ผู้ดูแลยกเลิก (ส่งแจ้งเตือน)</p>' : ''}
                                         </div>
                                     `;
                                 }).join('')}
@@ -4533,9 +4527,6 @@
                         <i class="far fa-clock mr-1"></i> ${formatTime(b.startTime)} - ${formatTime(b.endTime)}
                     </p>
                     ${b.approvedByName ? `<p class="text-xs text-green-500 mb-2">✅ อนุมัติโดย: ${b.approvedByName}</p>` : ''}
-                    ${b.status === 'auto_cancelled' ? '<p class="text-xs text-yellow-500 mb-2">🤖 ระบบยกเลิกอัตโนมัติ</p>' : ''}
-                    ${b.status === 'cancelled' && b.cancelledBy === 'system' ? '<p class="text-xs text-yellow-500 mb-2">🤖 ระบบยกเลิกอัตโนมัติ</p>' : ''}
-                    ${b.status === 'cancelled' && b.cancelledBy === 'admin' ? '<p class="text-xs text-red-500 mb-2">🔴 ผู้ดูแลยกเลิก (ส่งแจ้งเตือน)</p>' : ''}
                     <div class="flex justify-between items-center text-xs">
                         <span class="text-gray-500"><i class="fas fa-users mr-1"></i> ${b.attendees || 0} คน</span>
                         ${b.meetingLink ? '<span class="text-blue-500"><i class="fas fa-video mr-1"></i> มีลิงค์</span>' : ''}
@@ -4937,9 +4928,6 @@
                         </div>
                         ${b.approvedByName ? `<p class="text-xs text-green-500 mt-1">✅ อนุมัติโดย: ${b.approvedByName}</p>` : ''}
                         ${b.rejectedByName ? `<p class="text-xs text-red-500 mt-1">❌ ปฏิเสธโดย: ${b.rejectedByName}</p>` : ''}
-                        ${b.status === 'auto_cancelled' ? '<p class="text-xs text-yellow-500 mt-1">🤖 ระบบยกเลิกอัตโนมัติ</p>' : ''}
-                        ${b.status === 'cancelled' && b.cancelledBy === 'system' ? '<p class="text-xs text-yellow-500 mt-1">🤖 ระบบยกเลิกอัตโนมัติ</p>' : ''}
-                        ${b.status === 'cancelled' && b.cancelledBy === 'admin' ? '<p class="text-xs text-red-500 mt-1">🔴 ผู้ดูแลยกเลิก (ส่งแจ้งเตือน)</p>' : ''}
                     </div>
                     <div class="flex flex-col gap-2 ml-2">
                         <button class="text-[#06c755] text-xs" onclick="shareBookingViaPicker('${b.bookingId}'); event.stopPropagation();">
