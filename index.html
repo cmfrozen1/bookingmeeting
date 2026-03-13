@@ -4372,31 +4372,31 @@
             });
 
             $.myBookingsList.innerHTML = processedBookings.map(b => {
-                // กำหนดสถานะตามสถานะการจองเท่านั้น
+                // กำหนดสถานะตามสถานะการจองเท่านั้น ไม่สนใจเวลา
                 let statusClass = '';
                 let statusText = '';
                 
                 if (b.status === 'confirmed') {
-                    statusClass = 'badge-confirmed';
+                    statusClass = 'badge-confirmed'; // สีเขียว
                     statusText = '✅ อนุมัติแล้ว';
                 } else if (b.status === 'pending') {
-                    statusClass = 'badge-pending';
+                    statusClass = 'badge-pending'; // สีเหลือง
                     statusText = '⏳ รออนุมัติ';
                 } else if (b.status === 'cancelled') {
-                    statusClass = 'badge-cancelled';
+                    statusClass = 'badge-cancelled'; // สีแดง
                     statusText = '❌ ยกเลิก';
                 } else if (b.status === 'rejected') {
-                    statusClass = 'badge-rejected';
+                    statusClass = 'badge-rejected'; // สีแดง
                     statusText = '❌ ปฏิเสธ';
                 } else if (b.status === 'auto_cancelled') {
-                    statusClass = 'badge-auto-cancelled';
+                    statusClass = 'badge-auto-cancelled'; // สีเหลือง
                     statusText = '🤖 ระบบยกเลิก';
                 } else {
                     statusClass = 'badge-pending';
                     statusText = b.status;
                 }
                 
-                // ตรวจสอบว่าการจองนี้เลยเวลาหรือไม่ (สำหรับแสดง badge เพิ่มเติม แต่ไม่เปลี่ยนสีหลัก)
+                // ตรวจสอบว่าการจองนี้เลยเวลาหรือไม่ (สำหรับแสดงข้อความเพิ่มเติม แต่ไม่เปลี่ยนสี)
                 const now = new Date();
                 const endTime = new Date(b.endTime);
                 const isPastBooking = endTime < now;
