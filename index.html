@@ -4345,9 +4345,6 @@
                 filtered = filtered.filter(b => b.status === filter);
             }
 
-            // ไม่ต้องกรองตามเวลา ให้แสดงทั้งหมดตามสถานะที่ถูกต้อง
-            // การจองที่อนุมัติแล้ว (confirmed) จะเป็นสีเขียวตลอด
-
             if (!filtered.length) {
                 $.myBookingsList.innerHTML = `
                     <div class="col-span-full text-center py-10 text-gray-400">
@@ -4375,7 +4372,7 @@
             });
 
             $.myBookingsList.innerHTML = processedBookings.map(b => {
-                // กำหนดสถานะตามสถานะการจองเท่านั้น (ไม่เช็คเวลา)
+                // กำหนดสถานะตามสถานะการจองเท่านั้น
                 let statusClass = '';
                 let statusText = '';
                 
