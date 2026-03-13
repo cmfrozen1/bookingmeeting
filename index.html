@@ -4722,15 +4722,22 @@
             `).join('');
         }
 
-        // ========== LOAD ALL BOOKINGS ==========
+        // ========== LOAD ALL BOOKINGS (ADMIN) - แก้ไขใหม่ ==========
         async function loadAllBookings() {
             try {
                 const result = await callGAS('admin/all-bookings');
                 if (result.success) {
-                    state.allBookings = (result.data || [])
-                        .sort((a, b) => {
-                            return new Date(a.startTime) - new Date(b.startTime);
-                        });
+                    // กรองเอาเฉพาะการจองที่ยังมาไม่ถึง (สิ้นสุดหลังเวลาปัจจุบัน)
+                    const now = new Date();
+                    const upcomingBookings = (result.data || []).filter(booking => {
+                        const endTime = new Date(booking.endTime);
+                        return endTime >= now; // ยังไม่ถึงเวลาสิ้นสุด
+                    });
+                    
+                    // เรียงจากวันน้อยไปหามาก (ใกล้สุดไปไกลสุด)
+                    state.allBookings = upcomingBookings.sort((a, b) => {
+                        return new Date(a.startTime) - new Date(b.startTime);
+                    });
                     
                     renderAllBookings();
                 }
@@ -4748,7 +4755,7 @@
             );
 
             if (!filtered.length) {
-                $.allBookingsList.innerHTML = '<p class="text-center text-gray-400 py-6">ไม่พบการจอง</p>';
+                $.allBookingsList.innerHTML = '<div class="text-center py-10 text-gray-400">ไม่พบการจองที่กำลังจะมาถึง</div>';
                 return;
             }
 
@@ -4791,8 +4798,23 @@
                     'auto_cancelled': '🤖 ระบบยกเลิก'
                 }[b.status] || b.status;
                 
+                // คำนวณเวลาที่เหลือ
+                const startTime = new Date(b.startTime);
+                const timeDiff = startTime - now;
+                const daysLeft = Math.floor(timeDiff / (1000 * 60 * 60 * 24));
+                const hoursLeft = Math.floor((timeDiff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+                
+                let timeRemainingText = '';
+                if (daysLeft > 0) {
+                    timeRemainingText = `เหลืออีก ${daysLeft} วัน ${hoursLeft} ชั่วโมง`;
+                } else if (hoursLeft > 0) {
+                    timeRemainingText = `เหลืออีก ${hoursLeft} ชั่วโมง`;
+                } else {
+                    timeRemainingText = `กำลังจะเริ่มในอีกไม่กี่นาที`;
+                }
+                
                 return `
-                <div class="bg-[#1a1d24] p-3 rounded-lg border border-[#2a2e36] flex justify-between items-center">
+                <div class="bg-[#1a1d24] p-3 rounded-lg border border-[#2a2e36] flex justify-between items-center hover:border-[#06c755] transition-all">
                     <div class="flex-1">
                         <div class="flex justify-between items-start mb-2">
                             <div>
@@ -4801,9 +4823,13 @@
                             </div>
                             <span class="badge ${statusClass} text-xs">${statusText}</span>
                         </div>
-                        <div class="flex justify-between text-xs text-gray-400">
+                        <div class="flex flex-wrap gap-2 text-xs text-gray-400">
                             <span><i class="far fa-user mr-1"></i> ${b.userName}</span>
-                            <span><i class="far fa-clock mr-1"></i> ${formatDateShort(b.startTime)} - ${formatDateShort(b.endTime)}</span>
+                            <span><i class="far fa-calendar mr-1"></i> ${formatDateShort(b.startTime)}</span>
+                            <span><i class="far fa-clock mr-1"></i> ${formatTime(b.startTime)} - ${formatTime(b.endTime)}</span>
+                        </div>
+                        <div class="text-xs text-yellow-500 mt-1">
+                            <i class="fas fa-hourglass-half mr-1"></i> ${timeRemainingText}
                         </div>
                         ${b.approvedByName ? `<p class="text-xs text-green-500 mt-1">✅ อนุมัติโดย: ${b.approvedByName}</p>` : ''}
                         ${b.rejectedByName ? `<p class="text-xs text-red-500 mt-1">❌ ปฏิเสธโดย: ${b.rejectedByName}</p>` : ''}
