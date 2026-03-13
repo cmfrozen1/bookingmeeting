@@ -909,7 +909,7 @@
         
         .calendar-day.has-booking.multiple::after {
             width: 8px;
-            background: var(--warning);
+            background: var(--primary);
         }
         
         .date-bookings-list {
@@ -1871,7 +1871,7 @@
             settings: JSON.parse(localStorage.getItem('settings_cache')) || { 
                 appName: 'Meeting Room',
                 requireApproval: 'true',
-                reminderMinutes: '30'
+                reminderMinutes: 'none'
             },
             userSettings: JSON.parse(localStorage.getItem('user_settings_cache')) || { 
                 notificationsEnabled: true
