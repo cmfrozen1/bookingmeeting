@@ -3318,7 +3318,21 @@
 
         window.selectDate = async function(dateStr) {
             state.selectedDate = new Date(dateStr);
-            renderCalendar();
+            
+            // อัปเดตเฉพาะวันที่เลือกในปฏิทิน โดยไม่ต้องโหลดปฏิทินใหม่ทั้งหมด
+            document.querySelectorAll('.calendar-day').forEach(day => {
+                day.classList.remove('selected');
+            });
+            
+            // หา element ของวันที่เลือกและเพิ่ม class selected
+            const selectedDayElement = Array.from(document.querySelectorAll('.calendar-day')).find(el => {
+                return el.textContent.trim() === new Date(dateStr).getDate().toString() && 
+                       !el.classList.contains('other-month');
+            });
+            
+            if (selectedDayElement) {
+                selectedDayElement.classList.add('selected');
+            }
             
             const result = await callGAS('bookings', {
                 date: dateStr,
@@ -3382,7 +3396,9 @@
                 
                 $.selectedDateBookings.classList.remove('hidden');
             } else {
-                $.selectedDateBookings.classList.add('hidden');
+                $.selectedDateBookingsList.innerHTML = '<div class="text-center py-4 text-gray-400">ไม่มีการจองในวันนี้</div>';
+                $.selectedDateBookings.classList.remove('hidden');
+                $.selectedDateTitle.textContent = `📅 ${new Date(dateStr).toLocaleDateString('th-TH', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}`;
             }
         };
 
