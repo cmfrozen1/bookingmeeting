@@ -1171,23 +1171,6 @@
             margin-top: 4px;
         }
 
-        /* Auto-cancel notification */
-        .auto-cancel-badge {
-            background: rgba(245,158,11,0.15);
-            color: #f59e0b;
-            border: 1px solid rgba(245,158,11,0.3);
-            padding: 2px 8px;
-            border-radius: 12px;
-            font-size: 10px;
-            display: inline-flex;
-            align-items: center;
-            gap: 4px;
-        }
-        
-        .auto-cancel-badge i {
-            font-size: 10px;
-        }
-
         /* Quick date/time selection buttons */
         .quick-datetime-btn {
             background: var(--bg-card);
@@ -1253,21 +1236,6 @@
             height: 200px;
         }
         
-        @keyframes loading {
-            0% { background-position: 200% 0; }
-            100% { background-position: -200% 0; }
-        }
-        
-        /* Cache indicator */
-        .cache-badge {
-            background: rgba(6,199,85,0.1);
-            color: var(--primary);
-            font-size: 10px;
-            padding: 2px 6px;
-            border-radius: 12px;
-            margin-left: 8px;
-        }
-
         /* Multi-day booking indicator */
         .multi-day-badge {
             background: rgba(245,158,11,0.2);
@@ -1348,14 +1316,6 @@
                 </div>
             </div>
 
-            <!-- Auto Cancel Status (for managers) -->
-            <div id="auto-cancel-status" class="max-w-7xl mx-auto px-4 mb-2 hidden">
-                <div class="auto-cancel-badge">
-                    <i class="fas fa-clock"></i>
-                    <span id="auto-cancel-time">ระบบยกเลิกอัตโนมัติทำงานล่าสุด: -</span>
-                </div>
-            </div>
-
             <!-- Calendar Section -->
             <div class="calendar-container">
                 <div class="calendar-header">
@@ -1431,21 +1391,6 @@
                         <button id="refresh-admin" class="text-[#06c755] text-sm">
                             <i class="fas fa-sync-alt mr-1"></i>รีเฟรช
                         </button>
-                    </div>
-                </div>
-
-                <!-- Auto Cancel Stats (for managers) -->
-                <div id="admin-auto-cancel-stats" class="admin-section hidden">
-                    <h3 class="font-semibold mb-3">ระบบยกเลิกอัตโนมัติ</h3>
-                    <div class="grid grid-cols-2 gap-3">
-                        <div class="admin-stat">
-                            <p class="text-xs text-gray-400">ยกเลิกวันนี้</p>
-                            <p id="auto-cancel-today" class="text-xl font-bold text-[#f59e0b]">0</p>
-                        </div>
-                        <div class="admin-stat">
-                            <p class="text-xs text-gray-400">ทำงานล่าสุด</p>
-                            <p id="auto-cancel-last-run" class="text-sm font-bold text-[#f59e0b]">-</p>
-                        </div>
                     </div>
                 </div>
 
@@ -1879,13 +1824,6 @@
             initialized: false,
             emailFetchAttempted: false,
             userNamesCache: {},
-            autoCancelRunning: false,
-            autoCancelLastRun: null,
-            autoCancelInterval: null,
-            autoCancelStats: {
-                today: 0,
-                lastRun: null
-            },
             loading: {
                 rooms: false,
                 bookings: false,
@@ -1968,11 +1906,6 @@
             saveBookingBtn: document.getElementById('save-booking-btn'),
             availabilityStatus: document.getElementById('availability-status'),
             userRoleBadge: document.getElementById('user-role-badge'),
-            autoCancelStatus: document.getElementById('auto-cancel-status'),
-            autoCancelTime: document.getElementById('auto-cancel-time'),
-            adminAutoCancelStats: document.getElementById('admin-auto-cancel-stats'),
-            autoCancelToday: document.getElementById('auto-cancel-today'),
-            autoCancelLastRun: document.getElementById('auto-cancel-last-run'),
             datetimePresets: document.querySelectorAll('.datetime-preset')
         };
 
@@ -2093,93 +2026,6 @@
 
         function updateCacheTimestamp(cacheKey) {
             localStorage.setItem(`${cacheKey}_timestamp`, Date.now().toString());
-        }
-
-        // ========== AUTO CANCEL FUNCTIONS (ไม่แจ้งเตือน) ==========
-        async function autoCancelOverdueBookings() {
-            if (state.autoCancelRunning) return;
-            
-            try {
-                state.autoCancelRunning = true;
-                
-                console.log('🔄 ตรวจสอบการจองที่เลยเวลา...', new Date().toLocaleString('th-TH'));
-                
-                const result = await callGAS('admin/auto-cancel-overdue', {
-                    lineUserId: state.user?.lineUserId || 'system',
-                    silentMode: true
-                });
-                
-                if (result.success) {
-                    const now = new Date();
-                    state.autoCancelLastRun = now;
-                    state.autoCancelStats.lastRun = now;
-                    
-                    if (result.data.cancelledCount > 0) {
-                        console.log(`✅ ยกเลิกการจองที่เลยเวลาแล้ว ${result.data.cancelledCount} รายการ (ไม่แจ้งเตือน)`);
-                        
-                        const todayStr = formatDateForInput(now);
-                        if (state.autoCancelStats.lastRunDate !== todayStr) {
-                            state.autoCancelStats.today = 0;
-                            state.autoCancelStats.lastRunDate = todayStr;
-                        }
-                        state.autoCancelStats.today += result.data.cancelledCount;
-                        
-                        await Promise.all([
-                            loadPendingBookings(),
-                            loadMyBookings(),
-                            loadTodayStats(),
-                            loadMonthBookings(state.currentMonth.getFullYear(), state.currentMonth.getMonth())
-                        ]);
-                        
-                        if (state.isManager) {
-                            await loadAllBookings();
-                        }
-                    }
-                    
-                    updateAutoCancelUI();
-                }
-            } catch (error) {
-                console.error('Auto-cancel error:', error);
-            } finally {
-                state.autoCancelRunning = false;
-            }
-        }
-
-        function updateAutoCancelUI() {
-            if (state.autoCancelLastRun) {
-                const timeStr = formatDateTime(state.autoCancelLastRun);
-                if ($.autoCancelTime) {
-                    $.autoCancelTime.textContent = `⏱️ ล่าสุด: ${timeStr}`;
-                }
-                if ($.autoCancelStatus) {
-                    $.autoCancelStatus.classList.remove('hidden');
-                }
-            }
-            
-            if (state.isManager && $.adminAutoCancelStats) {
-                $.adminAutoCancelStats.classList.remove('hidden');
-                if ($.autoCancelToday) {
-                    $.autoCancelToday.textContent = state.autoCancelStats.today || 0;
-                }
-                if ($.autoCancelLastRun) {
-                    $.autoCancelLastRun.textContent = state.autoCancelStats.lastRun ? 
-                        formatDateTime(state.autoCancelStats.lastRun) : '-';
-                }
-            }
-        }
-
-        function startAutoCancelInterval() {
-            if (state.autoCancelInterval) {
-                clearInterval(state.autoCancelInterval);
-            }
-            
-            state.autoCancelInterval = setInterval(() => {
-                autoCancelOverdueBookings();
-            }, 5 * 60 * 1000);
-            
-            setTimeout(() => {
-                autoCancelOverdueBookings();
-            }, 60 * 1000);
         }
 
         // ========== NOTIFICATION CHECK ==========
@@ -3319,12 +3165,10 @@
         window.selectDate = async function(dateStr) {
             state.selectedDate = new Date(dateStr);
             
-            // อัปเดตเฉพาะวันที่เลือกในปฏิทิน โดยไม่ต้องโหลดปฏิทินใหม่ทั้งหมด
             document.querySelectorAll('.calendar-day').forEach(day => {
                 day.classList.remove('selected');
             });
             
-            // หา element ของวันที่เลือกและเพิ่ม class selected
             const selectedDayElement = Array.from(document.querySelectorAll('.calendar-day')).find(el => {
                 return el.textContent.trim() === new Date(dateStr).getDate().toString() && 
                        !el.classList.contains('other-month');
@@ -3530,7 +3374,6 @@
 
                 populateTimeSelects();
                 
-                // โหลดการตั้งค่า
                 await loadSettings();
                 
                 loadInitialData();
@@ -3538,8 +3381,6 @@
                 if (state.isManager) {
                     loadManagerData();
                 }
-
-                startAutoCancelInterval();
                 
             } catch (error) {
                 console.error('LIFF init error:', error);
@@ -3626,8 +3467,6 @@
                 $.floatingBtn.classList.remove('hidden');
                 if ($.quickBookBtn) $.quickBookBtn.classList.remove('hidden');
             }
-            
-            updateAutoCancelUI();
         }
 
         async function loadInitialData() {
@@ -3642,8 +3481,6 @@
                 await Promise.all([roomsPromise, calendarPromise, statsPromise]);
                 
                 loadMyBookings().catch(console.warn);
-                
-                setTimeout(() => autoCancelOverdueBookings(), 5000);
                 
             } catch (error) {
                 console.error('Error loading initial data:', error);
@@ -4095,7 +3932,6 @@
             setButtonLoading(btn, true);
             
             try {
-                // ดึงข้อมูลการจองก่อน
                 const bookingInfo = await callGAS('booking', { bookingId });
                 
                 if (!bookingInfo.success) {
@@ -4106,7 +3942,6 @@
                 
                 const booking = bookingInfo.data;
                 
-                // ยืนยันการยกเลิก
                 const result = await Swal.fire({
                     title: 'ยกเลิกการจอง (ส่งแจ้งเตือน)',
                     text: `คุณแน่ใจหรือไม่ต้องการยกเลิกการจอง "${booking.title}"? (ระบบจะส่งแจ้งเตือนไปยังผู้จอง)`,
@@ -4121,13 +3956,12 @@
                     const apiResult = await callGAS('booking/admin-cancel', { 
                         bookingId,
                         lineUserId: state.user.lineUserId,
-                        skipNotification: false // ส่ง flag ให้ส่งแจ้งเตือน
+                        skipNotification: false
                     });
                     
                     if (apiResult.success) {
                         showToast('ยกเลิกการจองสำเร็จ (ส่งแจ้งเตือนไปยังผู้จองแล้ว)');
                         
-                        // ส่งแจ้งเตือนไปยังแชท
                         await sendBookingToChat({
                             title: booking.title,
                             roomName: booking.roomName,
@@ -4142,12 +3976,10 @@
                             action: 'admin_cancelled'
                         });
                         
-                        // ปิด modal ถ้าเปิดอยู่
                         if (state.currentBooking && state.currentBooking.bookingId === bookingId) {
                             closeBookingDetailModal();
                         }
                         
-                        // โหลดข้อมูลใหม่
                         await Promise.all([
                             loadPendingBookings(), 
                             loadAdminStats(), 
@@ -4156,7 +3988,6 @@
                             loadMonthBookings(state.currentMonth.getFullYear(), state.currentMonth.getMonth())
                         ]);
                         
-                        // ถ้าอยู่ในหน้า my bookings ให้โหลดใหม่ด้วย
                         if (document.getElementById('tab-my').classList.contains('active')) {
                             await loadMyBookings();
                         }
@@ -4292,7 +4123,6 @@
             setButtonLoading(btn, true);
             
             try {
-                // ดึงข้อมูลการจองก่อนเพื่อตรวจสอบเวลา
                 const bookingInfo = await callGAS('booking', { bookingId });
                 
                 if (!bookingInfo.success) {
@@ -4303,12 +4133,10 @@
                 
                 const booking = bookingInfo.data;
                 
-                // ตรวจสอบว่าการจองเลยเวลาหรือไม่
                 const now = new Date();
                 const endTime = new Date(booking.endTime);
                 const isPastBooking = endTime < now;
                 
-                // ถ้าเป็นการจองที่เลยเวลาไปแล้ว ให้แจ้งเตือนและไม่ต้องส่งข้อความ
                 if (isPastBooking) {
                     const result = await Swal.fire({
                         title: 'ปฏิเสธการจองที่เลยเวลา',
@@ -4331,7 +4159,7 @@
                         bookingId,
                         reason,
                         lineUserId: state.user.lineUserId,
-                        skipNotification: true // ส่ง flag ให้ไม่ต้องส่งแจ้งเตือน
+                        skipNotification: true
                     });
                     
                     if (apiResult.success) {
@@ -4352,7 +4180,6 @@
                     return;
                 }
                 
-                // ถ้าเป็นการจองที่ยังไม่เลยเวลา ให้ใช้流程ปกติ (มีการแจ้งเตือน)
                 const result = await Swal.fire({
                     title: 'ปฏิเสธการจอง',
                     input: 'textarea',
@@ -4379,7 +4206,6 @@
                     if (apiResult.success) {
                         showToast('ปฏิเสธการจองสำเร็จ');
                         
-                        // ส่งแจ้งเตือนเฉพาะเมื่อเป็นการจองที่ยังไม่เลยเวลา
                         await sendBookingToChat({
                             title: booking.title,
                             roomName: booking.roomName,
@@ -4677,7 +4503,6 @@
                 const endTime = new Date(b.endTime);
                 const canCancel = b.status === 'confirmed' && endTime > now;
                 
-                // สร้างปุ่มใน footer
                 let footerButtons = '';
                 
                 if (canCancel && b.userId === state.user.lineUserId) {
@@ -4688,7 +4513,6 @@
                     `;
                 }
                 
-                // เพิ่มปุ่มสำหรับ admin/manager ให้ยกเลิกแบบส่งแจ้งเตือน
                 if (state.isManager && b.status === 'confirmed' && endTime > now) {
                     footerButtons += `
                         <button class="btn-danger flex-1" onclick="adminCancelBooking('${b.bookingId}', this)">
@@ -4767,12 +4591,6 @@
                     $.adminRooms.textContent = result.data.rooms || 0;
                     $.adminBookings.textContent = result.data.bookings || 0;
                     $.adminPending.textContent = result.data.pending || 0;
-                    
-                    if (result.data.autoCancel) {
-                        state.autoCancelStats.today = result.data.autoCancel.today || 0;
-                        state.autoCancelStats.lastRun = result.data.autoCancel.lastRun || null;
-                        updateAutoCancelUI();
-                    }
                 }
             } catch (error) {
                 console.error('Load admin stats error:', error);
@@ -4841,23 +4659,19 @@
             `).join('');
         }
 
-        // ========== LOAD ALL BOOKINGS (ปรับปรุง - แสดงเฉพาะปัจจุบันและอนาคต) ==========
+        // ========== LOAD ALL BOOKINGS ==========
         async function loadAllBookings() {
             try {
                 const result = await callGAS('admin/all-bookings');
                 if (result.success) {
                     const now = new Date();
                     
-                    // กรองเอาเฉพาะการจองที่สิ้นสุดแล้วหรือยังไม่เริ่ม (รวมถึงปัจจุบัน)
-                    // และเรียงลำดับตามเวลาเริ่ม (ใกล้ที่สุดขึ้นก่อน)
                     state.allBookings = (result.data || [])
                         .filter(booking => {
                             const endTime = new Date(booking.endTime);
-                            // แสดงเฉพาะการจองที่สิ้นสุดแล้วหรือยังไม่เริ่ม (รวมถึงปัจจุบัน)
                             return endTime >= now || booking.status === 'pending' || booking.status === 'confirmed';
                         })
                         .sort((a, b) => {
-                            // เรียงตามเวลาเริ่ม (ใกล้ที่สุดขึ้นก่อน)
                             return new Date(a.startTime) - new Date(b.startTime);
                         });
                     
@@ -5388,7 +5202,6 @@
                 Object.assign(state.settings, data);
                 updateAppName(appName);
                 
-                // อัปเดต cache
                 localStorage.setItem('settings_cache', JSON.stringify(state.settings));
                 updateCacheTimestamp('settings');
             } else {
