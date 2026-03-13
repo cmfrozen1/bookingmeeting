@@ -29,7 +29,7 @@
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     
     <style>
-        /* (CSS เดิมทั้งหมดเหมือนเดิม) */
+        /* Base Styles */
         * {
             font-family: 'IBM Plex Sans Thai', sans-serif;
             margin: 0;
@@ -50,6 +50,11 @@
             --danger: #ef4444;
             --warning: #f59e0b;
             --info: #3b82f6;
+            --success: #06c755;
+            --cancelled: #ef4444;
+            --pending: #f59e0b;
+            --rejected: #ef4444;
+            --auto-cancelled: #f59e0b;
         }
         
         body {
@@ -209,6 +214,7 @@
             display: inline-block;
         }
         
+        /* Room Status Badges */
         .badge-available {
             background: rgba(6,199,85,0.15);
             color: var(--primary);
@@ -221,22 +227,23 @@
             border: 1px solid rgba(239,68,68,0.3);
         }
         
+        /* Booking Status Badges - FIXED COLORS */
         .badge-pending {
-            background: rgba(6,199,85,0.15);
-            color: var(--primary);
-            border: 1px solid rgba(6,199,85,0.3);
+            background: rgba(245,158,11,0.15);
+            color: #f59e0b;
+            border: 1px solid rgba(245,158,11,0.3);
         }
         
         .badge-confirmed {
             background: rgba(6,199,85,0.15);
-            color: var(--primary);
+            color: #06c755;
             border: 1px solid rgba(6,199,85,0.3);
         }
         
         .badge-cancelled {
-            background: rgba(156,163,175,0.15);
-            color: #9ca3af;
-            border: 1px solid rgba(156,163,175,0.3);
+            background: rgba(239,68,68,0.15);
+            color: #ef4444;
+            border: 1px solid rgba(239,68,68,0.3);
         }
         
         .badge-rejected {
@@ -251,6 +258,7 @@
             border: 1px solid rgba(245,158,11,0.3);
         }
         
+        /* Button Styles */
         .btn-primary {
             background: var(--primary);
             color: white;
@@ -418,6 +426,7 @@
             animation: spin 0.6s linear infinite;
         }
         
+        /* Profile Styles */
         .profile-header {
             background: var(--bg-card);
             border-radius: 20px;
@@ -934,7 +943,21 @@
         }
         
         .date-booking-item.pending {
-            border-left-color: var(--primary);
+            border-left-color: #f59e0b;
+        }
+        
+        .date-booking-item.confirmed {
+            border-left-color: #06c755;
+        }
+        
+        .date-booking-item.cancelled {
+            border-left-color: #ef4444;
+            opacity: 0.8;
+        }
+        
+        .date-booking-item.rejected {
+            border-left-color: #ef4444;
+            opacity: 0.8;
         }
         
         .date-booking-item.auto-cancelled {
@@ -1244,6 +1267,26 @@
             padding: 2px 4px;
             border-radius: 4px;
             margin-left: 4px;
+        }
+
+        /* Filter Buttons */
+        .filter-btn {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            color: var(--text-secondary);
+            padding: 8px 16px;
+            border-radius: 30px;
+            font-size: 12px;
+            white-space: nowrap;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .filter-btn:hover,
+        .filter-btn.active {
+            border-color: var(--primary);
+            background: rgba(6,199,85,0.1);
+            color: var(--primary);
         }
     </style>
 </head>
@@ -1589,13 +1632,13 @@
                             <div>
                                 <label class="text-xs text-gray-400 mb-1 block">วันที่เริ่ม</label>
                                 <input type="date" id="booking-date" class="input-field" required 
-                                       min="<?php echo date('Y-m-d'); ?>" 
+                                       min="" 
                                        onchange="validateBookingForm(); checkAvailability();">
                             </div>
                             <div>
                                 <label class="text-xs text-gray-400 mb-1 block">วันที่สิ้นสุด</label>
                                 <input type="date" id="booking-end-date" class="input-field" required 
-                                       min="<?php echo date('Y-m-d'); ?>"
+                                       min=""
                                        onchange="validateBookingForm(); checkAvailability();">
                             </div>
                         </div>
@@ -2461,12 +2504,12 @@
                 statusText = 'อนุมัติแล้ว';
                 statusThai = '✅ อนุมัติแล้ว';
             } else if (status === 'pending') {
-                statusColor = '#06c755';
+                statusColor = '#f59e0b';
                 statusEmoji = '⏳';
                 statusText = 'รออนุมัติ';
                 statusThai = '⏳ รออนุมัติ';
             } else if (status === 'cancelled' || action === 'cancelled') {
-                statusColor = '#9ca3af';
+                statusColor = '#ef4444';
                 statusEmoji = '❌';
                 statusText = 'ยกเลิก';
                 statusThai = '❌ ยกเลิกการจอง';
@@ -2842,7 +2885,7 @@
                     layout: 'vertical',
                     spacing: 'sm',
                     margin: 'md',
-                    backgroundColor: '#f5f5f5',
+                    backgroundColor: '#ffebee',
                     paddingAll: '12px',
                     cornerRadius: '8px',
                     contents: [
@@ -2851,13 +2894,13 @@
                             text: '❌ ยกเลิกโดย:',
                             size: 'sm',
                             weight: 'bold',
-                            color: '#616161'
+                            color: '#c62828'
                         },
                         {
                             type: 'text',
                             text: cancelledByName,
                             size: 'sm',
-                            color: '#424242',
+                            color: '#b71c1c',
                             weight: 'bold',
                             wrap: true
                         }
@@ -3207,22 +3250,25 @@
                     const endDate = new Date(b.endTime);
                     const isMultiDay = formatDateForInput(startDate) !== formatDateForInput(endDate);
                     
+                    let statusClass = '';
+                    if (b.status === 'confirmed') statusClass = 'confirmed';
+                    else if (b.status === 'pending') statusClass = 'pending';
+                    else if (b.status === 'cancelled') statusClass = 'cancelled';
+                    else if (b.status === 'rejected') statusClass = 'rejected';
+                    else if (b.status === 'auto_cancelled') statusClass = 'auto-cancelled';
+                    
                     return {
                         ...b,
                         approvedByName,
                         isMultiDay,
-                        multiDayInfo: isMultiDay ? `${formatDateShort(b.startTime)} - ${formatDateShort(b.endTime)}` : null
+                        multiDayInfo: isMultiDay ? `${formatDateShort(b.startTime)} - ${formatDateShort(b.endTime)}` : null,
+                        statusClass
                     };
                 }));
                 
                 $.selectedDateBookingsList.innerHTML = processedBookings.map(b => {
-                    let statusClass = '';
-                    if (b.status === 'confirmed') statusClass = '';
-                    else if (b.status === 'pending') statusClass = 'pending';
-                    else if (b.status === 'auto_cancelled') statusClass = 'auto-cancelled';
-                    
                     return `
-                        <div class="date-booking-item ${statusClass}" onclick="showBookingDetail('${b.bookingId}')">
+                        <div class="date-booking-item ${b.statusClass}" onclick="showBookingDetail('${b.bookingId}')">
                             <div class="date-booking-time">
                                 <i class="far fa-clock mr-1"></i> ${formatTime(b.startTime)} - ${formatTime(b.endTime)}
                                 ${b.isMultiDay ? '<span class="ml-2 text-yellow-500">📅 ข้ามวัน</span>' : ''}
@@ -3689,18 +3735,26 @@
                                 ${todayBookings.map(b => {
                                     const statusColor = {
                                         'confirmed': 'text-green-500',
-                                        'pending': 'text-green-500',
-                                        'cancelled': 'text-gray-500',
+                                        'pending': 'text-yellow-500',
+                                        'cancelled': 'text-red-500',
                                         'rejected': 'text-red-500',
                                         'auto_cancelled': 'text-yellow-500'
                                     }[b.status] || 'text-gray-500';
                                     let approvedByName = b.approvedBy || '';
                                     
+                                    let statusText = {
+                                        'confirmed': 'อนุมัติแล้ว',
+                                        'pending': 'รออนุมัติ',
+                                        'cancelled': 'ยกเลิก',
+                                        'rejected': 'ปฏิเสธ',
+                                        'auto_cancelled': 'ระบบยกเลิก'
+                                    }[b.status] || b.status;
+                                    
                                     return `
                                         <div class="bg-[#111317] p-2 rounded-lg text-sm">
                                             <div class="flex justify-between">
                                                 <span class="font-semibold">${formatTime(b.startTime)} - ${formatTime(b.endTime)}</span>
-                                                <span class="${statusColor}">${b.status === 'confirmed' ? 'จองแล้ว' : b.status === 'pending' ? 'รออนุมัติ' : b.status}</span>
+                                                <span class="${statusColor}">${statusText}</span>
                                             </div>
                                             <p class="text-xs text-gray-400">${b.title}</p>
                                             ${approvedByName ? `<p class="text-xs text-green-500 mt-1">✅ อนุมัติโดย: ${approvedByName}</p>` : ''}
@@ -4334,11 +4388,11 @@
                 }[b.status] || 'badge-pending';
                 
                 const statusText = {
-                    'confirmed': 'อนุมัติแล้ว',
-                    'pending': 'รออนุมัติ',
-                    'cancelled': 'ยกเลิก',
-                    'rejected': 'ปฏิเสธ',
-                    'auto_cancelled': 'ระบบยกเลิก'
+                    'confirmed': '✅ อนุมัติแล้ว',
+                    'pending': '⏳ รออนุมัติ',
+                    'cancelled': '❌ ยกเลิก',
+                    'rejected': '❌ ปฏิเสธ',
+                    'auto_cancelled': '🤖 ระบบยกเลิก'
                 }[b.status] || b.status;
                 
                 return `
@@ -4390,11 +4444,11 @@
                 }[b.status] || 'badge-pending';
                 
                 const statusText = {
-                    'confirmed': 'อนุมัติแล้ว',
-                    'pending': 'รออนุมัติ',
-                    'cancelled': 'ยกเลิก',
-                    'rejected': 'ปฏิเสธ',
-                    'auto_cancelled': 'ระบบยกเลิกอัตโนมัติ'
+                    'confirmed': '✅ อนุมัติแล้ว',
+                    'pending': '⏳ รออนุมัติ',
+                    'cancelled': '❌ ยกเลิก',
+                    'rejected': '❌ ปฏิเสธ',
+                    'auto_cancelled': '🤖 ระบบยกเลิกอัตโนมัติ'
                 }[b.status] || b.status;
 
                 let approvedByName = b.approvedBy;
@@ -4485,9 +4539,9 @@
                     ` : ''}
                     
                     ${cancelledByName ? `
-                        <div class="mb-4 p-3 bg-gray-800 rounded-lg">
+                        <div class="mb-4 p-3 bg-red-900/20 rounded-lg">
                             <p class="text-sm text-gray-400 mb-1">❌ ยกเลิกโดย</p>
-                            <p class="font-semibold text-gray-400">${cancelledByName}</p>
+                            <p class="font-semibold text-red-500">${cancelledByName}</p>
                             ${b.cancelledBy === 'admin' ? '<p class="text-xs text-red-500 mt-1">🔴 ผู้ดูแลยกเลิก (ส่งแจ้งเตือน)</p>' : ''}
                         </div>
                     ` : ''}
@@ -4637,7 +4691,7 @@
             }
 
             $.pendingBookingsList.innerHTML = state.pendingBookings.map(b => `
-                <div class="bg-[#1a1d24] p-4 rounded-xl border border-[#06c755]/30">
+                <div class="bg-[#1a1d24] p-4 rounded-xl border border-[#f59e0b]/30">
                     <div class="flex justify-between mb-2">
                         <span class="badge badge-pending">⏳ รออนุมัติ</span>
                         <span class="text-xs text-gray-500">${formatDateTime(b.createdAt)}</span>
@@ -4726,6 +4780,14 @@
                 const endTime = new Date(b.endTime);
                 const canAdminCancel = state.isManager && b.status === 'confirmed' && endTime >= now;
                 
+                const statusText = {
+                    'confirmed': '✅ อนุมัติแล้ว',
+                    'pending': '⏳ รออนุมัติ',
+                    'cancelled': '❌ ยกเลิก',
+                    'rejected': '❌ ปฏิเสธ',
+                    'auto_cancelled': '🤖 ระบบยกเลิก'
+                }[b.status] || b.status;
+                
                 return `
                 <div class="bg-[#1a1d24] p-3 rounded-lg border border-[#2a2e36] flex justify-between items-center">
                     <div class="flex-1">
@@ -4734,7 +4796,7 @@
                                 <span class="font-semibold text-sm">${b.title}</span>
                                 <span class="text-xs text-gray-400 ml-2">${b.roomName}</span>
                             </div>
-                            <span class="badge ${statusClass} text-xs">${b.status === 'pending' ? 'รออนุมัติ' : b.status === 'confirmed' ? 'อนุมัติแล้ว' : b.status}</span>
+                            <span class="badge ${statusClass} text-xs">${statusText}</span>
                         </div>
                         <div class="flex justify-between text-xs text-gray-400">
                             <span><i class="far fa-user mr-1"></i> ${b.userName}</span>
@@ -5367,6 +5429,11 @@
             validateBookingForm();
             checkAvailability();
         });
+
+        // Set min dates for booking form
+        const today = formatDateForInput(new Date());
+        if ($.bookingDate) $.bookingDate.min = today;
+        if ($.bookingEndDate) $.bookingEndDate.min = today;
 
         // ========== INIT ==========
         if (document.readyState === 'loading') {
