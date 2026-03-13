@@ -4345,12 +4345,8 @@
                 filtered = filtered.filter(b => b.status === filter);
             }
 
-            const now = new Date();
-            filtered = filtered.filter(b => {
-                if (b.status === 'pending' || b.status === 'auto_cancelled') return true;
-                const endTime = new Date(b.endTime);
-                return endTime >= now;
-            });
+            // ไม่ต้องกรองตามเวลา ให้แสดงทั้งหมดตามสถานะที่ถูกต้อง
+            // การจองที่อนุมัติแล้ว (confirmed) จะเป็นสีเขียวตลอด
 
             if (!filtered.length) {
                 $.myBookingsList.innerHTML = `
@@ -4379,27 +4375,43 @@
             });
 
             $.myBookingsList.innerHTML = processedBookings.map(b => {
-                const statusClass = {
-                    'confirmed': 'badge-confirmed',
-                    'pending': 'badge-pending',
-                    'cancelled': 'badge-cancelled',
-                    'rejected': 'badge-rejected',
-                    'auto_cancelled': 'badge-auto-cancelled'
-                }[b.status] || 'badge-pending';
+                // กำหนดสถานะตามสถานะการจองเท่านั้น (ไม่เช็คเวลา)
+                let statusClass = '';
+                let statusText = '';
                 
-                const statusText = {
-                    'confirmed': '✅ อนุมัติแล้ว',
-                    'pending': '⏳ รออนุมัติ',
-                    'cancelled': '❌ ยกเลิก',
-                    'rejected': '❌ ปฏิเสธ',
-                    'auto_cancelled': '🤖 ระบบยกเลิก'
-                }[b.status] || b.status;
+                if (b.status === 'confirmed') {
+                    statusClass = 'badge-confirmed';
+                    statusText = '✅ อนุมัติแล้ว';
+                } else if (b.status === 'pending') {
+                    statusClass = 'badge-pending';
+                    statusText = '⏳ รออนุมัติ';
+                } else if (b.status === 'cancelled') {
+                    statusClass = 'badge-cancelled';
+                    statusText = '❌ ยกเลิก';
+                } else if (b.status === 'rejected') {
+                    statusClass = 'badge-rejected';
+                    statusText = '❌ ปฏิเสธ';
+                } else if (b.status === 'auto_cancelled') {
+                    statusClass = 'badge-auto-cancelled';
+                    statusText = '🤖 ระบบยกเลิก';
+                } else {
+                    statusClass = 'badge-pending';
+                    statusText = b.status;
+                }
+                
+                // ตรวจสอบว่าการจองนี้เลยเวลาหรือไม่ (สำหรับแสดง badge เพิ่มเติม แต่ไม่เปลี่ยนสีหลัก)
+                const now = new Date();
+                const endTime = new Date(b.endTime);
+                const isPastBooking = endTime < now;
                 
                 return `
                 <div class="bg-[#1a1d24] p-4 rounded-xl border border-[#2a2e36] cursor-pointer" onclick="showBookingDetail('${b.bookingId}')">
                     <div class="flex justify-between items-start mb-2">
                         <h3 class="font-semibold">${b.title}</h3>
-                        <span class="badge ${statusClass}">${statusText}</span>
+                        <div class="flex flex-col items-end">
+                            <span class="badge ${statusClass}">${statusText}</span>
+                            ${isPastBooking && b.status === 'confirmed' ? '<span class="text-xs text-gray-500 mt-1">(เลยเวลาแล้ว)</span>' : ''}
+                        </div>
                     </div>
                     <p class="text-sm text-[#06c755] mb-2">${b.roomName}</p>
                     <p class="text-xs text-gray-400 mb-2">
@@ -4410,7 +4422,7 @@
                     <div class="flex justify-between items-center text-xs">
                         <span class="text-gray-500"><i class="fas fa-users mr-1"></i> ${b.attendees || 0} คน</span>
                         ${b.meetingLink ? '<span class="text-blue-500"><i class="fas fa-video mr-1"></i> มีลิงค์</span>' : ''}
-                        ${b.status === 'confirmed' ? `
+                        ${b.status === 'confirmed' && !isPastBooking ? `
                             <button class="text-red-500" onclick="cancelBooking('${b.bookingId}'); event.stopPropagation();">
                                 <i class="fas fa-times mr-1"></i>ยกเลิก
                             </button>
@@ -4555,11 +4567,11 @@
                 const footer = document.getElementById('booking-modal-footer');
                 const now = new Date();
                 const endTime = new Date(b.endTime);
-                const canCancel = b.status === 'confirmed' && endTime > now;
+                const canCancel = b.status === 'confirmed' && endTime > now && b.userId === state.user.lineUserId;
                 
                 let footerButtons = '';
                 
-                if (canCancel && b.userId === state.user.lineUserId) {
+                if (canCancel) {
                     footerButtons += `
                         <button class="btn-danger flex-1" onclick="cancelBooking('${b.bookingId}')">
                             <i class="fas fa-times mr-2"></i>ยกเลิกการจอง
@@ -4718,13 +4730,7 @@
             try {
                 const result = await callGAS('admin/all-bookings');
                 if (result.success) {
-                    const now = new Date();
-                    
                     state.allBookings = (result.data || [])
-                        .filter(booking => {
-                            const endTime = new Date(booking.endTime);
-                            return endTime >= now || booking.status === 'pending' || booking.status === 'confirmed';
-                        })
                         .sort((a, b) => {
                             return new Date(a.startTime) - new Date(b.startTime);
                         });
