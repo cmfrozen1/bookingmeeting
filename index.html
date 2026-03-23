@@ -2590,6 +2590,9 @@
                 cancelledByName = await getUserNameFromCache(cancelledBy);
             }
             
+            // สร้าง URL ลิงค์สำหรับดูรายละเอียดการจองบนปฏิทิน (ใช้ liff URL พร้อม query parameter)
+            const bookingDetailUrl = `https://liff.line.me/${CONFIG.LIFF_ID}?bookingId=${bookingId}&view=calendar`;
+            
             const flexMessage = {
                 type: 'flex',
                 altText: `${statusEmoji} ${statusText} - ${title || 'การจองห้องประชุม'}`,
@@ -2995,13 +2998,14 @@
                 });
             }
             
+            // ปุ่ม "ดูรายละเอียดการจอง" ที่แสดงวันที่และเวลาตามปฏิทิน
             if (bookingId && liff.isInClient()) {
                 flexMessage.contents.footer.contents.push({
                     type: 'button',
                     action: {
                         type: 'uri',
-                        label: '📋 ดูรายละเอียดการจอง',
-                        uri: `https://liff.line.me/${CONFIG.LIFF_ID}?bookingId=${bookingId}`
+                        label: '📅 ดูรายละเอียดในปฏิทิน',
+                        uri: bookingDetailUrl
                     },
                     style: 'secondary',
                     margin: 'sm'
@@ -3203,6 +3207,19 @@
             return date1.getFullYear() === date2.getFullYear() &&
                    date1.getMonth() === date2.getMonth() &&
                    date1.getDate() === date2.getDate();
+        }
+
+        // เพิ่มฟังก์ชันสำหรับตรวจสอบ URL parameter และเปิดรายละเอียดการจองโดยตรง
+        function checkUrlForBookingId() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const bookingId = urlParams.get('bookingId');
+            const view = urlParams.get('view');
+            
+            if (bookingId && view === 'calendar') {
+                setTimeout(() => {
+                    showBookingDetail(bookingId);
+                }, 1500);
+            }
         }
 
         window.selectDate = async function(dateStr) {
@@ -3427,6 +3444,9 @@
                 if (state.isManager) {
                     loadManagerData();
                 }
+                
+                // ตรวจสอบ URL parameter สำหรับเปิดรายละเอียดการจองโดยตรง
+                checkUrlForBookingId();
                 
             } catch (error) {
                 console.error('LIFF init error:', error);
@@ -4372,31 +4392,29 @@
             });
 
             $.myBookingsList.innerHTML = processedBookings.map(b => {
-                // กำหนดสถานะตามสถานะการจองเท่านั้น ไม่สนใจเวลา
                 let statusClass = '';
                 let statusText = '';
                 
                 if (b.status === 'confirmed') {
-                    statusClass = 'badge-confirmed'; // สีเขียว
+                    statusClass = 'badge-confirmed';
                     statusText = '✅ อนุมัติแล้ว';
                 } else if (b.status === 'pending') {
-                    statusClass = 'badge-pending'; // สีเหลือง
+                    statusClass = 'badge-pending';
                     statusText = '⏳ รออนุมัติ';
                 } else if (b.status === 'cancelled') {
-                    statusClass = 'badge-cancelled'; // สีแดง
+                    statusClass = 'badge-cancelled';
                     statusText = '❌ ยกเลิก';
                 } else if (b.status === 'rejected') {
-                    statusClass = 'badge-rejected'; // สีแดง
+                    statusClass = 'badge-rejected';
                     statusText = '❌ ปฏิเสธ';
                 } else if (b.status === 'auto_cancelled') {
-                    statusClass = 'badge-auto-cancelled'; // สีเหลือง
+                    statusClass = 'badge-auto-cancelled';
                     statusText = '🤖 ระบบยกเลิก';
                 } else {
                     statusClass = 'badge-pending';
                     statusText = b.status;
                 }
                 
-                // ตรวจสอบว่าการจองนี้เลยเวลาหรือไม่ (สำหรับแสดงข้อความเพิ่มเติม แต่ไม่เปลี่ยนสี)
                 const now = new Date();
                 const endTime = new Date(b.endTime);
                 const isPastBooking = endTime < now;
@@ -4722,19 +4740,17 @@
             `).join('');
         }
 
-        // ========== LOAD ALL BOOKINGS (ADMIN) - แก้ไขใหม่ ==========
+        // ========== LOAD ALL BOOKINGS (ADMIN) ==========
         async function loadAllBookings() {
             try {
                 const result = await callGAS('admin/all-bookings');
                 if (result.success) {
-                    // กรองเอาเฉพาะการจองที่ยังมาไม่ถึง (สิ้นสุดหลังเวลาปัจจุบัน)
                     const now = new Date();
                     const upcomingBookings = (result.data || []).filter(booking => {
                         const endTime = new Date(booking.endTime);
-                        return endTime >= now; // ยังไม่ถึงเวลาสิ้นสุด
+                        return endTime >= now;
                     });
                     
-                    // เรียงจากวันน้อยไปหามาก (ใกล้สุดไปไกลสุด)
                     state.allBookings = upcomingBookings.sort((a, b) => {
                         return new Date(a.startTime) - new Date(b.startTime);
                     });
@@ -4798,7 +4814,6 @@
                     'auto_cancelled': '🤖 ระบบยกเลิก'
                 }[b.status] || b.status;
                 
-                // คำนวณเวลาที่เหลือ
                 const startTime = new Date(b.startTime);
                 const timeDiff = startTime - now;
                 const daysLeft = Math.floor(timeDiff / (1000 * 60 * 60 * 24));
@@ -5459,10 +5474,9 @@
             checkAvailability();
         });
 
-        // Set min dates for booking form
-        const today = formatDateForInput(new Date());
-        if ($.bookingDate) $.bookingDate.min = today;
-        if ($.bookingEndDate) $.bookingEndDate.min = today;
+        const todayForInput = formatDateForInput(new Date());
+        if ($.bookingDate) $.bookingDate.min = todayForInput;
+        if ($.bookingEndDate) $.bookingEndDate.min = todayForInput;
 
         // ========== INIT ==========
         if (document.readyState === 'loading') {
