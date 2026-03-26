@@ -19,8 +19,8 @@
     <!-- Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     
-    <!-- LINE LIFF -->
-    <script src="https://static.line-scdn.net/liff/edge/2.1/sdk.js"></script>
+    <!-- LINE LIFF (v2.28.0) -->
+    <script src="https://static.line-scdn.net/liff/edge/versions/2.28.0/sdk.js"></script>
     
     <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -1830,7 +1830,7 @@
 
     <script>
         // ========== CONFIG ==========
-        const CONFIG = {
+         const CONFIG = {
             GAS_URL: 'https://script.google.com/macros/s/AKfycbwEkTSINEvnyBdapUWbJ8djVpdLt6rN7NlaXn5cKMow7RJtY3gI19-RSMyFHsWBxII-vA/exec',
             LIFF_ID: '2009198981-GsqxkwIK',
             PAGE_SIZE: 20,
@@ -3209,17 +3209,37 @@
                    date1.getDate() === date2.getDate();
         }
 
-        // เพิ่มฟังก์ชันสำหรับตรวจสอบ URL parameter และเปิดรายละเอียดการจองโดยตรง
+        // ========== ENHANCED URL BOOKING POPUP ==========
         function checkUrlForBookingId() {
             const urlParams = new URLSearchParams(window.location.search);
             const bookingId = urlParams.get('bookingId');
-            const view = urlParams.get('view');
             
-            if (bookingId && view === 'calendar') {
-                setTimeout(() => {
-                    showBookingDetail(bookingId);
-                }, 1500);
+            if (!bookingId) {
+                console.log('No bookingId found in URL');
+                return;
             }
+            
+            console.log('Found bookingId in URL:', bookingId);
+            
+            const attemptShowDetail = (attempt = 0) => {
+                if (state.user && state.initialized && typeof showBookingDetail === 'function') {
+                    console.log('LIFF ready, showing booking detail for:', bookingId);
+                    setTimeout(() => {
+                        showBookingDetail(bookingId).catch(err => {
+                            console.error('Error showing booking detail:', err);
+                            showToast('ไม่สามารถเปิดรายละเอียดการจองได้', 'error');
+                        });
+                    }, 100);
+                } else if (attempt < 10) {
+                    console.log(`Waiting for LIFF to initialize... attempt ${attempt + 1}`);
+                    setTimeout(() => attemptShowDetail(attempt + 1), 1000);
+                } else {
+                    console.error('Failed to show booking detail after multiple attempts');
+                    showToast('ไม่สามารถเปิดรายละเอียดการจองได้ โปรดลองอีกครั้ง', 'error');
+                }
+            };
+            
+            attemptShowDetail();
         }
 
         window.selectDate = async function(dateStr) {
@@ -3445,13 +3465,22 @@
                     loadManagerData();
                 }
                 
-                // ตรวจสอบ URL parameter สำหรับเปิดรายละเอียดการจองโดยตรง
                 checkUrlForBookingId();
+                
+                // Request friendship after a short delay
+                setTimeout(async () => {
+                    if (liff.isInClient() && typeof liff.requestFriendship === 'function') {
+                        try {
+                            await liff.requestFriendship();
+                        } catch(e) { console.log(e); }
+                    }
+                }, 2000);
                 
             } catch (error) {
                 console.error('LIFF init error:', error);
                 $.initLoading.classList.add('hide');
                 if (!state.user) showToast('ไม่สามารถเชื่อมต่อ LINE ได้', 'error');
+                checkUrlForBookingId();
             }
         }
 
@@ -4610,6 +4639,9 @@
                 `;
                 
                 footer.innerHTML = footerButtons;
+            } else {
+                showToast('ไม่พบข้อมูลการจอง', 'error');
+                closeBookingDetailModal();
             }
         };
 
