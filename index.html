@@ -3566,6 +3566,8 @@
 
         async function loadInitialData() {
             try {
+                // ========== OPTIMIZED INITIAL LOADING ==========
+                // โหลดข้อมูลพื้นฐานพร้อมกัน (ห้อง, ปฏิทิน, สถิติ)
                 const roomsPromise = loadRooms();
                 const calendarPromise = loadMonthBookings(
                     state.currentMonth.getFullYear(), 
@@ -3575,6 +3577,7 @@
                 
                 await Promise.all([roomsPromise, calendarPromise, statsPromise]);
                 
+                // โหลดการจองของผู้ใช้แบบอะซิงโครนัส
                 loadMyBookings().catch(console.warn);
                 
             } catch (error) {
@@ -3583,15 +3586,16 @@
         }
 
         function loadManagerData() {
-            setTimeout(() => {
-                Promise.all([
-                    loadUsers().catch(console.warn),
-                    loadAdminStats().catch(console.warn),
-                    loadPendingBookings().catch(console.warn),
-                    loadAllBookings().catch(console.warn),
-                    loadRoomsManagement().catch(console.warn)
-                ]).catch(console.warn);
-            }, 500);
+            // ========== OPTIMIZED MANAGER DATA LOADING ==========
+            // โหลดข้อมูลผู้จัดการ/แอดมินพร้อมกันโดยไม่มีการหน่วงเวลา
+            // ลบ setTimeout เพื่อให้การโหลดเร็วขึ้น
+            Promise.all([
+                loadUsers().catch(console.warn),
+                loadAdminStats().catch(console.warn),
+                loadPendingBookings().catch(console.warn),
+                loadAllBookings().catch(console.warn),
+                loadRoomsManagement().catch(console.warn)
+            ]).catch(console.warn);
         }
 
         // ========== ROOMS ==========
@@ -4183,27 +4187,33 @@
                 if (result.success) {
                     showToast(id ? 'แก้ไขการจองสำเร็จ' : 'จองห้องสำเร็จ');
                     
+                    // ========== AUTO-APPROVE FOR ADMIN ==========
+                    // เงื่อนไข: เป็นการจองใหม่ (ไม่ใช่แก้ไข) และผู้ใช้เป็นแอดมิน
                     if (!id && state.isAdmin && result.data?.bookingData?.bookingId) {
+                        console.log('Admin auto-approval triggered for booking:', result.data.bookingData.bookingId);
+                        // อนุมัติการจองโดยอัตโนมัติ
                         await approveBooking(result.data.bookingData.bookingId, null, true);
                     } else {
+                        // สำหรับผู้ใช้ทั่วไป: ส่งการแจ้งเตือนไปยังแชท
                         if (!id && result.data?.bookingData && !state.isAdmin) {
-                            setTimeout(async () => {
-                                const bookingData = {
-                                    ...result.data.bookingData,
-                                    action: 'created',
-                                    createdAt: new Date().toISOString(),
-                                    bookingId: result.data.bookingData.bookingId || result.data.bookingData.id,
-                                    approvedBy: result.data.bookingData.approvedBy,
-                                    rejectedBy: result.data.bookingData.rejectedBy,
-                                    cancelledBy: result.data.bookingData.cancelledBy
-                                };
-                                await sendBookingToChat(bookingData);
-                            }, 500);
+                            const bookingData = {
+                                ...result.data.bookingData,
+                                action: 'created',
+                                createdAt: new Date().toISOString(),
+                                bookingId: result.data.bookingData.bookingId || result.data.bookingData.id,
+                                approvedBy: result.data.bookingData.approvedBy,
+                                rejectedBy: result.data.bookingData.rejectedBy,
+                                cancelledBy: result.data.bookingData.cancelledBy
+                            };
+                            // ส่งข้อมูลการจองไปยังแชทโดยไม่มีการหน่วงเวลา
+                            await sendBookingToChat(bookingData).catch(e => console.warn('Send booking to chat warning:', e));
                         }
                     }
                     
                     closeBookingCreateModal();
                     
+                    // ========== OPTIMIZED PARALLEL LOADING ==========
+                    // โหลดข้อมูลทั้งหมดพร้อมกันเพื่อเพิ่มความเร็ว
                     await Promise.all([
                         loadRooms(), 
                         loadMyBookings(), 
@@ -5422,9 +5432,11 @@
         };
 
         // ========== EVENT LISTENERS ==========
+        // ========== OPTIMIZED SEARCH WITH DEBOUNCE ==========
         let searchTimer;
         $.searchInput.addEventListener('input', () => {
             clearTimeout(searchTimer);
+            // ใช้ debounce เพื่อลดการเรนเดอร์ที่ไม่จำเป็น
             searchTimer = setTimeout(() => {
                 renderRooms();
             }, 300);
