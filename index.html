@@ -1624,7 +1624,7 @@
                             <option value="">เลือกห้องประชุม</option>
                         </select>
                         <input type="text" id="booking-title" placeholder="หัวข้อการประชุม" class="input-field" required maxlength="100">
-                        <textarea id="booking-description" placeholder="รายละเอียด (เช่น วัตถุประสงค์, จำนวนผู้เข้าร่วม)" class="input-field" rows="3" maxlength="500"></textarea>
+                        <textarea id="booking-description" placeholder="รายละเอียด (เช่น ตั้งซูม,ประชุมเฉยๆ,หรือต้องการให้ตั้งคอมพิวเตอร์)" class="input-field" rows="3" maxlength="500" required></textarea>
                         
                         <input type="text" id="booking-meeting-link" placeholder="ลิงค์ประชุม (Zoom, Teams, etc.)" class="input-field">
                         
@@ -1673,7 +1673,7 @@
                         <div class="grid grid-cols-2 gap-2">
                             <div>
                                 <label class="text-xs text-gray-400 mb-1 block">จำนวนผู้เข้าร่วม</label>
-                                <input type="number" id="booking-attendees" class="input-field" placeholder="จำนวน" min="1" value="4" required
+                                <input type="number" id="booking-attendees" class="input-field" placeholder="จำนวน" min="1" value="" required
                                        oninput="validateBookingForm(); checkAvailability();">
                             </div>
                         </div>
