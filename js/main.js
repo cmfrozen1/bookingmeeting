@@ -1,0 +1,3698 @@
+/**
+ * js/main.js
+ * Application logic for Meeting Room booking app.
+ */
+
+// ========== CONFIG ==========
+const CONFIG = {
+    GAS_URL: 'https://script.google.com/macros/s/AKfycbwEkTSINEvnyBdapUWbJ8djVpdLt6rN7NlaXn5cKMow7RJtY3gI19-RSMyFHsWBxII-vA/exec',
+    LIFF_ID: '2009198981-GsqxkwIK',
+    PAGE_SIZE: 20,
+    CACHE_TTL: 5 * 60 * 1000, // 5 นาที
+    MAX_RETRY: 3
+};
+
+// ========== STATE ==========
+const state = {
+    user: JSON.parse(localStorage.getItem('user_cache')) || null,
+    rooms: JSON.parse(localStorage.getItem('rooms_cache')) || [],
+    bookings: [],
+    myBookings: [],
+    pendingBookings: [],
+    users: [],
+    currentDate: new Date(),
+    currentMonth: new Date(),
+    selectedDate: new Date(),
+    dateBookings: {},
+    currentRoom: null,
+    currentBooking: null,
+    currentUserToDelete: null,
+    role: (JSON.parse(localStorage.getItem('user_cache')) || {}).role || 'user',
+    isAdmin: false,
+    isManager: false,
+    settings: JSON.parse(localStorage.getItem('settings_cache')) || { 
+        appName: 'Meeting Room',
+        requireApproval: 'true',
+        reminderMinutes: 'none'
+    },
+    userSettings: JSON.parse(localStorage.getItem('user_settings_cache')) || { 
+        notificationsEnabled: true
+    },
+    initialized: false,
+    emailFetchAttempted: false,
+    userNamesCache: {},
+    loading: {
+        rooms: false,
+        bookings: false,
+        users: false
+    },
+    cacheTimestamps: {
+        rooms: localStorage.getItem('rooms_cache_timestamp'),
+        settings: localStorage.getItem('settings_cache_timestamp')
+    }
+};
+
+function updateRoleFlags() {
+    state.isAdmin = state.role === 'admin';
+    state.isManager = state.isAdmin || state.role === 'manager';
+    console.log('Role updated:', { role: state.role, isAdmin: state.isAdmin, isManager: state.isManager });
+}
+
+if (state.user) {
+    state.role = state.user.role || 'user';
+    updateRoleFlags();
+}
+
+// ========== DOM Cache ==========
+const $ = {
+    initLoading: document.getElementById('initial-loading'),
+    pageTitle: document.getElementById('page-title'),
+    navbarAppName: document.getElementById('navbar-app-name'),
+    homeTab: document.getElementById('tab-home'),
+    myTab: document.getElementById('tab-my'),
+    adminTab: document.getElementById('tab-admin'),
+    roomsList: document.getElementById('rooms-list'),
+    myBookingsList: document.getElementById('my-bookings-list'),
+    pendingBookingsList: document.getElementById('pending-bookings-list'),
+    allBookingsList: document.getElementById('all-bookings-list'),
+    roomsManagementList: document.getElementById('rooms-management-list'),
+    usersList: document.getElementById('users-list'),
+    profileName: document.getElementById('profile-name'),
+    profileEmail: document.getElementById('profile-email'),
+    profileAvatar: document.getElementById('profile-avatar'),
+    profileRole: document.getElementById('profile-role'),
+    statRooms: document.getElementById('stat-rooms'),
+    statToday: document.getElementById('stat-today'),
+    statPending: document.getElementById('stat-pending'),
+    searchInput: document.getElementById('search-input'),
+    navItems: document.querySelectorAll('.nav-item'),
+    modal: document.getElementById('room-modal'),
+    modalBody: document.getElementById('modal-body'),
+    modalTitle: document.getElementById('modal-title'),
+    modalBookBtn: document.getElementById('modal-book-btn'),
+    modalEditBtn: document.getElementById('modal-edit-btn'),
+    modalDeleteBtn: document.getElementById('modal-delete-btn'),
+    modalAdminControls: document.getElementById('modal-admin-controls'),
+    floatingBtn: document.getElementById('floating-book-btn'),
+    quickBookBtn: document.getElementById('quick-book-btn'),
+    managerAdmin: document.querySelectorAll('.manager-admin'),
+    adminOnlyUsers: document.querySelectorAll('.admin-only-users'),
+    adminOnlySettings: document.querySelectorAll('.admin-only-settings'),
+    refreshAdmin: document.getElementById('refresh-admin'),
+    adminUsers: document.getElementById('admin-users'),
+    adminRooms: document.getElementById('admin-rooms'),
+    adminBookings: document.getElementById('admin-bookings'),
+    adminPending: document.getElementById('admin-pending'),
+    pendingBadge: document.getElementById('pending-badge'),
+    userSearch: document.getElementById('user-search'),
+    adminBookingSearch: document.getElementById('admin-booking-search'),
+    settingsSaveBtn: document.getElementById('settings-save-btn'),
+    settingRequireApproval: document.getElementById('setting-require-approval'),
+    settingReminderMinutes: document.getElementById('setting-reminder-minutes'),
+    profileNotificationsEnabled: document.getElementById('profile-notifications-enabled'),
+    calendarDays: document.getElementById('calendar-days'),
+    currentMonth: document.getElementById('current-month'),
+    selectedDateBookings: document.getElementById('selected-date-bookings'),
+    selectedDateTitle: document.getElementById('selected-date-title'),
+    selectedDateBookingsList: document.getElementById('selected-date-bookings-list'),
+    bookingDate: document.getElementById('booking-date'),
+    bookingEndDate: document.getElementById('booking-end-date'),
+    bookingStart: document.getElementById('booking-start'),
+    bookingEnd: document.getElementById('booking-end'),
+    bookingAttendees: document.getElementById('booking-attendees'),
+    saveBookingBtn: document.getElementById('save-booking-btn'),
+    availabilityStatus: document.getElementById('availability-status'),
+    userRoleBadge: document.getElementById('user-role-badge'),
+    datetimePresets: document.querySelectorAll('.datetime-preset')
+};
+
+// ========== UTILS ==========
+function showToast(msg, type = 'success') {
+    const toast = document.createElement('div');
+    toast.style.cssText = `
+        position: fixed;
+        bottom: 80px;
+        left: 16px;
+        right: 16px;
+        background: #1a1d24;
+        border-left: 4px solid \${type === 'success' ? '#06c755' : type === 'warning' ? '#f59e0b' : '#ef4444'};
+        border-radius: 12px;
+        padding: 12px 16px;
+        color: white;
+        z-index: 2000;
+        max-width: 400px;
+        margin: 0 auto;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+        animation: slideUp 0.3s ease;
+    `;
+    toast.textContent = msg;
+    document.body.appendChild(toast);
+    setTimeout(() => {
+        toast.style.animation = 'slideDown 0.3s ease';
+        setTimeout(() => toast.remove(), 300);
+    }, 3000);
+}
+
+function setButtonLoading(button, isLoading) {
+    if (!button) return;
+    if (isLoading) {
+        button.disabled = true;
+        button.classList.add('loading');
+    } else {
+        button.disabled = false;
+        button.classList.remove('loading');
+    }
+}
+
+function formatDateThai(dateStr) {
+    if (!dateStr) return '';
+    const date = new Date(dateStr);
+    return date.toLocaleDateString('th-TH', { 
+        day: 'numeric', 
+        month: 'long', 
+        year: 'numeric',
+        weekday: 'long'
+    });
+}
+
+function formatDateShort(dateStr) {
+    if (!dateStr) return '';
+    const date = new Date(dateStr);
+    return date.toLocaleDateString('th-TH', { 
+        day: 'numeric', 
+        month: 'short', 
+        year: 'numeric'
+    });
+}
+
+function formatTime(dateStr) {
+    if (!dateStr) return '';
+    return new Date(dateStr).toLocaleTimeString('th-TH', { 
+        hour: '2-digit', 
+        minute: '2-digit'
+    });
+}
+
+function formatDateTime(dateStr) {
+    if (!dateStr) return '';
+    return new Date(dateStr).toLocaleString('th-TH', {
+        day: 'numeric',
+        month: 'short',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+    });
+}
+
+function formatDateForInput(date) {
+    const d = new Date(date);
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `\${year}-\${month}-\${day}`;
+}
+
+function formatTimeForInput(date) {
+    const d = new Date(date);
+    const hours = String(d.getHours()).padStart(2, '0');
+    const minutes = String(d.getMinutes()).padStart(2, '0');
+    return `\${hours}:\${minutes}`;
+}
+
+function formatMonthThai(date) {
+    return date.toLocaleDateString('th-TH', { 
+        month: 'long', 
+        year: 'numeric' 
+    });
+}
+
+function updateAppName(name) {
+    if (!name) name = 'Meeting Room';
+    $.pageTitle.textContent = name + ' · LINE';
+    $.navbarAppName.textContent = name;
+}
+
+// ========== CACHE MANAGEMENT ==========
+function isCacheValid(cacheKey, maxAge = CONFIG.CACHE_TTL) {
+    const timestamp = localStorage.getItem(`\${cacheKey}_timestamp`);
+    if (!timestamp) return false;
+    
+    const age = Date.now() - parseInt(timestamp);
+    return age < maxAge;
+}
+
+function updateCacheTimestamp(cacheKey) {
+    localStorage.setItem(`\${cacheKey}_timestamp`, Date.now().toString());
+}
+
+// ========== NOTIFICATION CHECK ==========
+function areNotificationsEnabled() {
+    return state.userSettings.notificationsEnabled !== false;
+}
+
+// ========== JWT PARSER ==========
+function parseJwt(token) {
+    try {
+        const base64Url = token.split('.')[1];
+        const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+        const jsonPayload = decodeURIComponent(atob(base64).split('').map(function(c) {
+            return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+        }).join(''));
+        return JSON.parse(jsonPayload);
+    } catch(e) {
+        console.error('Error parsing JWT:', e);
+        return {};
+    }
+}
+
+// ========== USER NAME CACHE FUNCTIONS ==========
+async function getUserNameFromCache(userId) {
+    if (!userId) return '';
+    
+    if (state.userNamesCache[userId]) {
+        return state.userNamesCache[userId];
+    }
+    
+    if (state.user && state.user.lineUserId === userId) {
+        state.userNamesCache[userId] = state.user.displayName || 'Unknown User';
+        return state.userNamesCache[userId];
+    }
+    
+    if (state.users && state.users.length > 0) {
+        const foundUser = state.users.find(u => u.lineUserId === userId);
+        if (foundUser) {
+            state.userNamesCache[userId] = foundUser.displayName || 'Unknown User';
+            return state.userNamesCache[userId];
+        }
+    }
+    
+    if (state.bookings && state.bookings.length > 0) {
+        const foundBooking = state.bookings.find(b => b.userId === userId);
+        if (foundBooking && foundBooking.userName) {
+            state.userNamesCache[userId] = foundBooking.userName;
+            return state.userNamesCache[userId];
+        }
+    }
+    
+    if (state.myBookings && state.myBookings.length > 0) {
+        const foundBooking = state.myBookings.find(b => b.userId === userId);
+        if (foundBooking && foundBooking.userName) {
+            state.userNamesCache[userId] = foundBooking.userName;
+            return state.userNamesCache[userId];
+        }
+    }
+    
+    try {
+        const result = await callGAS('user/get-name', { userId });
+        if (result.success && result.data.name) {
+            state.userNamesCache[userId] = result.data.name;
+            return result.data.name;
+        }
+    } catch (error) {
+        console.error('Error fetching user name:', error);
+    }
+    
+    return userId.substring(0, 8) + '...';
+}
+
+// ========== EMAIL FETCH FUNCTIONS ==========
+async function fetchEmailWithAccessToken() {
+    try {
+        const accessToken = liff.getAccessToken();
+        if (!accessToken) {
+            console.log('No access token available');
+            return null;
+        }
+
+        const response = await fetch('https://api.line.me/oauth2/v2.1/userinfo', {
+            headers: {
+                'Authorization': `Bearer \${accessToken}`
+            }
+        });
+
+        if (response.ok) {
+            const userInfo = await response.json();
+            console.log('User info from LINE API:', userInfo);
+            
+            if (userInfo.email) {
+                const updateResult = await callGAS('user/update-email', {
+                    lineUserId: state.user.lineUserId,
+                    email: userInfo.email
+                });
+
+                if (updateResult.success) {
+                    console.log('Email updated successfully in database:', userInfo.email);
+                    return userInfo.email;
+                }
+            }
+        }
+        return null;
+    } catch (error) {
+        console.error('Error fetching email with token:', error);
+        return null;
+    }
+}
+
+async function fetchEmailFromIdToken() {
+    try {
+        const idToken = liff.getIDToken();
+        if (!idToken) return null;
+
+        const tokenPayload = parseJwt(idToken);
+        if (tokenPayload.email) {
+            const updateResult = await callGAS('user/update-email', {
+                lineUserId: state.user.lineUserId,
+                email: tokenPayload.email
+            });
+
+            if (updateResult.success) {
+                console.log('Email updated successfully from ID token:', tokenPayload.email);
+                return tokenPayload.email;
+            }
+        }
+        return null;
+    } catch (error) {
+        console.error('Error fetching email from ID token:', error);
+        return null;
+    }
+}
+
+async function tryFetchEmail() {
+    if (!state.user) return null;
+    if (state.user.email && state.user.email !== '') return state.user.email;
+
+    console.log('Attempting to fetch email...');
+
+    let email = await fetchEmailFromIdToken();
+    if (email) {
+        state.user.email = email;
+        localStorage.setItem('user_cache', JSON.stringify(state.user));
+        updateUserUI(state.user);
+        showToast('ดึงอีเมลจาก LINE สำเร็จ');
+        return email;
+    }
+
+    email = await fetchEmailWithAccessToken();
+    if (email) {
+        state.user.email = email;
+        localStorage.setItem('user_cache', JSON.stringify(state.user));
+        updateUserUI(state.user);
+        showToast('ดึงอีเมลจาก LINE สำเร็จ');
+        return email;
+    }
+
+    console.log('Could not fetch email');
+    return null;
+}
+
+// ========== TIME SELECT DROPDOWN HELPERS ==========
+function populateTimeSelects() {
+    const startSelect = document.getElementById('booking-start');
+    const endSelect = document.getElementById('booking-end');
+    if (!startSelect || !endSelect) return;
+    
+    startSelect.innerHTML = '';
+    endSelect.innerHTML = '';
+    
+    const startHour = 8;
+    const endHour = 20;
+    const stepMinutes = 15;
+    
+    for (let hour = startHour; hour <= endHour; hour++) {
+        for (let minute = 0; minute < 60; minute += stepMinutes) {
+            if (hour === endHour && minute > 0) continue;
+            const time = `\${hour.toString().padStart(2, '0')}:\${minute.toString().padStart(2, '0')}`;
+            const option = new Option(time, time);
+            startSelect.add(option.cloneNode(true));
+            endSelect.add(option.cloneNode(true));
+        }
+    }
+}
+
+function setDefaultTimeSelects() {
+    const now = new Date();
+    const startSelect = document.getElementById('booking-start');
+    const endSelect = document.getElementById('booking-end');
+    if (!startSelect || !endSelect) return;
+    
+    const minutes = now.getMinutes();
+    const roundedMinutes = Math.ceil(minutes / 15) * 15;
+    now.setMinutes(roundedMinutes, 0, 0);
+    
+    const startTime = formatTimeForInput(now);
+    const endDateTime = new Date(now.getTime() + 60 * 60 * 1000);
+    const endTime = formatTimeForInput(endDateTime);
+    
+    if ([...startSelect.options].some(opt => opt.value === startTime)) {
+        startSelect.value = startTime;
+    } else {
+        startSelect.value = '08:00';
+    }
+    
+    if ([...endSelect.options].some(opt => opt.value === endTime)) {
+        endSelect.value = endTime;
+    } else {
+        endSelect.value = '09:00';
+    }
+}
+
+// ========== QUICK DATETIME FUNCTIONS ==========
+window.setQuickDateTime = function(type) {
+    const now = new Date();
+    let startDate = new Date(now);
+    let endDate = new Date(now);
+    
+    $.datetimePresets.forEach(btn => {
+        btn.classList.remove('active');
+        if (btn.getAttribute('onclick')?.includes(type)) {
+            btn.classList.add('active');
+        }
+    });
+    
+    switch(type) {
+        case 'now':
+            startDate = new Date(now);
+            startDate.setMinutes(Math.ceil(now.getMinutes() / 15) * 15);
+            endDate = new Date(startDate);
+            endDate.setHours(startDate.getHours() + 1);
+            break;
+            
+        case '1hour':
+            startDate = new Date(now);
+            startDate.setHours(now.getHours() + 1);
+            startDate.setMinutes(0);
+            endDate = new Date(startDate);
+            endDate.setHours(startDate.getHours() + 1);
+            break;
+            
+        case '2hour':
+            startDate = new Date(now);
+            startDate.setHours(now.getHours() + 2);
+            startDate.setMinutes(0);
+            endDate = new Date(startDate);
+            endDate.setHours(startDate.getHours() + 1);
+            break;
+            
+        case 'today':
+            startDate = new Date(now);
+            startDate.setHours(14, 0, 0, 0);
+            endDate = new Date(startDate);
+            endDate.setHours(15, 0, 0, 0);
+            break;
+            
+        case 'tomorrow':
+            startDate = new Date(now);
+            startDate.setDate(now.getDate() + 1);
+            startDate.setHours(9, 0, 0, 0);
+            endDate = new Date(startDate);
+            endDate.setHours(10, 0, 0, 0);
+            break;
+    }
+    
+    if ($.bookingDate) {
+        $.bookingDate.value = formatDateForInput(startDate);
+    }
+    
+    if ($.bookingEndDate) {
+        $.bookingEndDate.value = formatDateForInput(endDate);
+    }
+    
+    const startTime = formatTimeForInput(startDate);
+    const endTime = formatTimeForInput(endDate);
+    
+    const startSelect = document.getElementById('booking-start');
+    const endSelect = document.getElementById('booking-end');
+    
+    if (startSelect && [...startSelect.options].some(opt => opt.value === startTime)) {
+        startSelect.value = startTime;
+    }
+    if (endSelect && [...endSelect.options].some(opt => opt.value === endTime)) {
+        endSelect.value = endTime;
+    }
+    
+    validateBookingForm();
+    checkAvailability();
+};
+
+window.adjustTime = function(target, minutes) {
+    const select = target === 'start' ? document.getElementById('booking-start') : document.getElementById('booking-end');
+    if (!select || !select.value) return;
+    
+    const [hours, mins] = select.value.split(':').map(Number);
+    const date = new Date();
+    date.setHours(hours, mins + minutes);
+    
+    const newHours = date.getHours();
+    const newMins = date.getMinutes();
+    
+    if (newHours < 8 || newHours > 20 || (newHours === 20 && newMins > 0)) {
+        showToast('เวลาต้องอยู่ในช่วง 08:00 - 20:00 น.', 'warning');
+        return;
+    }
+    
+    const roundedMins = Math.ceil(newMins / 15) * 15;
+    date.setMinutes(roundedMins);
+    if (date.getMinutes() >= 60) {
+        date.setHours(date.getHours() + 1, 0);
+    }
+    
+    const newTime = formatTimeForInput(date);
+    
+    if ([...select.options].some(opt => opt.value === newTime)) {
+        select.value = newTime;
+    } else {
+        showToast('เวลาไม่อยู่ในตัวเลือก', 'warning');
+        return;
+    }
+    
+    validateBookingForm();
+    checkAvailability();
+};
+
+// ========== VALIDATE BOOKING FORM ==========
+function validateBookingForm() {
+    const roomId = document.getElementById('booking-room')?.value;
+    const title = document.getElementById('booking-title')?.value;
+    const date = $.bookingDate?.value;
+    const endDate = $.bookingEndDate?.value;
+    const start = $.bookingStart?.value;
+    const end = $.bookingEnd?.value;
+    const attendees = parseInt($.bookingAttendees?.value) || 0;
+
+    if (!attendees || attendees < 1) {
+        if ($.availabilityStatus) {
+            $.availabilityStatus.innerHTML = '<span class="text-red-500">⚠️ จำนวนผู้เข้าร่วมต้องมีอย่างน้อย 1 คน</span>';
+            $.availabilityStatus.classList.remove('hidden');
+        }
+        $.saveBookingBtn.disabled = true;
+        return false;
+    }
+
+    if (!roomId || !title || !date || !endDate || !start || !end) {
+        $.saveBookingBtn.disabled = true;
+        return false;
+    }
+
+    if (date && endDate && date > endDate) {
+        if ($.availabilityStatus) {
+            $.availabilityStatus.innerHTML = '<span class="text-red-500">⚠️ วันที่สิ้นสุดต้องไม่ก่อนวันที่เริ่ม</span>';
+            $.availabilityStatus.classList.remove('hidden');
+        }
+        $.saveBookingBtn.disabled = true;
+        return false;
+    }
+
+    $.saveBookingBtn.disabled = false;
+    return true;
+}
+
+// ========== API CALL WITH RETRY ==========
+async function callGAS(path, data = {}, retryCount = 0) {
+    try {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 15000);
+
+        const formData = new FormData();
+        formData.append('path', path);
+        if (state.user?.lineUserId) formData.append('lineUserId', state.user.lineUserId);
+        
+        Object.keys(data).forEach(key => {
+            if (data[key] !== undefined && data[key] !== null) {
+                formData.append(key, data[key]);
+            }
+        });
+
+        const res = await fetch(CONFIG.GAS_URL, { 
+            method: 'POST', 
+            body: formData,
+            signal: controller.signal
+        });
+        
+        clearTimeout(timeoutId);
+        
+        const text = await res.text();
+        return JSON.parse(text);
+    } catch (error) {
+        console.error('API Error:', error);
+        
+        if (retryCount < CONFIG.MAX_RETRY) {
+            console.log(`Retrying... (\${retryCount + 1}/\${CONFIG.MAX_RETRY})`);
+            await new Promise(resolve => setTimeout(resolve, 1000 * (retryCount + 1)));
+            return callGAS(path, data, retryCount + 1);
+        }
+        
+        return { success: false, message: 'connection error' };
+    }
+}
+
+// ========== FLEX MESSAGE ==========
+async function createBookingFlexMessage(bookingData) {
+    const { 
+        title, 
+        roomName, 
+        userName, 
+        startTime, 
+        endTime, 
+        status, 
+        reason, 
+        attendees, 
+        description, 
+        meetingLink,
+        action,
+        approvedBy,      
+        approvedAt,       
+        rejectedBy,       
+        cancelledBy,       
+        createdAt,         
+        bookingId         
+    } = bookingData;
+    
+    let statusColor = '#06c755';
+    let statusEmoji = '✅';
+    let statusText = 'อนุมัติแล้ว';
+    let statusThai = '✅ อนุมัติแล้ว';
+    
+    if (status === 'confirmed' || action === 'approved') {
+        statusColor = '#06c755';
+        statusEmoji = '✅';
+        statusText = 'อนุมัติแล้ว';
+        statusThai = '✅ อนุมัติแล้ว';
+    } else if (status === 'pending') {
+        statusColor = '#f59e0b';
+        statusEmoji = '⏳';
+        statusText = 'รออนุมัติ';
+        statusThai = '⏳ รออนุมัติ';
+    } else if (status === 'cancelled' || action === 'cancelled') {
+        statusColor = '#ef4444';
+        statusEmoji = '❌';
+        statusText = 'ยกเลิก';
+        statusThai = '❌ ยกเลิกการจอง';
+    } else if (status === 'rejected' || action === 'rejected') {
+        statusColor = '#ef4444';
+        statusEmoji = '❌';
+        statusText = 'ปฏิเสธ';
+        statusThai = '❌ ปฏิเสธการจอง';
+    } else if (action === 'auto_cancelled' || status === 'auto_cancelled') {
+        statusColor = '#f59e0b';
+        statusEmoji = '🤖';
+        statusText = 'ระบบยกเลิกอัตโนมัติ';
+        statusThai = '🤖 ระบบยกเลิกอัตโนมัติ';
+    } else if (action === 'admin_cancelled') {
+        statusColor = '#ef4444';
+        statusEmoji = '🔴';
+        statusText = 'ผู้ดูแลยกเลิก';
+        statusThai = '🔴 ผู้ดูแลระบบยกเลิกการจอง';
+    }
+    
+    if (action === 'created') {
+        statusEmoji = '📅';
+        statusText = 'จองใหม่';
+        statusThai = '📅 จองห้องประชุมใหม่';
+    } else if (action === 'cancelled') {
+        statusEmoji = '❌';
+        statusText = 'ยกเลิก';
+        statusThai = '❌ ยกเลิกการจอง';
+    } else if (action === 'rejected') {
+        statusEmoji = '❌';
+        statusText = 'ปฏิเสธ';
+        statusThai = '❌ ปฏิเสธการจอง';
+    } else if (action === 'deleted') {
+        statusColor = '#ef4444';
+        statusEmoji = '🗑️';
+        statusText = 'ลบ';
+        statusThai = '🗑️ ลบการจอง';
+    } else if (action === 'approved') {
+        statusColor = '#06c755';
+        statusEmoji = '✅';
+        statusText = 'อนุมัติ';
+        statusThai = '✅ อนุมัติการจอง';
+    } else if (action === 'role_updated') {
+        statusColor = '#3b82f6';
+        statusEmoji = '🔑';
+        statusText = 'อัปเดตสิทธิ์';
+        statusThai = '🔑 อัปเดตสิทธิ์ผู้ใช้';
+    } else if (action === 'settings_updated') {
+        statusColor = '#f59e0b';
+        statusEmoji = '⚙️';
+        statusText = 'อัปเดตการตั้งค่า';
+        statusThai = '⚙️ อัปเดตการตั้งค่าระบบ';
+    } else if (action === 'user_deleted') {
+        statusColor = '#ef4444';
+        statusEmoji = '🗑️';
+        statusText = 'ลบผู้ใช้';
+        statusThai = '🗑️ ลบผู้ใช้ออกจากระบบ';
+    } else if (action === 'admin_cancelled') {
+        statusColor = '#ef4444';
+        statusEmoji = '🔴';
+        statusText = 'ผู้ดูแลยกเลิก';
+        statusThai = '🔴 ผู้ดูแลระบบยกเลิกการจอง';
+    }
+    
+    let approvedByName = approvedBy;
+    let rejectedByName = rejectedBy;
+    let cancelledByName = cancelledBy;
+    
+    if (approvedBy && approvedBy.length > 20 && !approvedBy.includes(' ')) {
+        approvedByName = await getUserNameFromCache(approvedBy);
+    }
+    
+    if (rejectedBy && rejectedBy.length > 20 && !rejectedBy.includes(' ')) {
+        rejectedByName = await getUserNameFromCache(rejectedBy);
+    }
+    
+    if (cancelledBy && cancelledBy.length > 20 && !cancelledBy.includes(' ')) {
+        cancelledByName = await getUserNameFromCache(cancelledBy);
+    }
+    
+    // สร้าง URL ลิงค์สำหรับดูรายละเอียดการจองบนปฏิทิน (ใช้ liff URL พร้อม query parameter)
+    const bookingDetailUrl = `https://liff.line.me/\${CONFIG.LIFF_ID}?bookingId=\${bookingId}&view=calendar`;
+    
+    const flexMessage = {
+        type: 'flex',
+        altText: `\${statusEmoji} \${statusText} - \${title || 'การจองห้องประชุม'}`,
+        contents: {
+            type: 'bubble',
+            header: {
+                type: 'box',
+                layout: 'vertical',
+                backgroundColor: statusColor,
+                paddingAll: '12px',
+                contents: [
+                    {
+                        type: 'text',
+                        text: `\${statusEmoji} \${statusThai}`,
+                        size: 'lg',
+                        weight: 'bold',
+                        color: '#ffffff',
+                        align: 'center'
+                    }
+                ]
+            },
+            body: {
+                type: 'box',
+                layout: 'vertical',
+                spacing: 'md',
+                paddingAll: '16px',
+                contents: [
+                    {
+                        type: 'text',
+                        text: title || 'ไม่ระบุหัวข้อการประชุม',
+                        size: 'xl',
+                        weight: 'bold',
+                        wrap: true,
+                        color: '#000000'
+                    },
+                    {
+                        type: 'separator',
+                        margin: 'md'
+                    },
+                    {
+                        type: 'box',
+                        layout: 'vertical',
+                        spacing: 'sm',
+                        margin: 'md',
+                        contents: [
+                            {
+                                type: 'box',
+                                layout: 'baseline',
+                                spacing: 'sm',
+                                contents: [
+                                    {
+                                        type: 'text',
+                                        text: '🏢',
+                                        size: 'md',
+                                        flex: 0
+                                    },
+                                    {
+                                        type: 'text',
+                                        text: 'ห้องประชุม:',
+                                        size: 'sm',
+                                        color: '#8c8c8c',
+                                        flex: 2
+                                    },
+                                    {
+                                        type: 'text',
+                                        text: roomName || 'ไม่ระบุห้อง',
+                                        size: 'sm',
+                                        color: '#06c755',
+                                        weight: 'bold',
+                                        flex: 4,
+                                        wrap: true
+                                    }
+                                ]
+                            },
+                            {
+                                type: 'box',
+                                layout: 'baseline',
+                                spacing: 'sm',
+                                contents: [
+                                    {
+                                        type: 'text',
+                                        text: '👤',
+                                        size: 'md',
+                                        flex: 0
+                                    },
+                                    {
+                                        type: 'text',
+                                        text: 'ผู้จอง:',
+                                        size: 'sm',
+                                        color: '#8c8c8c',
+                                        flex: 2
+                                    },
+                                    {
+                                        type: 'text',
+                                        text: userName || 'ไม่ระบุชื่อ',
+                                        size: 'sm',
+                                        weight: 'bold',
+                                        flex: 4,
+                                        wrap: true
+                                    }
+                                ]
+                            },
+                            {
+                                type: 'box',
+                                layout: 'baseline',
+                                spacing: 'sm',
+                                contents: [
+                                    {
+                                        type: 'text',
+                                        text: '📅',
+                                        size: 'md',
+                                        flex: 0
+                                    },
+                                    {
+                                        type: 'text',
+                                        text: 'วันที่:',
+                                        size: 'sm',
+                                        color: '#8c8c8c',
+                                        flex: 2
+                                    },
+                                    {
+                                        type: 'text',
+                                        text: formatDateShort(startTime) || 'ไม่ระบุวันที่',
+                                        size: 'sm',
+                                        flex: 4
+                                    }
+                                ]
+                            },
+                            {
+                                type: 'box',
+                                layout: 'baseline',
+                                spacing: 'sm',
+                                contents: [
+                                    {
+                                        type: 'text',
+                                        text: '⏰',
+                                        size: 'md',
+                                        flex: 0
+                                    },
+                                    {
+                                        type: 'text',
+                                        text: 'เวลา:',
+                                        size: 'sm',
+                                        color: '#8c8c8c',
+                                        flex: 2
+                                    },
+                                    {
+                                        type: 'text',
+                                        text: (formatTime(startTime) || 'ไม่ระบุ') + ' - ' + (formatTime(endTime) || 'ไม่ระบุ'),
+                                        size: 'sm',
+                                        flex: 4
+                                    }
+                                ]
+                            },
+                            {
+                                type: 'box',
+                                layout: 'baseline',
+                                spacing: 'sm',
+                                contents: [
+                                    {
+                                        type: 'text',
+                                        text: '👥',
+                                        size: 'md',
+                                        flex: 0
+                                    },
+                                    {
+                                        type: 'text',
+                                        text: 'ผู้เข้าร่วม:',
+                                        size: 'sm',
+                                        color: '#8c8c8c',
+                                        flex: 2
+                                    },
+                                    {
+                                        type: 'text',
+                                        text: (attendees || 0) + ' คน',
+                                        size: 'sm',
+                                        flex: 4
+                                    }
+                                ]
+                            },
+                            {
+                                type: 'box',
+                                layout: 'baseline',
+                                spacing: 'sm',
+                                contents: [
+                                    {
+                                        type: 'text',
+                                        text: '🆔',
+                                        size: 'md',
+                                        flex: 0
+                                    },
+                                    {
+                                        type: 'text',
+                                        text: 'รหัสการจอง:',
+                                        size: 'sm',
+                                        color: '#8c8c8c',
+                                        flex: 2
+                                    },
+                                    {
+                                        type: 'text',
+                                        text: bookingId?.substring(0, 8) + '...' || 'ไม่ระบุ',
+                                        size: 'sm',
+                                        flex: 4
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    footer: {
+                        type: 'box',
+                        layout: 'vertical',
+                        spacing: 'sm',
+                        paddingAll: '16px',
+                        contents: []
+                    }
+                }
+            };
+    
+    if (approvedByName) {
+        flexMessage.contents.body.contents.push({
+            type: 'box',
+            layout: 'vertical',
+            spacing: 'sm',
+            margin: 'md',
+            backgroundColor: '#e8f5e9',
+            paddingAll: '12px',
+            cornerRadius: '8px',
+            contents: [
+                {
+                    type: 'text',
+                    text: '✅ อนุมัติโดย:',
+                    size: 'sm',
+                    weight: 'bold',
+                    color: '#2e7d32'
+                },
+                {
+                    type: 'text',
+                    text: approvedByName,
+                    size: 'sm',
+                    color: '#1b5e20',
+                    weight: 'bold',
+                    wrap: true
+                },
+                {
+                    type: 'text',
+                    text: approvedAt ? formatDateTime(approvedAt) : '',
+                    size: 'xs',
+                    color: '#4caf50',
+                    margin: 'xs'
+                }
+            ]
+        });
+    }
+    
+    if (rejectedByName) {
+        flexMessage.contents.body.contents.push({
+            type: 'box',
+            layout: 'vertical',
+            spacing: 'sm',
+            margin: 'md',
+            backgroundColor: '#ffebee',
+            paddingAll: '12px',
+            cornerRadius: '8px',
+            contents: [
+                {
+                    type: 'text',
+                    text: '❌ ปฏิเสธโดย:',
+                    size: 'sm',
+                    weight: 'bold',
+                    color: '#c62828'
+                },
+                {
+                    type: 'text',
+                    text: rejectedByName,
+                    size: 'sm',
+                    color: '#b71c1c',
+                    weight: 'bold',
+                    wrap: true
+                }
+            ]
+        });
+    }
+    
+    if (cancelledByName) {
+        flexMessage.contents.body.contents.push({
+            type: 'box',
+            layout: 'vertical',
+            spacing: 'sm',
+            margin: 'md',
+            backgroundColor: '#ffebee',
+            paddingAll: '12px',
+            cornerRadius: '8px',
+            contents: [
+                {
+                    type: 'text',
+                    text: '❌ ยกเลิกโดย:',
+                    size: 'sm',
+                    weight: 'bold',
+                    color: '#c62828'
+                },
+                {
+                    type: 'text',
+                    text: cancelledByName,
+                    size: 'sm',
+                    color: '#b71c1c',
+                    weight: 'bold',
+                    wrap: true
+                }
+            ]
+        });
+    }
+    
+    if (reason) {
+        flexMessage.contents.body.contents.push({
+            type: 'box',
+            layout: 'vertical',
+            spacing: 'sm',
+            margin: 'md',
+            backgroundColor: '#fff3e0',
+            paddingAll: '12px',
+            cornerRadius: '8px',
+            contents: [
+                {
+                    type: 'text',
+                    text: '📝 เหตุผล:',
+                    size: 'sm',
+                    weight: 'bold',
+                    color: '#e65100'
+                },
+                {
+                    type: 'text',
+                    text: reason,
+                    size: 'sm',
+                    color: '#bf360c',
+                    wrap: true
+                }
+            ]
+        });
+    }
+    
+    if (description) {
+        flexMessage.contents.body.contents.push({
+            type: 'box',
+            layout: 'vertical',
+            spacing: 'sm',
+            margin: 'md',
+            backgroundColor: '#f5f5f5',
+            paddingAll: '12px',
+            cornerRadius: '8px',
+            contents: [
+                {
+                    type: 'text',
+                    text: '📄 รายละเอียดเพิ่มเติม:',
+                    size: 'sm',
+                    weight: 'bold'
+                },
+                {
+                    type: 'text',
+                    text: description,
+                    size: 'sm',
+                    color: '#424242',
+                    wrap: true
+                }
+            ]
+        });
+    }
+    
+    if (createdAt) {
+        flexMessage.contents.body.contents.push({
+            type: 'box',
+            layout: 'vertical',
+            spacing: 'sm',
+            margin: 'md',
+            contents: [
+                {
+                    type: 'text',
+                    text: '📌 จองเมื่อ: ' + formatDateTime(createdAt),
+                    size: 'xs',
+                    color: '#9e9e9e',
+                    align: 'center'
+                }
+            ]
+        });
+    }
+    
+    if (meetingLink) {
+        flexMessage.contents.footer.contents.push({
+            type: 'button',
+            action: {
+                type: 'uri',
+                label: '🔗 เข้าร่วมประชุม',
+                uri: meetingLink
+            },
+            style: 'primary',
+            color: '#06c755',
+            margin: 'sm'
+        });
+    }
+    
+    // ปุ่ม "ดูรายละเอียดการจอง" ที่แสดงวันที่และเวลาตามปฏิทิน
+    if (bookingId && liff.isInClient()) {
+        flexMessage.contents.footer.contents.push({
+            type: 'button',
+            action: {
+                type: 'uri',
+                label: '📅 ดูรายละเอียดในปฏิทิน',
+                uri: bookingDetailUrl
+            },
+            style: 'secondary',
+            margin: 'sm'
+        });
+    }
+    
+    return flexMessage;
+}
+
+async function sendBookingToChat(bookingData) {
+    try {
+        if (!areNotificationsEnabled()) {
+            console.log('Notifications are disabled for this user, skipping message send');
+            return false;
+        }
+
+        if (!liff.isInClient()) {
+            console.log('Not in LINE client, cannot send message');
+            return false;
+        }
+        
+        const flexMessage = await createBookingFlexMessage(bookingData);
+        await liff.sendMessages([flexMessage]);
+        console.log('Flex message sent successfully');
+        showToast('ส่งข้อมูลการจองไปยังแชทเรียบร้อย');
+        return true;
+    } catch (error) {
+        console.error('Error sending flex message:', error);
+        return false;
+    }
+}
+
+// ========== IMAGE UPLOAD ==========
+async function uploadImageToDrive(file) {
+    try {
+        const base64 = await new Promise((resolve) => {
+            const reader = new FileReader();
+            reader.onload = () => resolve(reader.result.split(',')[1]);
+            reader.readAsDataURL(file);
+        });
+
+        const result = await callGAS('uploadImage', {
+            fileName: file.name,
+            fileType: file.type,
+            fileData: base64
+        });
+
+        if (result.success) {
+            return result.data.fileUrl;
+        }
+        return null;
+    } catch (error) {
+        console.error('Upload error:', error);
+        return null;
+    }
+}
+
+window.previewRoomImage = function(input) {
+    const preview = document.getElementById('room-image-preview');
+    if (input.files?.[0]) {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            preview.src = e.target.result;
+            preview.style.display = 'block';
+        };
+        reader.readAsDataURL(input.files[0]);
+    }
+};
+
+// ========== CALENDAR FUNCTIONS ==========
+async function loadMonthBookings(year, month) {
+    try {
+        const startDate = new Date(year, month, 1);
+        const endDate = new Date(year, month + 1, 0);
+        
+        const startStr = formatDateForInput(startDate);
+        const endStr = formatDateForInput(endDate);
+        
+        const result = await callGAS('bookings', {
+            startDate: startStr,
+            endDate: endStr,
+            showPast: 'true',
+            includeMultiDay: 'true'
+        });
+        
+        if (result.success) {
+            state.dateBookings = {};
+            
+            result.data.bookings.forEach(booking => {
+                const startDateObj = new Date(booking.startTime);
+                const endDateObj = new Date(booking.endTime);
+                
+                let currentDate = new Date(startDateObj);
+                while (currentDate <= endDateObj) {
+                    const dateStr = formatDateForInput(currentDate);
+                    
+                    if (!state.dateBookings[dateStr]) {
+                        state.dateBookings[dateStr] = [];
+                    }
+                    
+                    const isMultiDay = formatDateForInput(startDateObj) !== formatDateForInput(endDateObj);
+                    
+                    state.dateBookings[dateStr].push({
+                        ...booking,
+                        isPartOfMultiDay: isMultiDay,
+                        originalStartDate: startDateObj,
+                        originalEndDate: endDateObj
+                    });
+                    
+                    currentDate.setDate(currentDate.getDate() + 1);
+                    currentDate.setHours(0, 0, 0, 0);
+                }
+            });
+            
+            renderCalendar();
+        }
+    } catch (error) {
+        console.error('Load month bookings error:', error);
+        renderCalendar();
+    }
+}
+
+function renderCalendar() {
+    const year = state.currentMonth.getFullYear();
+    const month = state.currentMonth.getMonth();
+    
+    $.currentMonth.textContent = formatMonthThai(state.currentMonth);
+    
+    const firstDay = new Date(year, month, 1);
+    const lastDay = new Date(year, month + 1, 0);
+    
+    const startDay = firstDay.getDay();
+    const totalDays = lastDay.getDate();
+    
+    const prevMonthLastDay = new Date(year, month, 0).getDate();
+    
+    let html = '';
+    
+    for (let i = startDay - 1; i >= 0; i--) {
+        const day = prevMonthLastDay - i;
+        const date = new Date(year, month - 1, day);
+        const dateStr = formatDateForInput(date);
+        const bookings = state.dateBookings[dateStr] || [];
+        const hasBooking = bookings.length > 0;
+        const hasMultiDayBooking = bookings.some(b => b.isPartOfMultiDay);
+        const isToday = isSameDay(date, new Date());
+        
+        html += renderCalendarDay(day, true, hasBooking, isToday, dateStr, bookings.length, false, hasMultiDayBooking);
+    }
+    
+    for (let day = 1; day <= totalDays; day++) {
+        const date = new Date(year, month, day);
+        const dateStr = formatDateForInput(date);
+        const bookings = state.dateBookings[dateStr] || [];
+        const hasBooking = bookings.length > 0;
+        const hasMultiDayBooking = bookings.some(b => b.isPartOfMultiDay);
+        const isToday = isSameDay(date, new Date());
+        const isSelected = isSameDay(date, state.selectedDate);
+        
+        html += renderCalendarDay(day, false, hasBooking, isToday, dateStr, bookings.length, isSelected, hasMultiDayBooking);
+    }
+    
+    const totalCells = 42;
+    const remainingCells = totalCells - (startDay + totalDays);
+    for (let day = 1; day <= remainingCells; day++) {
+        const date = new Date(year, month + 1, day);
+        const dateStr = formatDateForInput(date);
+        const bookings = state.dateBookings[dateStr] || [];
+        const hasBooking = bookings.length > 0;
+        const hasMultiDayBooking = bookings.some(b => b.isPartOfMultiDay);
+        
+        html += renderCalendarDay(day, true, hasBooking, false, dateStr, bookings.length, false, hasMultiDayBooking);
+    }
+    
+    $.calendarDays.innerHTML = html;
+}
+
+function renderCalendarDay(day, isOtherMonth, hasBooking, isToday, dateStr, bookingCount = 0, isSelected = false, hasMultiDayBooking = false) {
+    let classes = 'calendar-day';
+    if (isOtherMonth) classes += ' other-month';
+    if (isToday) classes += ' today';
+    if (isSelected) classes += ' selected';
+    if (hasBooking) {
+        classes += ' has-booking';
+        if (bookingCount > 1 || hasMultiDayBooking) {
+            classes += ' multiple';
+        }
+    }
+    
+    return `
+        <div class="\${classes}" onclick="selectDate('\${dateStr}')">
+            \${day}
+            \${hasMultiDayBooking ? '<span class="multi-day-badge">📅</span>' : ''}
+        </div>
+    `;
+}
+
+function isSameDay(date1, date2) {
+    return date1.getFullYear() === date2.getFullYear() &&
+           date1.getMonth() === date2.getMonth() &&
+           date1.getDate() === date2.getDate();
+}
+
+// ========== ENHANCED URL BOOKING POPUP ==========
+function checkUrlForBookingId() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const bookingId = urlParams.get('bookingId');
+    
+    if (!bookingId) {
+        console.log('No bookingId found in URL');
+        return;
+    }
+    
+    console.log('Found bookingId in URL:', bookingId);
+    
+    const attemptShowDetail = (attempt = 0) => {
+        if (state.user && state.initialized && typeof showBookingDetail === 'function') {
+            console.log('LIFF ready, showing booking detail for:', bookingId);
+            setTimeout(() => {
+                showBookingDetail(bookingId).catch(err => {
+                    console.error('Error showing booking detail:', err);
+                    showToast('ไม่สามารถเปิดรายละเอียดการจองได้', 'error');
+                });
+            }, 100);
+        } else if (attempt < 10) {
+            console.log(`Waiting for LIFF to initialize... attempt \${attempt + 1}`);
+            setTimeout(() => attemptShowDetail(attempt + 1), 1000);
+        } else {
+            console.error('Failed to show booking detail after multiple attempts');
+            showToast('ไม่สามารถเปิดรายละเอียดการจองได้ โปรดลองอีกครั้ง', 'error');
+        }
+    };
+    
+    attemptShowDetail();
+}
+
+window.selectDate = async function(dateStr) {
+    state.selectedDate = new Date(dateStr);
+    
+    document.querySelectorAll('.calendar-day').forEach(day => {
+        day.classList.remove('selected');
+    });
+    
+    const selectedDayElement = Array.from(document.querySelectorAll('.calendar-day')).find(el => {
+        return el.textContent.trim() === new Date(dateStr).getDate().toString() && 
+               !el.classList.contains('other-month');
+    });
+    
+    if (selectedDayElement) {
+        selectedDayElement.classList.add('selected');
+    }
+    
+    const result = await callGAS('bookings', {
+        date: dateStr,
+        showPast: 'true',
+        includeMultiDay: 'true'
+    });
+    
+    if (result.success && result.data.bookings.length > 0) {
+        const bookings = result.data.bookings;
+        const dateObj = new Date(dateStr);
+        const dateThai = dateObj.toLocaleDateString('th-TH', { 
+            weekday: 'long', 
+            day: 'numeric', 
+            month: 'long', 
+            year: 'numeric' 
+        });
+        
+        $.selectedDateTitle.textContent = `📅 การจองวันที่ \${dateThai}`;
+        
+        const processedBookings = await Promise.all(bookings.map(async (b) => {
+            let approvedByName = b.approvedBy;
+            
+            if (approvedByName && approvedByName.length > 20 && !approvedByName.includes(' ')) {
+                approvedByName = await getUserNameFromCache(approvedByName);
+            }
+            
+            const startDate = new Date(b.startTime);
+            const endDate = new Date(b.endTime);
+            const isMultiDay = formatDateForInput(startDate) !== formatDateForInput(endDate);
+            
+            let statusClass = '';
+            if (b.status === 'confirmed') statusClass = 'confirmed';
+            else if (b.status === 'pending') statusClass = 'pending';
+            else if (b.status === 'cancelled') statusClass = 'cancelled';
+            else if (b.status === 'rejected') statusClass = 'rejected';
+            else if (b.status === 'auto_cancelled') statusClass = 'auto-cancelled';
+            
+            return {
+                ...b,
+                approvedByName,
+                isMultiDay,
+                multiDayInfo: isMultiDay ? `\${formatDateShort(b.startTime)} - \${formatDateShort(b.endTime)}` : null,
+                statusClass
+            };
+        }));
+        
+        $.selectedDateBookingsList.innerHTML = processedBookings.map(b => {
+            return `
+                <div class="date-booking-item \${b.statusClass}" onclick="showBookingDetail('\${b.bookingId}')">
+                    <div class="date-booking-time">
+                        <i class="far fa-clock mr-1"></i> \${formatTime(b.startTime)} - \${formatTime(b.endTime)}
+                        \${b.isMultiDay ? '<span class="ml-2 text-yellow-500">📅 ข้ามวัน</span>' : ''}
+                    </div>
+                    <div class="date-booking-title">\${b.title}</div>
+                    <div class="date-booking-room">\${b.roomName} | โดย: \${b.userName}</div>
+                    \${b.approvedByName ? `<div class="text-xs text-green-500 mt-1">✅ อนุมัติโดย: \${b.approvedByName}</div>` : ''}
+                    \${b.multiDayInfo ? `<div class="text-xs text-yellow-500 mt-1">📅 \${b.multiDayInfo}</div>` : ''}
+                </div>
+            `;
+        }).join('');
+        
+        $.selectedDateBookings.classList.remove('hidden');
+    } else {
+        $.selectedDateBookingsList.innerHTML = '<div class="text-center py-4 text-gray-400">ไม่มีการจองในวันนี้</div>';
+        $.selectedDateBookings.classList.remove('hidden');
+        $.selectedDateTitle.textContent = `📅 \${new Date(dateStr).toLocaleDateString('th-TH', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}`;
+    }
+};
+
+window.changeMonth = function(delta) {
+    const newMonth = new Date(state.currentMonth);
+    newMonth.setMonth(newMonth.getMonth() + delta);
+    state.currentMonth = newMonth;
+    loadMonthBookings(newMonth.getFullYear(), newMonth.getMonth());
+};
+
+window.goToToday = function() {
+    state.currentMonth = new Date();
+    state.selectedDate = new Date();
+    loadMonthBookings(state.currentMonth.getFullYear(), state.currentMonth.getMonth());
+    selectDate(formatDateForInput(new Date()));
+};
+
+window.showAllRooms = function() {
+    $.searchInput.value = '';
+    renderRooms();
+};
+
+window.resetDatabase = async function() {
+    if (!state.isAdmin) {
+        showToast('เฉพาะผู้ดูแลระบบเท่านั้น', 'error');
+        return;
+    }
+    
+    const btn = event.target;
+    setButtonLoading(btn, true);
+    
+    const result = await Swal.fire({
+        title: 'รีเซ็ตฐานข้อมูล',
+        text: 'คุณแน่ใจหรือไม่? ข้อมูลทั้งหมดจะถูกลบและกลับสู่ค่าเริ่มต้น',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#ef4444',
+        confirmButtonText: 'ใช่, รีเซ็ต',
+        cancelButtonText: 'ยกเลิก'
+    });
+
+    if (result.isConfirmed) {
+        const apiResult = await callGAS('setupDatabase');
+        if (apiResult.success) {
+            showToast('รีเซ็ตฐานข้อมูลสำเร็จ');
+            setTimeout(() => location.reload(), 1500);
+        } else {
+            showToast(apiResult.message || 'เกิดข้อผิดพลาด', 'error');
+        }
+    }
+    
+    setButtonLoading(btn, false);
+};
+
+// ========== LIFF INIT ==========
+async function initLIFF() {
+    try {
+        if (state.user) {
+            state.role = state.user.role || 'user';
+            updateRoleFlags();
+            updateUserUI(state.user);
+            
+            if (isCacheValid('rooms') && state.rooms.length > 0) {
+                renderRooms();
+                $.initLoading.classList.add('hide');
+            } else {
+                renderSkeletonRooms();
+            }
+        }
+
+        await liff.init({ liffId: CONFIG.LIFF_ID });
+        
+        const urlParams = new URLSearchParams(window.location.search);
+        if (urlParams.has('liff.state')) {
+            window.history.replaceState({}, document.title, window.location.pathname);
+        }
+        
+        if (!liff.isLoggedIn()) {
+            liff.login({ 
+                scope: 'openid email profile',
+                prompt: 'consent'
+            });
+            return;
+        }
+
+        const profile = await liff.getProfile();
+        
+        const userData = {
+            lineUserId: profile.userId,
+            displayName: profile.displayName,
+            pictureUrl: profile.pictureUrl || '',
+            email: '',
+            source: 'miniapp'
+        };
+
+        const idToken = liff.getIDToken();
+        const tokenPayload = idToken ? parseJwt(idToken) : {};
+        if (tokenPayload.email) {
+            userData.email = tokenPayload.email;
+            console.log('Email from ID Token:', tokenPayload.email);
+        }
+
+        const [userResult, roomsResult] = await Promise.all([
+            callGAS('user/profile', userData),
+            callGAS('rooms')
+        ]);
+
+        if (userResult.success) {
+            state.user = userResult.data;
+            state.role = state.user.role || 'user';
+            updateRoleFlags();
+            localStorage.setItem('user_cache', JSON.stringify(state.user));
+            updateUserUI(state.user);
+            
+            if (!state.user.email || state.user.email === '') {
+                console.log('No email found, attempting to fetch...');
+                tryFetchEmail().catch(console.warn);
+            }
+        }
+
+        if (roomsResult.success) {
+            state.rooms = roomsResult.data || [];
+            localStorage.setItem('rooms_cache', JSON.stringify(state.rooms));
+            updateCacheTimestamp('rooms');
+            renderRooms();
+        }
+
+        loadUserSettings();
+
+        $.initLoading.classList.add('hide');
+        state.initialized = true;
+
+        populateTimeSelects();
+        
+        await loadSettings();
+        
+        loadInitialData();
+        
+        if (state.isManager) {
+            loadManagerData();
+        }
+        
+        checkUrlForBookingId();
+        
+        // Request friendship after a short delay
+        setTimeout(async () => {
+            if (liff.isInClient() && typeof liff.requestFriendship === 'function') {
+                try {
+                    await liff.requestFriendship();
+                } catch(e) { console.log(e); }
+            }
+        }, 2000);
+        
+    } catch (error) {
+        console.error('LIFF init error:', error);
+        $.initLoading.classList.add('hide');
+        if (!state.user) showToast('ไม่สามารถเชื่อมต่อ LINE ได้', 'error');
+        checkUrlForBookingId();
+    }
+}
+
+function renderSkeletonRooms() {
+    if (!$.roomsList) return;
+    $.roomsList.innerHTML = `
+        <div class="skeleton-room"></div>
+        <div class="skeleton-room"></div>
+        <div class="skeleton-room"></div>
+    `;
+}
+
+function loadUserSettings() {
+    const saved = localStorage.getItem('user_settings_cache');
+    if (saved) {
+        try {
+            state.userSettings = JSON.parse(saved);
+        } catch (e) {
+            console.warn('Error parsing user settings', e);
+        }
+    }
+    
+    if ($.profileNotificationsEnabled) {
+        $.profileNotificationsEnabled.checked = state.userSettings.notificationsEnabled !== false;
+    }
+}
+
+function saveUserSettings() {
+    localStorage.setItem('user_settings_cache', JSON.stringify(state.userSettings));
+}
+
+function updateUserUI(user) {
+    if (!user) return;
+    
+    $.profileName.textContent = user.displayName || 'ผู้ใช้';
+    
+    if (user.email && user.email !== '') {
+        $.profileEmail.textContent = user.email;
+        $.profileEmail.classList.remove('text-gray-500', 'cursor-pointer');
+    } else {
+        $.profileEmail.innerHTML = '<span class="text-gray-400"><i class="fas fa-spinner fa-spin mr-1"></i>กำลังโหลดอีเมล...</span>';
+    }
+    
+    $.profileAvatar.src = user.pictureUrl || 'https://via.placeholder.com/60';
+    
+    const roleText = {
+        admin: '👑 ผู้ดูแลระบบ',
+        manager: '👥 ผู้จัดการ',
+        user: '👤 ผู้ใช้ทั่วไป'
+    }[user.role] || '';
+    
+    $.profileRole.textContent = roleText;
+
+    if ($.userRoleBadge) {
+        $.userRoleBadge.textContent = roleText;
+        if (state.isAdmin || state.isManager) {
+            $.userRoleBadge.classList.remove('hidden');
+        } else {
+            $.userRoleBadge.classList.add('hidden');
+        }
+    }
+
+    $.managerAdmin.forEach(el => {
+        if (state.isManager) el.classList.remove('hidden');
+        else el.classList.add('hidden');
+    });
+
+    $.adminOnlyUsers.forEach(el => {
+        if (state.isAdmin) el.style.display = 'block';
+        else el.style.display = 'none';
+    });
+
+    $.adminOnlySettings.forEach(el => {
+        if (state.isAdmin) el.style.display = 'block';
+        else el.style.display = 'none';
+    });
+
+    if (!state.isAdmin) {
+        $.floatingBtn.classList.remove('hidden');
+        if ($.quickBookBtn) $.quickBookBtn.classList.remove('hidden');
+    }
+}
+
+async function loadInitialData() {
+    try {
+        // ========== OPTIMIZED INITIAL LOADING ==========
+        // โหลดข้อมูลพื้นฐานพร้อมกัน (ห้อง, ปฏิทิน, สถิติ)
+        const roomsPromise = loadRooms();
+        const calendarPromise = loadMonthBookings(
+            state.currentMonth.getFullYear(), 
+            state.currentMonth.getMonth()
+        );
+        const statsPromise = loadTodayStats();
+        
+        await Promise.all([roomsPromise, calendarPromise, statsPromise]);
+        
+        // โหลดการจองของผู้ใช้แบบอะซิงโครนัส
+        loadMyBookings().catch(console.warn);
+        
+    } catch (error) {
+        console.error('Error loading initial data:', error);
+    }
+}
+
+function loadManagerData() {
+    // ========== OPTIMIZED MANAGER DATA LOADING ==========
+    // โหลดข้อมูลผู้จัดการ/แอดมินพร้อมกันโดยไม่มีการหน่วงเวลา
+    // ลบ setTimeout เพื่อให้การโหลดเร็วขึ้น
+    Promise.all([
+        loadUsers().catch(console.warn),
+        loadAdminStats().catch(console.warn),
+        loadPendingBookings().catch(console.warn),
+        loadAllBookings().catch(console.warn),
+        loadRoomsManagement().catch(console.warn)
+    ]).catch(console.warn);
+}
+
+// ========== ROOMS ==========
+async function loadRooms() {
+    try {
+        if (isCacheValid('rooms') && state.rooms.length > 0) {
+            renderRooms();
+            return;
+        }
+
+        const result = await callGAS('rooms');
+        
+        if (result.success) {
+            state.rooms = result.data || [];
+            localStorage.setItem('rooms_cache', JSON.stringify(state.rooms));
+            updateCacheTimestamp('rooms');
+            renderRooms();
+        }
+    } catch (error) {
+        console.error('Load rooms error:', error);
+    }
+}
+
+function renderRooms() {
+    const search = $.searchInput?.value.toLowerCase() || '';
+    const filtered = state.rooms.filter(r => 
+        r.name?.toLowerCase().includes(search) || 
+        r.location?.toLowerCase().includes(search)
+    );
+
+    if (!filtered.length && state.rooms.length === 0) {
+        return;
+    }
+
+    if (!filtered.length) {
+        $.roomsList.innerHTML = `
+            <div class="col-span-full text-center py-10 text-gray-400">
+                <i class="fas fa-door-open text-3xl mb-3"></i>
+                <p>ไม่มีห้องประชุม</p>
+            </div>
+        `;
+        return;
+    }
+
+    $.roomsList.innerHTML = filtered.map(r => {
+        const imageHtml = r.imageUrl ? 
+            `<img src="\${r.imageUrl}" class="w-full h-full object-cover" loading="lazy" onerror="this.style.display='none'; this.parentElement.innerHTML='<i class=\\'fas fa-door-open text-4xl text-[#06c755]\\'></i>';">` : 
+            `<i class="fas fa-door-open text-4xl text-[#06c755]"></i>`;
+        
+        return `
+        <div class="room-card" onclick="showRoomDetail('\${r.roomId}')">
+            <div class="room-image">
+                \${imageHtml}
+            </div>
+            <div class="room-content">
+                <div class="flex justify-between items-start mb-2">
+                    <h3 class="font-semibold text-base">\${r.name}</h3>
+                    <span class="capacity-badge"><i class="fas fa-users mr-1"></i>\${r.capacity}</span>
+                </div>
+                <p class="text-sm text-gray-400 mb-2"><i class="fas fa-map-marker-alt mr-1"></i> \${r.location || 'ไม่มีข้อมูล'}</p>
+                <p class="text-xs text-gray-500 line-clamp-2 mb-3">\${r.description || ''}</p>
+                <div class="flex justify-between items-center">
+                    <span class="badge badge-available">ว่าง</span>
+                    <button class="text-[#06c755] text-sm" onclick="showBookingModal('\${r.roomId}'); event.stopPropagation();">
+                        <i class="fas fa-calendar-plus mr-1"></i>จอง
+                    </button>
+                </div>
+            </div>
+        </div>
+    `}).join('');
+}
+
+// ========== ROOMS MANAGEMENT ==========
+async function loadRoomsManagement() {
+    try {
+        const result = await callGAS('rooms');
+        
+        if (result.success) {
+            const rooms = result.data || [];
+            renderRoomsManagement(rooms);
+        }
+    } catch (error) {
+        console.error('Load rooms management error:', error);
+    }
+}
+
+function renderRoomsManagement(rooms) {
+    if (!rooms.length) {
+        $.roomsManagementList.innerHTML = '<p class="text-center text-gray-400 py-6">ไม่มีห้องประชุม</p>';
+        return;
+    }
+
+    $.roomsManagementList.innerHTML = rooms.map(room => `
+        <div class="room-management-item">
+            <div class="room-management-info">
+                <div class="flex items-center gap-2">
+                    <span class="font-semibold">\${room.name}</span>
+                    <span class="capacity-badge text-xs"><i class="fas fa-users mr-1"></i>\${room.capacity}</span>
+                </div>
+                <p class="text-xs text-gray-400 mt-1">\${room.location || 'ไม่มีสถานที่'}</p>
+            </div>
+            <div class="room-management-actions">
+                <button class="text-[#06c755] text-sm" onclick="editRoom('\${room.roomId}')">
+                    <i class="fas fa-edit"></i>
+                </button>
+                <button class="text-red-500 text-sm" onclick="deleteRoom('\${room.roomId}')">
+                    <i class="fas fa-trash"></i>
+                </button>
+            </div>
+        </div>
+    `).join('');
+}
+
+window.editRoom = function(roomId) {
+    const room = state.rooms.find(r => r.roomId === roomId);
+    if (room) {
+        state.currentRoom = room;
+        editCurrentRoom();
+    }
+};
+
+window.deleteRoom = async function(roomId) {
+    const room = state.rooms.find(r => r.roomId === roomId);
+    if (room) {
+        state.currentRoom = room;
+        deleteCurrentRoom();
+    }
+};
+
+window.showRoomDetail = async function(roomId) {
+    $.modal.classList.add('active');
+    $.modalBody.innerHTML = '<div class="flex justify-center py-10"><div class="loading-spinner w-10 h-10"></div></div>';
+    
+    const result = await callGAS('room', { roomId });
+    
+    if (result.success) {
+        const room = result.data;
+        state.currentRoom = room;
+        $.modalTitle.textContent = room.name;
+
+        const facilities = room.facilities ? room.facilities.split(',').map(f => f.trim()) : [];
+
+        const today = new Date();
+        const dateStr = formatDateForInput(today);
+        const bookingsResult = await callGAS('bookings', { 
+            roomId, 
+            date: dateStr,
+            showPast: 'false',
+            includeMultiDay: 'true'
+        });
+        
+        const todayBookings = bookingsResult.success ? bookingsResult.data.bookings : [];
+
+        const imageHtml = room.imageUrl ? 
+            `<img src="\${room.imageUrl}" class="w-full max-h-80 object-cover rounded-xl mb-4" loading="lazy" onerror="this.style.display='none';">` : 
+            `<div class="w-full h-48 flex items-center justify-center bg-gradient-to-br from-[#2a2e36] to-[#1a1d24] rounded-xl mb-4">
+                <i class="fas fa-door-open text-6xl text-[#06c755]"></i>
+            </div>`;
+
+        $.modalBody.innerHTML = `
+            \${imageHtml}
+            <div class="flex gap-2 mb-4 flex-wrap">
+                <span class="capacity-badge"><i class="fas fa-users mr-1"></i> รองรับ \${room.capacity} คน</span>
+                <span class="badge badge-available">พร้อมใช้งาน</span>
+            </div>
+            
+            <div class="mb-4">
+                <p class="text-sm text-gray-400 mb-1"><i class="fas fa-map-marker-alt mr-2"></i> สถานที่</p>
+                <p class="mb-3">\${room.location || 'ไม่มีข้อมูล'}</p>
+            </div>
+            
+            <div class="mb-4">
+                <p class="text-sm text-gray-400 mb-1"><i class="fas fa-info-circle mr-2"></i> รายละเอียด</p>
+                <p class="whitespace-pre-wrap">\${room.description || 'ไม่มีรายละเอียด'}</p>
+            </div>
+            
+            \${facilities.length > 0 ? `
+                <div class="mb-4">
+                    <p class="text-sm text-gray-400 mb-2"><i class="fas fa-couch mr-2"></i> สิ่งอำนวยความสะดวก</p>
+                    <div>
+                        \${facilities.map(f => `<span class="facility-tag">\${f}</span>`).join('')}
+                    </div>
+                </div>
+            ` : ''}
+            
+            \${todayBookings.length > 0 ? `
+                <div class="mt-4 pt-4 border-t border-[#2a2e36]">
+                    <p class="text-sm text-gray-400 mb-2"><i class="fas fa-clock mr-2"></i> การจองวันนี้</p>
+                    <div class="space-y-2">
+                        \${todayBookings.map(b => {
+                            const statusColor = {
+                                'confirmed': 'text-green-500',
+                                'pending': 'text-yellow-500',
+                                'cancelled': 'text-red-500',
+                                'rejected': 'text-red-500',
+                                'auto_cancelled': 'text-yellow-500'
+                            }[b.status] || 'text-gray-500';
+                            let approvedByName = b.approvedBy || '';
+                            
+                            let statusText = {
+                                'confirmed': 'อนุมัติแล้ว',
+                                'pending': 'รออนุมัติ',
+                                'cancelled': 'ยกเลิก',
+                                'rejected': 'ปฏิเสธ',
+                                'auto_cancelled': 'ระบบยกเลิก'
+                            }[b.status] || b.status;
+                            
+                            return `
+                                <div class="bg-[#111317] p-2 rounded-lg text-sm">
+                                    <div class="flex justify-between">
+                                        <span class="font-semibold">\${formatTime(b.startTime)} - \${formatTime(b.endTime)}</span>
+                                        <span class="\${statusColor}">\${statusText}</span>
+                                    </div>
+                                    <p class="text-xs text-gray-400">\${b.title}</p>
+                                    \${approvedByName ? `<p class="text-xs text-green-500 mt-1">✅ อนุมัติโดย: \${approvedByName}</p>` : ''}
+                                </div>
+                            `;
+                        }).join('')}
+                    </div>
+                </div>
+            ` : ''}
+        `;
+
+        $.modalBookBtn.onclick = () => showBookingModal(roomId);
+
+        if (state.isManager) {
+            $.modalAdminControls.classList.remove('hidden');
+            $.modalEditBtn.disabled = false;
+            $.modalDeleteBtn.disabled = false;
+        } else {
+            $.modalAdminControls.classList.add('hidden');
+        }
+    }
+};
+
+window.closeModal = function() {
+    $.modal.classList.remove('active');
+    state.currentRoom = null;
+};
+
+// ========== BOOKINGS ==========
+window.showBookingModal = function(roomId = null) {
+    document.getElementById('booking-modal-title').textContent = 'จองห้องประชุม';
+    document.getElementById('edit-booking-id').value = '';
+    document.getElementById('booking-title').value = '';
+    document.getElementById('booking-description').value = '';
+    document.getElementById('booking-meeting-link').value = '';
+    document.getElementById('booking-attendees').value = '4';
+    document.getElementById('availability-status').classList.add('hidden');
+    document.getElementById('save-booking-btn').disabled = true;
+    
+    populateTimeSelects();
+    
+    const roomSelect = document.getElementById('booking-room');
+    roomSelect.innerHTML = '<option value="">เลือกห้องประชุม</option>';
+    state.rooms.forEach(r => {
+        const option = document.createElement('option');
+        option.value = r.roomId;
+        option.textContent = `\${r.name} (\${r.capacity} ที่นั่ง)`;
+        if (r.roomId === roomId) option.selected = true;
+        roomSelect.appendChild(option);
+    });
+    
+    setQuickDateTime('now');
+    
+    $.datetimePresets.forEach(btn => {
+        btn.classList.remove('active');
+        if (btn.getAttribute('onclick')?.includes('now')) {
+            btn.classList.add('active');
+        }
+    });
+    
+    document.getElementById('booking-create-modal').classList.add('active');
+};
+
+window.closeBookingCreateModal = function() {
+    document.getElementById('booking-create-modal').classList.remove('active');
+};
+
+async function checkAvailability() {
+    const roomId = document.getElementById('booking-room').value;
+    const startDate = $.bookingDate?.value;
+    const endDate = $.bookingEndDate?.value;
+    const start = $.bookingStart?.value;
+    const end = $.bookingEnd?.value;
+    const attendees = parseInt($.bookingAttendees?.value) || 0;
+    const editBookingId = document.getElementById('edit-booking-id')?.value;
+    
+    if (!roomId || !startDate || !endDate || !start || !end) {
+        $.availabilityStatus.classList.add('hidden');
+        $.saveBookingBtn.disabled = true;
+        return;
+    }
+    
+    const selectedRoom = state.rooms.find(r => r.roomId === roomId);
+    const roomName = selectedRoom ? selectedRoom.name : 'ห้องที่เลือก';
+    
+    if (attendees < 1) {
+        $.availabilityStatus.innerHTML = '<span class="text-red-500">⚠️ จำนวนผู้เข้าร่วมต้องมีอย่างน้อย 1 คน</span>';
+        $.availabilityStatus.classList.remove('hidden');
+        $.saveBookingBtn.disabled = true;
+        return;
+    }
+    
+    const startDateTime = new Date(`\${startDate}T\${start}:00`);
+    const endDateTime = new Date(`\${endDate}T\${end}:00`);
+    
+    if (startDateTime >= endDateTime) {
+        $.availabilityStatus.innerHTML = '<span class="text-red-500">⚠️ เวลาสิ้นสุดต้องมากกว่าเวลาเริ่ม</span>';
+        $.availabilityStatus.classList.remove('hidden');
+        $.saveBookingBtn.disabled = true;
+        return;
+    }
+    
+    if (startDate > endDate) {
+        $.availabilityStatus.innerHTML = '<span class="text-red-500">⚠️ วันที่สิ้นสุดต้องไม่ก่อนวันที่เริ่ม</span>';
+        $.availabilityStatus.classList.remove('hidden');
+        $.saveBookingBtn.disabled = true;
+        return;
+    }
+    
+    const startHour = startDateTime.getHours();
+    const endHour = endDateTime.getHours();
+    const endMinutes = endDateTime.getMinutes();
+    
+    if (startHour < 8 || startHour > 20 || (startHour === 20 && startDateTime.getMinutes() > 0)) {
+        $.availabilityStatus.innerHTML = '<span class="text-red-500">⚠️ เวลาทำการ 08:00 - 20:00 น.</span>';
+        $.availabilityStatus.classList.remove('hidden');
+        $.saveBookingBtn.disabled = true;
+        return;
+    }
+    
+    if (endHour < 8 || endHour > 20 || (endHour === 20 && endMinutes > 0)) {
+        $.availabilityStatus.innerHTML = '<span class="text-red-500">⚠️ เวลาทำการ 08:00 - 20:00 น.</span>';
+        $.availabilityStatus.classList.remove('hidden');
+        $.saveBookingBtn.disabled = true;
+        return;
+    }
+    
+    const durationHours = (endDateTime - startDateTime) / (1000 * 60 * 60);
+    if (durationHours > 24) {
+        $.availabilityStatus.innerHTML = '<span class="text-red-500">⚠️ จองได้ครั้งละไม่เกิน 24 ชั่วโมง</span>';
+        $.availabilityStatus.classList.remove('hidden');
+        $.saveBookingBtn.disabled = true;
+        return;
+    }
+    
+    if (selectedRoom && attendees > selectedRoom.capacity) {
+        $.availabilityStatus.innerHTML = `<span class="text-red-500">⚠️ จำนวนผู้เข้าร่วม (\${attendees}) เกินความจุห้อง (\${selectedRoom.capacity} คน)</span>`;
+        $.availabilityStatus.classList.remove('hidden');
+        $.saveBookingBtn.disabled = true;
+        return;
+    }
+    
+    $.availabilityStatus.innerHTML = `<span class="text-yellow-500"><i class="fas fa-spinner fa-spin mr-2"></i>กำลังตรวจสอบห้องว่างสำหรับห้อง "\${roomName}"...</span>`;
+    $.availabilityStatus.classList.remove('hidden');
+    $.saveBookingBtn.disabled = true;
+    
+    try {
+        console.log('Checking availability for room:', roomId, roomName);
+        
+        const result = await callGAS('booking/check-availability', {
+            roomId,
+            startTime: startDateTime.toISOString(),
+            endTime: endDateTime.toISOString(),
+            bookingId: editBookingId || undefined
+        });
+        
+        if (result.success) {
+            if (result.data.available) {
+                $.availabilityStatus.innerHTML = `<span class="text-green-500">✅ ห้อง "\${roomName}" ว่างในช่วงเวลาที่เลือก</span>`;
+                $.availabilityStatus.classList.remove('hidden');
+                $.saveBookingBtn.disabled = false;
+            } else {
+                let message = `❌ ห้อง "\${roomName}" ไม่ว่างในช่วงเวลาที่เลือก`;
+                if (result.data.conflictingBookings && result.data.conflictingBookings.length > 0) {
+                    const times = result.data.conflictingBookings.map(c => 
+                        `\${formatTime(c.startTime)}-\${formatTime(c.endTime)}`
+                    ).join(', ');
+                    message = `❌ ห้อง "\${roomName}" มีการจองแล้วในช่วงเวลา: \${times}`;
+                }
+                $.availabilityStatus.innerHTML = `<span class="text-red-500">\${message}</span>`;
+                $.availabilityStatus.classList.remove('hidden');
+                $.saveBookingBtn.disabled = true;
+            }
+        } else {
+            $.availabilityStatus.innerHTML = '<span class="text-red-500">❌ ไม่สามารถตรวจสอบห้องว่างได้ กรุณาลองใหม่อีกครั้ง</span>';
+            $.availabilityStatus.classList.remove('hidden');
+            $.saveBookingBtn.disabled = true;
+        }
+    } catch (error) {
+        console.error('Check availability error:', error);
+        $.availabilityStatus.innerHTML = '<span class="text-red-500">❌ เกิดข้อผิดพลาดในการตรวจสอบ</span>';
+        $.availabilityStatus.classList.remove('hidden');
+        $.saveBookingBtn.disabled = true;
+    }
+}
+
+window.approveBooking = async function(bookingId, btn, skipNotification = false) {
+    setButtonLoading(btn, true);
+    
+    const result = await callGAS('booking/approve', { 
+        bookingId,
+        lineUserId: state.user.lineUserId
+    });
+    
+    if (result.success) {
+        showToast('อนุมัติการจองสำเร็จ');
+        const booking = state.pendingBookings.find(b => b.bookingId === bookingId) || {};
+        if (!skipNotification) {
+            await sendBookingToChat({
+                title: booking.title,
+                roomName: booking.roomName,
+                userName: booking.userName,
+                startTime: booking.startTime,
+                endTime: booking.endTime,
+                attendees: booking.attendees,
+                description: booking.description,
+                meetingLink: booking.meetingLink,
+                approvedBy: state.user.displayName,
+                approvedAt: new Date().toISOString(),
+                action: 'approved'
+            });
+        }
+        await Promise.all([
+            loadPendingBookings(), 
+            loadAdminStats(), 
+            loadTodayStats(),
+            loadAllBookings(),
+            loadMonthBookings(state.currentMonth.getFullYear(), state.currentMonth.getMonth())
+        ]);
+    } else {
+        showToast(result.message || 'อนุมัติไม่สำเร็จ', 'error');
+    }
+    
+    setButtonLoading(btn, false);
+};
+
+// ========== ADMIN CANCEL BOOKING (ส่งแจ้งเตือน) ==========
+window.adminCancelBooking = async function(bookingId, btn) {
+    setButtonLoading(btn, true);
+    
+    try {
+        const bookingInfo = await callGAS('booking', { bookingId });
+        
+        if (!bookingInfo.success) {
+            showToast('ไม่พบข้อมูลการจอง', 'error');
+            setButtonLoading(btn, false);
+            return;
+        }
+        
+        const booking = bookingInfo.data;
+        
+        const result = await Swal.fire({
+            title: 'ยกเลิกการจอง (ส่งแจ้งเตือน)',
+            text: `คุณแน่ใจหรือไม่ต้องการยกเลิกการจอง "\${booking.title}"? (ระบบจะส่งแจ้งเตือนไปยังผู้จอง)`,
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#ef4444',
+            confirmButtonText: 'ใช่, ยกเลิก',
+            cancelButtonText: 'ยกเลิก'
+        });
+
+        if (result.isConfirmed) {
+            const apiResult = await callGAS('booking/admin-cancel', { 
+                bookingId,
+                lineUserId: state.user.lineUserId,
+                skipNotification: false
+            });
+            
+            if (apiResult.success) {
+                showToast('ยกเลิกการจองสำเร็จ (ส่งแจ้งเตือนไปยังผู้จองแล้ว)');
+                
+                await sendBookingToChat({
+                    title: booking.title,
+                    roomName: booking.roomName,
+                    userName: booking.userName,
+                    startTime: booking.startTime,
+                    endTime: booking.endTime,
+                    attendees: booking.attendees,
+                    description: booking.description,
+                    meetingLink: booking.meetingLink,
+                    cancelledBy: state.user.displayName + ' (ผู้ดูแลระบบ)',
+                    reason: 'ผู้ดูแลระบบยกเลิกการจอง',
+                    action: 'admin_cancelled'
+                });
+                
+                if (state.currentBooking && state.currentBooking.bookingId === bookingId) {
+                    closeBookingDetailModal();
+                }
+                
+                await Promise.all([
+                    loadPendingBookings(), 
+                    loadAdminStats(), 
+                    loadTodayStats(),
+                    loadAllBookings(),
+                    loadMonthBookings(state.currentMonth.getFullYear(), state.currentMonth.getMonth())
+                ]);
+                
+                if (document.getElementById('tab-my').classList.contains('active')) {
+                    await loadMyBookings();
+                }
+            } else {
+                showToast(apiResult.message || 'ยกเลิกไม่สำเร็จ', 'error');
+            }
+        }
+    } catch (error) {
+        console.error('Admin cancel booking error:', error);
+        showToast('เกิดข้อผิดพลาด', 'error');
+    } finally {
+        setButtonLoading(btn, false);
+    }
+};
+
+// ========== SAVE BOOKING FUNCTION ==========
+window.saveBooking = async function(e) {
+    e.preventDefault();
+    
+    const btn = document.getElementById('save-booking-btn');
+    if (btn.disabled) return;
+    
+    setButtonLoading(btn, true);
+
+    try {
+        const id = document.getElementById('edit-booking-id').value;
+        const roomId = document.getElementById('booking-room').value;
+        const startDate = $.bookingDate.value;
+        const endDate = $.bookingEndDate.value;
+        const start = $.bookingStart.value;
+        const end = $.bookingEnd.value;
+        const attendees = parseInt($.bookingAttendees.value) || 0;
+        
+        if (attendees < 1) {
+            showToast('จำนวนผู้เข้าร่วมต้องมีอย่างน้อย 1 คน', 'error');
+            setButtonLoading(btn, false);
+            return;
+        }
+        
+        const startDateTime = new Date(`\${startDate}T\${start}:00`);
+        const endDateTime = new Date(`\${endDate}T\${end}:00`);
+        
+        if (startDate > endDate) {
+            showToast('วันที่สิ้นสุดต้องไม่ก่อนวันที่เริ่ม', 'error');
+            setButtonLoading(btn, false);
+            return;
+        }
+        
+        const selectedRoom = state.rooms.find(r => r.roomId === roomId);
+        if (selectedRoom && attendees > selectedRoom.capacity) {
+            showToast(`จำนวนผู้เข้าร่วม (\${attendees}) เกินความจุห้อง (\${selectedRoom.capacity} คน)`, 'error');
+            setButtonLoading(btn, false);
+            return;
+        }
+        
+        const roomName = selectedRoom ? selectedRoom.name : 'ห้องที่เลือก';
+        
+        console.log('Saving booking for room:', roomId, roomName);
+        
+        const checkResult = await callGAS('booking/check-availability', {
+            roomId,
+            startTime: startDateTime.toISOString(),
+            endTime: endDateTime.toISOString(),
+            bookingId: id || undefined
+        });
+        
+        if (!checkResult.success || !checkResult.data.available) {
+            showToast(`ห้อง "\${roomName}" ไม่ว่างในช่วงเวลาที่เลือก`, 'error');
+            setButtonLoading(btn, false);
+            await checkAvailability();
+            return;
+        }
+        
+        const data = {
+            roomId,
+            title: document.getElementById('booking-title').value,
+            description: document.getElementById('booking-description').value,
+            meetingLink: document.getElementById('booking-meeting-link').value,
+            startTime: startDateTime.toISOString(),
+            endTime: endDateTime.toISOString(),
+            attendees: attendees,
+            userName: state.user.displayName,
+            lineUserId: state.user.lineUserId
+        };
+
+        if (id) data.bookingId = id;
+
+        const result = await callGAS(id ? 'booking/update' : 'booking/create', data);
+
+        if (result.success) {
+            showToast(id ? 'แก้ไขการจองสำเร็จ' : 'จองห้องสำเร็จ');
+            
+            // ========== AUTO-APPROVE FOR ADMIN ==========
+            // เงื่อนไข: เป็นการจองใหม่ (ไม่ใช่แก้ไข) และผู้ใช้เป็นแอดมิน
+            if (!id && state.isAdmin && result.data?.bookingData?.bookingId) {
+                console.log('Admin auto-approval triggered for booking:', result.data.bookingData.bookingId);
+                // อนุมัติการจองโดยอัตโนมัติ
+                await approveBooking(result.data.bookingData.bookingId, null, true);
+            } else {
+                // สำหรับผู้ใช้ทั่วไป: ส่งการแจ้งเตือนไปยังแชท
+                if (!id && result.data?.bookingData && !state.isAdmin) {
+                    const bookingData = {
+                        ...result.data.bookingData,
+                        action: 'created',
+                        createdAt: new Date().toISOString(),
+                        bookingId: result.data.bookingData.bookingId || result.data.bookingData.id,
+                        approvedBy: result.data.bookingData.approvedBy,
+                        rejectedBy: result.data.bookingData.rejectedBy,
+                        cancelledBy: result.data.bookingData.cancelledBy
+                    };
+                    // ส่งข้อมูลการจองไปยังแชทโดยไม่มีการหน่วงเวลา
+                    await sendBookingToChat(bookingData).catch(e => console.warn('Send booking to chat warning:', e));
+                }
+            }
+            
+            closeBookingCreateModal();
+            
+            // ========== OPTIMIZED PARALLEL LOADING ==========
+            // โหลดข้อมูลทั้งหมดพร้อมกันเพื่อเพิ่มความเร็ว
+            await Promise.all([
+                loadRooms(), 
+                loadMyBookings(), 
+                loadTodayStats(),
+                loadMonthBookings(state.currentMonth.getFullYear(), state.currentMonth.getMonth())
+            ]);
+        } else {
+            showToast(result.message || 'เกิดข้อผิดพลาด', 'error');
+        }
+    } catch (error) {
+        console.error('Save booking error:', error);
+        showToast('เกิดข้อผิดพลาด', 'error');
+    } finally {
+        setButtonLoading(btn, false);
+    }
+};
+
+// ========== REJECT BOOKING FUNCTION ==========
+window.rejectBooking = async function(bookingId, btn) {
+    setButtonLoading(btn, true);
+    
+    try {
+        const bookingInfo = await callGAS('booking', { bookingId });
+        
+        if (!bookingInfo.success) {
+            showToast('ไม่พบข้อมูลการจอง', 'error');
+            setButtonLoading(btn, false);
+            return;
+        }
+        
+        const booking = bookingInfo.data;
+        
+        const now = new Date();
+        const endTime = new Date(booking.endTime);
+        const isPastBooking = endTime < now;
+        
+        if (isPastBooking) {
+            const result = await Swal.fire({
+                title: 'ปฏิเสธการจองที่เลยเวลา',
+                text: 'การจองนี้หมดระยะเวลาไปแล้ว คุณต้องการปฏิเสธหรือไม่? (ระบบจะไม่ส่งการแจ้งเตือนไปยังผู้จอง)',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#ef4444',
+                confirmButtonText: 'ใช่, ปฏิเสธ',
+                cancelButtonText: 'ยกเลิก'
+            });
+
+            if (!result.isConfirmed) {
+                setButtonLoading(btn, false);
+                return;
+            }
+
+            const reason = result.value || 'ไม่ระบุเหตุผล (การจองเลยเวลา)';
+            
+            const apiResult = await callGAS('booking/reject', { 
+                bookingId,
+                reason,
+                lineUserId: state.user.lineUserId,
+                skipNotification: true
+            });
+            
+            if (apiResult.success) {
+                showToast('ปฏิเสธการจองสำเร็จ (ไม่มีการแจ้งเตือน)');
+                
+                await Promise.all([
+                    loadPendingBookings(), 
+                    loadAdminStats(), 
+                    loadTodayStats(),
+                    loadAllBookings(),
+                    loadMonthBookings(state.currentMonth.getFullYear(), state.currentMonth.getMonth())
+                ]);
+            } else {
+                showToast(apiResult.message || 'ปฏิเสธไม่สำเร็จ', 'error');
+            }
+            
+            setButtonLoading(btn, false);
+            return;
+        }
+        
+        const result = await Swal.fire({
+            title: 'ปฏิเสธการจอง',
+            input: 'textarea',
+            inputLabel: 'เหตุผลที่ปฏิเสธ',
+            inputPlaceholder: 'ระบุเหตุผล...',
+            showCancelButton: true,
+            confirmButtonColor: '#ef4444',
+            confirmButtonText: 'ปฏิเสธ',
+            cancelButtonText: 'ยกเลิก',
+            inputValidator: (value) => {
+                if (!value) {
+                    return 'กรุณาระบุเหตุผล';
+                }
+            }
+        });
+
+        if (result.isConfirmed) {
+            const apiResult = await callGAS('booking/reject', { 
+                bookingId,
+                reason: result.value,
+                lineUserId: state.user.lineUserId
+            });
+            
+            if (apiResult.success) {
+                showToast('ปฏิเสธการจองสำเร็จ');
+                
+                await sendBookingToChat({
+                    title: booking.title,
+                    roomName: booking.roomName,
+                    userName: booking.userName,
+                    startTime: booking.startTime,
+                    endTime: booking.endTime,
+                    attendees: booking.attendees,
+                    description: booking.description,
+                    meetingLink: booking.meetingLink,
+                    rejectedBy: state.user.displayName,
+                    reason: result.value,
+                    action: 'rejected'
+                });
+                
+                await Promise.all([
+                    loadPendingBookings(), 
+                    loadAdminStats(), 
+                    loadTodayStats(),
+                    loadAllBookings(),
+                    loadMonthBookings(state.currentMonth.getFullYear(), state.currentMonth.getMonth())
+                ]);
+            } else {
+                showToast(apiResult.message || 'ปฏิเสธไม่สำเร็จ', 'error');
+            }
+        }
+    } catch (error) {
+        console.error('Reject booking error:', error);
+        showToast('เกิดข้อผิดพลาด', 'error');
+    } finally {
+        setButtonLoading(btn, false);
+    }
+};
+
+window.shareBookingViaPicker = async function(bookingId) {
+    try {
+        if (!liff.isInClient()) {
+            showToast('กรุณาเปิดใน LINE', 'warning');
+            return;
+        }
+
+        const result = await callGAS('booking', { bookingId });
+        if (!result.success) {
+            showToast('ไม่พบข้อมูลการจอง', 'error');
+            return;
+        }
+
+        const booking = result.data;
+        const flexMessage = await createBookingFlexMessage(booking);
+
+        await liff.shareTargetPicker([flexMessage]);
+        showToast('แชร์การจองสำเร็จ');
+        
+    } catch (error) {
+        console.error('Share via picker error:', error);
+        showToast('ไม่สามารถแชร์ได้', 'error');
+    }
+};
+
+window.shareBooking = async function(bookingId) {
+    await shareBookingViaPicker(bookingId);
+};
+
+// ========== MY BOOKINGS ==========
+async function loadMyBookings() {
+    try {
+        const result = await callGAS('user/bookings', {
+            lineUserId: state.user?.lineUserId
+        });
+
+        if (result.success) {
+            state.myBookings = result.data || [];
+            renderMyBookings('all');
+        }
+    } catch (error) {
+        console.error('Load my bookings error:', error);
+    }
+}
+
+function renderMyBookings(filter = 'all') {
+    let filtered = state.myBookings;
+    
+    if (filter !== 'all') {
+        filtered = filtered.filter(b => b.status === filter);
+    }
+
+    if (!filtered.length) {
+        $.myBookingsList.innerHTML = `
+            <div class="col-span-full text-center py-10 text-gray-400">
+                <i class="fas fa-calendar-times text-3xl mb-3"></i>
+                <p>ไม่พบการจอง</p>
+                <button class="btn-primary text-sm mt-3" onclick="showBookingModal()">
+                    <i class="fas fa-plus mr-1"></i>จองห้องแรก
+                </button>
+            </div>
+        `;
+        return;
+    }
+
+    const processedBookings = filtered.map(b => {
+        let approvedByName = b.approvedBy;
+        
+        if (approvedByName && approvedByName.length > 20 && !approvedByName.includes(' ')) {
+            approvedByName = state.userNamesCache[approvedByName] || approvedByName.substring(0, 8) + '...';
+        }
+        
+        return {
+            ...b,
+            approvedByName
+        };
+    });
+
+    $.myBookingsList.innerHTML = processedBookings.map(b => {
+        let statusClass = '';
+        let statusText = '';
+        
+        if (b.status === 'confirmed') {
+            statusClass = 'badge-confirmed';
+            statusText = '✅ อนุมัติแล้ว';
+        } else if (b.status === 'pending') {
+            statusClass = 'badge-pending';
+            statusText = '⏳ รออนุมัติ';
+        } else if (b.status === 'cancelled') {
+            statusClass = 'badge-cancelled';
+            statusText = '❌ ยกเลิก';
+        } else if (b.status === 'rejected') {
+            statusClass = 'badge-rejected';
+            statusText = '❌ ปฏิเสธ';
+        } else if (b.status === 'auto_cancelled') {
+            statusClass = 'badge-auto-cancelled';
+            statusText = '🤖 ระบบยกเลิก';
+        } else {
+            statusClass = 'badge-pending';
+            statusText = b.status;
+        }
+        
+        const now = new Date();
+        const endTime = new Date(b.endTime);
+        const isPastBooking = endTime < now;
+        
+        return `
+        <div class="bg-[#1a1d24] p-4 rounded-xl border border-[#2a2e36] cursor-pointer" onclick="showBookingDetail('\${b.bookingId}')">
+            <div class="flex justify-between items-start mb-2">
+                <h3 class="font-semibold">\${b.title}</h3>
+                <div class="flex flex-col items-end">
+                    <span class="badge \${statusClass}">\${statusText}</span>
+                    \${isPastBooking && b.status === 'confirmed' ? '<span class="text-xs text-gray-500 mt-1">(เลยเวลาแล้ว)</span>' : ''}
+                </div>
+            </div>
+            <p class="text-sm text-[#06c755] mb-2">\${b.roomName}</p>
+            <p class="text-xs text-gray-400 mb-2">
+                <i class="far fa-calendar mr-1"></i> \${formatDateShort(b.startTime)} - \${formatDateShort(b.endTime)}<br>
+                <i class="far fa-clock mr-1"></i> \${formatTime(b.startTime)} - \${formatTime(b.endTime)}
+            </p>
+            \${b.approvedByName ? `<p class="text-xs text-green-500 mb-2">✅ อนุมัติโดย: \${b.approvedByName}</p>` : ''}
+            <div class="flex justify-between items-center text-xs">
+                <span class="text-gray-500"><i class="fas fa-users mr-1"></i> \${b.attendees || 0} คน</span>
+                \${b.meetingLink ? '<span class="text-blue-500"><i class="fas fa-video mr-1"></i> มีลิงค์</span>' : ''}
+                \${b.status === 'confirmed' && !isPastBooking ? `
+                    <button class="text-red-500" onclick="cancelBooking('\${b.bookingId}'); event.stopPropagation();">
+                        <i class="fas fa-times mr-1"></i>ยกเลิก
+                    </button>
+                ` : ''}
+            </div>
+            <div class="mt-2 flex gap-2">
+                <button class="text-xs text-[#06c755]" onclick="shareBookingViaPicker('\${b.bookingId}'); event.stopPropagation();">
+                    <i class="fas fa-share-alt mr-1"></i>แชร์
+                </button>
+            </div>
+        </div>
+    `}).join('');
+}
+
+window.showBookingDetail = async function(bookingId) {
+    document.getElementById('booking-modal').classList.add('active');
+    document.getElementById('booking-modal-body').innerHTML = '<div class="flex justify-center py-10"><div class="loading-spinner w-10 h-10"></div></div>';
+    
+    const result = await callGAS('booking', { bookingId });
+    
+    if (result.success) {
+        const b = result.data;
+        state.currentBooking = b;
+        
+        const statusClass = {
+            'confirmed': 'badge-confirmed',
+            'pending': 'badge-pending',
+            'cancelled': 'badge-cancelled',
+            'rejected': 'badge-rejected',
+            'auto_cancelled': 'badge-auto-cancelled'
+        }[b.status] || 'badge-pending';
+        
+        const statusText = {
+            'confirmed': '✅ อนุมัติแล้ว',
+            'pending': '⏳ รออนุมัติ',
+            'cancelled': '❌ ยกเลิก',
+            'rejected': '❌ ปฏิเสธ',
+            'auto_cancelled': '🤖 ระบบยกเลิกอัตโนมัติ'
+        }[b.status] || b.status;
+
+        let approvedByName = b.approvedBy;
+        if (approvedByName && approvedByName.length > 20 && !approvedByName.includes(' ')) {
+            approvedByName = await getUserNameFromCache(approvedByName);
+        }
+        
+        let rejectedByName = b.rejectedBy;
+        if (rejectedByName && rejectedByName.length > 20 && !rejectedByName.includes(' ')) {
+            rejectedByName = await getUserNameFromCache(rejectedByName);
+        }
+        
+        let cancelledByName = b.cancelledBy;
+        if (cancelledByName && cancelledByName.length > 20 && !cancelledByName.includes(' ')) {
+            cancelledByName = await getUserNameFromCache(cancelledByName);
+        }
+
+        document.getElementById('booking-modal-body').innerHTML = `
+            <div class="mb-4">
+                <span class="badge \${statusClass}">\${statusText}</span>
+            </div>
+            
+            <div class="mb-4">
+                <p class="text-sm text-gray-400 mb-1">หัวข้อ</p>
+                <p class="text-lg font-semibold">\${b.title}</p>
+            </div>
+            
+            <div class="mb-4">
+                <p class="text-sm text-gray-400 mb-1">ห้องประชุม</p>
+                <p class="text-[#06c755]">\${b.roomName}</p>
+            </div>
+            
+            <div class="grid grid-cols-2 gap-3 mb-4">
+                <div>
+                    <p class="text-sm text-gray-400 mb-1">วันที่เริ่ม</p>
+                    <p>\${formatDateShort(b.startTime)}</p>
+                </div>
+                <div>
+                    <p class="text-sm text-gray-400 mb-1">วันที่สิ้นสุด</p>
+                    <p>\${formatDateShort(b.endTime)}</p>
+                </div>
+            </div>
+            
+            <div class="grid grid-cols-2 gap-3 mb-4">
+                <div>
+                    <p class="text-sm text-gray-400 mb-1">เวลาเริ่ม</p>
+                    <p>\${formatTime(b.startTime)}</p>
+                </div>
+                <div>
+                    <p class="text-sm text-gray-400 mb-1">เวลาสิ้นสุด</p>
+                    <p>\${formatTime(b.endTime)}</p>
+                </div>
+            </div>
+            
+            <div class="mb-4">
+                <p class="text-sm text-gray-400 mb-1">จำนวนผู้เข้าร่วม</p>
+                <p>\${b.attendees || 0} คน</p>
+            </div>
+            
+            \${b.meetingLink ? `
+                <div class="mb-4">
+                    <p class="text-sm text-gray-400 mb-1">ลิงค์ประชุม</p>
+                    <a href="\${b.meetingLink}" target="_blank" class="text-[#06c755] underline break-all">\${b.meetingLink}</a>
+                </div>
+            ` : ''}
+            
+            \${b.description ? `
+                <div class="mb-4">
+                    <p class="text-sm text-gray-400 mb-1">รายละเอียด</p>
+                    <p class="whitespace-pre-wrap">\${b.description}</p>
+                </div>
+            ` : ''}
+            
+            \${approvedByName ? `
+                <div class="mb-4 p-3 bg-green-900/20 rounded-lg">
+                    <p class="text-sm text-gray-400 mb-1">✅ อนุมัติโดย</p>
+                    <p class="font-semibold text-green-500">\${approvedByName}</p>
+                    <p class="text-xs text-gray-500">\${b.approvedAt ? formatDateTime(b.approvedAt) : ''}</p>
+                </div>
+            ` : ''}
+            
+            \${rejectedByName ? `
+                <div class="mb-4 p-3 bg-red-900/20 rounded-lg">
+                    <p class="text-sm text-gray-400 mb-1">❌ ปฏิเสธโดย</p>
+                    <p class="font-semibold text-red-500">\${rejectedByName}</p>
+                    \${b.rejectReason ? `<p class="text-sm mt-1">เหตุผล: \${b.rejectReason}</p>` : ''}
+                </div>
+            ` : ''}
+            
+            \${cancelledByName ? `
+                <div class="mb-4 p-3 bg-red-900/20 rounded-lg">
+                    <p class="text-sm text-gray-400 mb-1">❌ ยกเลิกโดย</p>
+                    <p class="font-semibold text-red-500">\${cancelledByName}</p>
+                    \${b.cancelledBy === 'admin' ? '<p class="text-xs text-red-500 mt-1">🔴 ผู้ดูแลยกเลิก (ส่งแจ้งเตือน)</p>' : ''}
+                </div>
+            ` : ''}
+            
+            <div class="text-xs text-gray-500 border-t border-[#2a2e36] pt-3">
+                <p>จองโดย: \${b.userName}</p>
+                <p class="mt-1">\${formatDateTime(b.createdAt)}</p>
+            </div>
+        `;
+
+        const footer = document.getElementById('booking-modal-footer');
+        const now = new Date();
+        const endTime = new Date(b.endTime);
+        const canCancel = b.status === 'confirmed' && endTime > now && b.userId === state.user.lineUserId;
+        
+        let footerButtons = '';
+        
+        if (canCancel) {
+            footerButtons += `
+                <button class="btn-danger flex-1" onclick="cancelBooking('\${b.bookingId}')">
+                    <i class="fas fa-times mr-2"></i>ยกเลิกการจอง
+                </button>
+            `;
+        }
+        
+        if (state.isManager && b.status === 'confirmed' && endTime > now) {
+            footerButtons += `
+                <button class="btn-danger flex-1" onclick="adminCancelBooking('\${b.bookingId}', this)">
+                    <i class="fas fa-ban mr-2"></i>ยกเลิก (แจ้งเตือน)
+                </button>
+            `;
+        }
+        
+        footerButtons += `
+            <button class="btn-outline flex-1" onclick="shareBookingViaPicker('\${b.bookingId}')">
+                <i class="fas fa-share-alt mr-2"></i>แชร์
+            </button>
+            <button class="btn-outline flex-1" onclick="closeBookingDetailModal()">ปิด</button>
+        `;
+        
+        footer.innerHTML = footerButtons;
+    } else {
+        showToast('ไม่พบข้อมูลการจอง', 'error');
+        closeBookingDetailModal();
+    }
+};
+
+window.closeBookingDetailModal = function() {
+    document.getElementById('booking-modal').classList.remove('active');
+    state.currentBooking = null;
+};
+
+window.cancelBooking = async function(bookingId) {
+    const result = await Swal.fire({
+        title: 'ยกเลิกการจอง',
+        text: 'คุณแน่ใจหรือไม่ว่าต้องการยกเลิกการจองนี้?',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#ef4444',
+        confirmButtonText: 'ใช่, ยกเลิก',
+        cancelButtonText: 'ปิด'
+    });
+
+    if (result.isConfirmed) {
+        const apiResult = await callGAS('booking/cancel', { 
+            bookingId,
+            lineUserId: state.user.lineUserId
+        });
+
+        if (apiResult.success) {
+            showToast('ยกเลิกการจองสำเร็จ');
+            const booking = state.currentBooking || {};
+            await sendBookingToChat({
+                title: booking.title,
+                roomName: booking.roomName,
+                userName: state.user.displayName,
+                startTime: booking.startTime,
+                endTime: booking.endTime,
+                attendees: booking.attendees,
+                description: booking.description,
+                meetingLink: booking.meetingLink,
+                cancelledBy: state.user.displayName,
+                action: 'cancelled'
+            });
+            closeBookingDetailModal();
+            await Promise.all([
+                loadMyBookings(), 
+                loadRooms(), 
+                loadTodayStats(),
+                loadMonthBookings(state.currentMonth.getFullYear(), state.currentMonth.getMonth())
+            ]);
+        } else {
+            showToast(apiResult.message || 'ยกเลิกไม่สำเร็จ', 'error');
+        }
+    }
+};
+
+// ========== ADMIN FUNCTIONS ==========
+async function loadAdminStats() {
+    try {
+        const result = await callGAS('admin/stats');
+        if (result.success) {
+            $.adminUsers.textContent = result.data.users || 0;
+            $.adminRooms.textContent = result.data.rooms || 0;
+            $.adminBookings.textContent = result.data.bookings || 0;
+            $.adminPending.textContent = result.data.pending || 0;
+        }
+    } catch (error) {
+        console.error('Load admin stats error:', error);
+    }
+}
+
+async function loadTodayStats() {
+    try {
+        const result = await callGAS('admin/stats');
+        if (result.success) {
+            $.statRooms.textContent = result.data.rooms || 0;
+            $.statToday.textContent = result.data.today || 0;
+            $.statPending.textContent = result.data.pending || 0;
+        }
+    } catch (error) {
+        console.error('Load stats error:', error);
+    }
+}
+
+async function loadPendingBookings() {
+    try {
+        const result = await callGAS('admin/pending-bookings');
+        if (result.success) {
+            state.pendingBookings = result.data || [];
+            renderPendingBookings();
+            
+            const count = state.pendingBookings.length;
+            if (count > 0) {
+                $.pendingBadge.textContent = count > 9 ? '9+' : count;
+                $.pendingBadge.classList.remove('hidden');
+            } else {
+                $.pendingBadge.classList.add('hidden');
+            }
+        }
+    } catch (error) {
+        console.error('Load pending bookings error:', error);
+    }
+}
+
+function renderPendingBookings() {
+    if (!state.pendingBookings.length) {
+        $.pendingBookingsList.innerHTML = '<div class="text-center py-10 text-gray-400">ไม่มีรายการรออนุมัติ</div>';
+        return;
+    }
+
+    $.pendingBookingsList.innerHTML = state.pendingBookings.map(b => `
+        <div class="bg-[#1a1d24] p-4 rounded-xl border border-[#f59e0b]/30">
+            <div class="flex justify-between mb-2">
+                <span class="badge badge-pending">⏳ รออนุมัติ</span>
+                <span class="text-xs text-gray-500">\${formatDateTime(b.createdAt)}</span>
+            </div>
+            <h3 class="font-semibold mb-1">\${b.title}</h3>
+            <p class="text-sm text-[#06c755] mb-2">\${b.roomName}</p>
+            <p class="text-xs text-gray-400 mb-3">
+                <i class="far fa-calendar mr-1"></i> \${formatDateShort(b.startTime)} - \${formatDateShort(b.endTime)}<br>
+                <i class="far fa-clock mr-1"></i> \${formatTime(b.startTime)} - \${formatTime(b.endTime)}
+            </p>
+            <div class="flex justify-between items-center">
+                <span class="text-xs text-gray-500">โดย: \${b.userName}</span>
+                <div class="flex gap-2">
+                    <button class="btn-success text-xs py-2 px-3" onclick="approveBooking('\${b.bookingId}', this)">อนุมัติ</button>
+                    <button class="btn-danger text-xs py-2 px-3" onclick="rejectBooking('\${b.bookingId}', this)">ปฏิเสธ</button>
+                </div>
+            </div>
+        </div>
+    `).join('');
+}
+
+// ========== LOAD ALL BOOKINGS (ADMIN) ==========
+async function loadAllBookings() {
+    try {
+        const result = await callGAS('admin/all-bookings');
+        if (result.success) {
+            const now = new Date();
+            const upcomingBookings = (result.data || []).filter(booking => {
+                const endTime = new Date(booking.endTime);
+                return endTime >= now;
+            });
+            
+            state.allBookings = upcomingBookings.sort((a, b) => {
+                return new Date(a.startTime) - new Date(b.startTime);
+            });
+            
+            renderAllBookings();
+        }
+    } catch (error) {
+        console.error('Load all bookings error:', error);
+    }
+}
+
+function renderAllBookings() {
+    const search = $.adminBookingSearch?.value.toLowerCase() || '';
+    const filtered = state.allBookings.filter(b => 
+        b.title?.toLowerCase().includes(search) || 
+        b.userName?.toLowerCase().includes(search) ||
+        b.roomName?.toLowerCase().includes(search)
+    );
+
+    if (!filtered.length) {
+        $.allBookingsList.innerHTML = '<div class="text-center py-10 text-gray-400">ไม่พบการจองที่กำลังจะมาถึง</div>';
+        return;
+    }
+
+    const processedBookings = filtered.map(b => {
+        let approvedByName = b.approvedBy;
+        if (approvedByName && approvedByName.length > 20 && !approvedByName.includes(' ')) {
+            approvedByName = state.userNamesCache[approvedByName] || approvedByName.substring(0, 8) + '...';
+        }
+        
+        let rejectedByName = b.rejectedBy;
+        if (rejectedByName && rejectedByName.length > 20 && !rejectedByName.includes(' ')) {
+            rejectedByName = state.userNamesCache[rejectedByName] || rejectedByName.substring(0, 8) + '...';
+        }
+        
+        return {
+            ...b,
+            approvedByName,
+            rejectedByName
+        };
+    });
+
+    $.allBookingsList.innerHTML = processedBookings.map(b => {
+        const statusClass = {
+            'confirmed': 'badge-confirmed',
+            'pending': 'badge-pending',
+            'cancelled': 'badge-cancelled',
+            'rejected': 'badge-rejected',
+            'auto_cancelled': 'badge-auto-cancelled'
+        }[b.status] || 'badge-pending';
+        
+        const now = new Date();
+        const endTime = new Date(b.endTime);
+        const canAdminCancel = state.isManager && b.status === 'confirmed' && endTime >= now;
+        
+        const statusText = {
+            'confirmed': '✅ อนุมัติแล้ว',
+            'pending': '⏳ รออนุมัติ',
+            'cancelled': '❌ ยกเลิก',
+            'rejected': '❌ ปฏิเสธ',
+            'auto_cancelled': '🤖 ระบบยกเลิก'
+        }[b.status] || b.status;
+        
+        const startTime = new Date(b.startTime);
+        const timeDiff = startTime - now;
+        const daysLeft = Math.floor(timeDiff / (1000 * 60 * 60 * 24));
+        const hoursLeft = Math.floor((timeDiff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+        
+        let timeRemainingText = '';
+        if (daysLeft > 0) {
+            timeRemainingText = `เหลืออีก \${daysLeft} วัน \${hoursLeft} ชั่วโมง`;
+        } else if (hoursLeft > 0) {
+            timeRemainingText = `เหลืออีก \${hoursLeft} ชั่วโมง`;
+        } else {
+            timeRemainingText = `กำลังจะเริ่มในอีกไม่กี่นาที`;
+        }
+        
+        return `
+        <div class="bg-[#1a1d24] p-3 rounded-lg border border-[#2a2e36] flex justify-between items-center hover:border-[#06c755] transition-all">
+            <div class="flex-1">
+                <div class="flex justify-between items-start mb-2">
+                    <div>
+                        <span class="font-semibold text-sm">\${b.title}</span>
+                        <span class="text-xs text-gray-400 ml-2">\${b.roomName}</span>
+                    </div>
+                    <span class="badge \${statusClass} text-xs">\${statusText}</span>
+                </div>
+                <div class="flex flex-wrap gap-2 text-xs text-gray-400">
+                    <span><i class="far fa-user mr-1"></i> \${b.userName}</span>
+                    <span><i class="far fa-calendar mr-1"></i> \${formatDateShort(b.startTime)}</span>
+                    <span><i class="far fa-clock mr-1"></i> \${formatTime(b.startTime)} - \${formatTime(b.endTime)}</span>
+                </div>
+                <div class="text-xs text-yellow-500 mt-1">
+                    <i class="fas fa-hourglass-half mr-1"></i> \${timeRemainingText}
+                </div>
+                \${b.approvedByName ? `<p class="text-xs text-green-500 mt-1">✅ อนุมัติโดย: \${b.approvedByName}</p>` : ''}
+                \${b.rejectedByName ? `<p class="text-xs text-red-500 mt-1">❌ ปฏิเสธโดย: \${b.rejectedByName}</p>` : ''}
+            </div>
+            <div class="flex flex-col gap-2 ml-2">
+                <button class="text-[#06c755] text-xs" onclick="shareBookingViaPicker('\${b.bookingId}'); event.stopPropagation();">
+                    <i class="fas fa-share-alt mr-1"></i>แชร์
+                </button>
+                \${canAdminCancel ? `
+                    <button class="text-red-500 text-xs" onclick="adminCancelBooking('\${b.bookingId}', this); event.stopPropagation();">
+                        <i class="fas fa-ban mr-1"></i>ยกเลิก
+                    </button>
+                ` : ''}
+            </div>
+        </div>
+    `}).join('');
+}
+
+async function loadUsers() {
+    try {
+        const result = await callGAS('admin/users');
+        if (result.success) {
+            state.users = result.data || [];
+            state.users.forEach(u => {
+                if (u.lineUserId && u.displayName) {
+                    state.userNamesCache[u.lineUserId] = u.displayName;
+                }
+            });
+            renderUsers();
+        }
+    } catch (error) {
+        console.error('Load users error:', error);
+    }
+}
+
+function renderUsers() {
+    const search = $.userSearch?.value.toLowerCase() || '';
+    const filtered = state.users.filter(u => 
+        u.displayName?.toLowerCase().includes(search) || 
+        u.email?.toLowerCase().includes(search)
+    );
+
+    if (!filtered.length) {
+        $.usersList.innerHTML = '<p class="text-center text-gray-400 py-6">ไม่พบผู้ใช้</p>';
+        return;
+    }
+
+    $.usersList.innerHTML = filtered.map(u => `
+        <div class="user-row">
+            <img src="\${u.pictureUrl || 'https://via.placeholder.com/40'}" class="user-avatar-sm" loading="lazy">
+            <div class="flex-1">
+                <p class="font-semibold text-sm">\${u.displayName || ''}</p>
+                <p class="text-xs text-gray-400">\${u.email || ''}</p>
+            </div>
+            <span class="role-badge role-\${u.role}">\${{admin:'ผู้ดูแล', manager:'ผู้จัดการ', user:'ผู้ใช้'}[u.role]}</span>
+            \${state.isAdmin ? `
+                <button class="text-[#06c755] text-xs" onclick="showRoleModal('\${u.lineUserId}', '\${u.displayName}', '\${u.role}')">
+                    <i class="fas fa-cog"></i>
+                </button>
+                <button class="text-red-500 text-xs" onclick="showDeleteUserModal('\${u.lineUserId}', '\${u.displayName}')">
+                    <i class="fas fa-trash"></i>
+                </button>
+            ` : ''}
+        </div>
+    `).join('');
+}
+
+window.showRoleModal = function(userId, userName, currentRole) {
+    if (!state.isAdmin) {
+        showToast('เฉพาะผู้ดูแลระบบเท่านั้น', 'error');
+        return;
+    }
+    document.getElementById('role-user-id').value = userId;
+    document.getElementById('role-user-name').textContent = `จัดการสิทธิ์: \${userName}`;
+    document.getElementById('user-role').value = currentRole;
+    document.getElementById('role-modal').classList.add('active');
+};
+
+window.closeRoleModal = function() {
+    document.getElementById('role-modal').classList.remove('active');
+};
+
+window.showDeleteUserModal = function(userId, userName) {
+    if (!state.isAdmin) {
+        showToast('เฉพาะผู้ดูแลระบบเท่านั้น', 'error');
+        return;
+    }
+    state.currentUserToDelete = userId;
+    document.getElementById('delete-user-name').textContent = `คุณแน่ใจหรือไม่ว่าต้องการลบผู้ใช้: \${userName}`;
+    document.getElementById('delete-user-modal').classList.add('active');
+};
+
+window.closeDeleteUserModal = function() {
+    document.getElementById('delete-user-modal').classList.remove('active');
+    state.currentUserToDelete = null;
+};
+
+window.confirmDeleteUser = async function() {
+    if (!state.isAdmin || !state.currentUserToDelete) {
+        closeDeleteUserModal();
+        return;
+    }
+
+    const btn = document.querySelector('#delete-user-modal .btn-danger');
+    setButtonLoading(btn, true);
+
+    try {
+        const result = await callGAS('admin/user/delete', {
+            targetUserId: state.currentUserToDelete,
+            lineUserId: state.user.lineUserId
+        });
+
+        if (result.success) {
+            showToast('ลบผู้ใช้สำเร็จ');
+            
+            const deletedUser = state.users.find(u => u.lineUserId === state.currentUserToDelete) || {};
+            await sendBookingToChat({
+                title: 'ลบผู้ใช้ออกจากระบบ',
+                roomName: 'การจัดการผู้ใช้',
+                userName: state.user.displayName,
+                startTime: new Date().toISOString(),
+                endTime: new Date().toISOString(),
+                description: 'ผู้ใช้ที่ถูกลบ: ' + (deletedUser.displayName || 'ไม่ระบุ') + '\\nสิทธิ์เดิม: ' + (deletedUser.role || 'ไม่ระบุ'),
+                action: 'user_deleted'
+            });
+
+            closeDeleteUserModal();
+            await loadUsers();
+            await loadAdminStats();
+        } else {
+            showToast(result.message || 'ลบผู้ใช้ไม่สำเร็จ', 'error');
+            closeDeleteUserModal();
+        }
+    } catch (error) {
+        console.error('Delete user error:', error);
+        showToast('เกิดข้อผิดพลาด', 'error');
+        closeDeleteUserModal();
+    } finally {
+        setButtonLoading(btn, false);
+    }
+};
+
+window.saveUserRole = async function(e) {
+    e.preventDefault();
+    
+    if (!state.isAdmin) {
+        showToast('เฉพาะผู้ดูแลระบบเท่านั้น', 'error');
+        return;
+    }
+
+    const userId = document.getElementById('role-user-id').value;
+    const role = document.getElementById('user-role').value;
+
+    const saveBtn = e.submitter;
+    setButtonLoading(saveBtn, true);
+
+    const result = await callGAS('admin/user/role', {
+        targetUserId: userId,
+        role,
+        lineUserId: state.user.lineUserId
+    });
+
+    if (result.success) {
+        showToast('อัปเดตสิทธิ์สำเร็จ');
+        
+        const targetUser = state.users.find(u => u.lineUserId === userId) || {};
+        const roleNames = { admin: 'ผู้ดูแลระบบ', manager: 'ผู้จัดการ', user: 'ผู้ใช้ทั่วไป' };
+        await sendBookingToChat({
+            title: 'เปลี่ยนสิทธิ์ผู้ใช้งาน: ' + (targetUser.displayName || 'ไม่ระบุ'),
+            roomName: 'ระบบจัดการสิทธิ์',
+            userName: state.user.displayName,
+            startTime: new Date().toISOString(),
+            endTime: new Date().toISOString(),
+            description: 'ผู้ใช้: ' + (targetUser.displayName || 'ไม่ระบุ') + '\\nสิทธิ์ใหม่: ' + (roleNames[role] || role),
+            action: 'role_updated'
+        });
+
+        closeRoleModal();
+        await loadUsers();
+        
+        if (userId === state.user?.lineUserId) {
+            const userResult = await callGAS('user/profile', {
+                lineUserId: state.user.lineUserId,
+                forceEmailFetch: 'true'
+            });
+            if (userResult.success) {
+                state.user = userResult.data;
+                state.role = state.user.role || 'user';
+                updateRoleFlags();
+                
+                $.profileRole.textContent = {
+                    admin: '👑 ผู้ดูแลระบบ',
+                    manager: '👥 ผู้จัดการ',
+                    user: '👤 ผู้ใช้ทั่วไป'
+                }[state.user.role] || '';
+                
+                $.managerAdmin.forEach(el => {
+                    if (state.isManager) el.classList.remove('hidden');
+                    else el.classList.add('hidden');
+                });
+
+                $.adminOnlyUsers.forEach(el => {
+                    if (state.isAdmin) el.style.display = 'block';
+                    else el.style.display = 'none';
+                });
+
+                $.adminOnlySettings.forEach(el => {
+                    if (state.isAdmin) el.style.display = 'block';
+                    else el.style.display = 'none';
+                });
+            }
+        }
+    } else {
+        showToast(result.message || 'อัปเดตไม่สำเร็จ', 'error');
+    }
+
+    setButtonLoading(saveBtn, false);
+};
+
+// ========== ROOM MANAGEMENT ==========
+window.showCreateRoomModal = function() {
+    document.getElementById('room-modal-title').textContent = 'เพิ่มห้องใหม่';
+    document.getElementById('edit-room-id').value = '';
+    document.getElementById('room-name').value = '';
+    document.getElementById('room-capacity').value = '';
+    document.getElementById('room-location').value = '';
+    document.getElementById('room-description').value = '';
+    document.getElementById('room-facilities').value = '';
+    document.getElementById('room-image').value = '';
+    document.getElementById('room-image-preview').style.display = 'none';
+    document.getElementById('room-create-modal').classList.add('active');
+};
+
+window.closeRoomModal = function() {
+    document.getElementById('room-create-modal').classList.remove('active');
+};
+
+window.saveRoom = async function(e) {
+    e.preventDefault();
+    
+    const btn = document.getElementById('save-room-btn');
+    if (btn.disabled) return;
+    
+    setButtonLoading(btn, true);
+
+    try {
+        const id = document.getElementById('edit-room-id').value;
+        let imageUrl = document.getElementById('room-image').value;
+        const file = document.getElementById('room-image-file').files[0];
+
+        if (file) {
+            const uploaded = await uploadImageToDrive(file);
+            if (uploaded) imageUrl = uploaded;
+        }
+
+        const data = {
+            name: document.getElementById('room-name').value,
+            capacity: document.getElementById('room-capacity').value,
+            location: document.getElementById('room-location').value,
+            description: document.getElementById('room-description').value,
+            facilities: document.getElementById('room-facilities').value,
+            imageUrl,
+            lineUserId: state.user.lineUserId
+        };
+
+        if (id) data.roomId = id;
+
+        const result = await callGAS(id ? 'room/update' : 'room/create', data);
+
+        if (result.success) {
+            showToast(id ? 'แก้ไขห้องสำเร็จ' : 'เพิ่มห้องสำเร็จ');
+            closeRoomModal();
+            await loadRooms();
+            await loadRoomsManagement();
+            if (state.isAdmin) await loadAdminStats();
+        } else {
+            showToast(result.message || 'เกิดข้อผิดพลาด', 'error');
+        }
+    } catch (error) {
+        console.error('Save room error:', error);
+        showToast('เกิดข้อผิดพลาด', 'error');
+    } finally {
+        setButtonLoading(btn, false);
+    }
+};
+
+window.editCurrentRoom = function() {
+    if (!state.currentRoom) return;
+    
+    const r = state.currentRoom;
+    document.getElementById('room-modal-title').textContent = 'แก้ไขห้อง';
+    document.getElementById('edit-room-id').value = r.roomId;
+    document.getElementById('room-name').value = r.name;
+    document.getElementById('room-capacity').value = r.capacity;
+    document.getElementById('room-location').value = r.location;
+    document.getElementById('room-description').value = r.description || '';
+    document.getElementById('room-facilities').value = r.facilities || '';
+    document.getElementById('room-image').value = r.imageUrl || '';
+    
+    if (r.imageUrl) {
+        document.getElementById('room-image-preview').src = r.imageUrl;
+        document.getElementById('room-image-preview').style.display = 'block';
+    }
+    
+    closeModal();
+    document.getElementById('room-create-modal').classList.add('active');
+};
+
+window.deleteCurrentRoom = async function() {
+    if (!state.currentRoom) return;
+
+    const result = await Swal.fire({
+        title: 'ลบห้องประชุม',
+        text: 'คุณแน่ใจหรือไม่? การลบห้องจะส่งผลต่อการจองที่เกี่ยวข้อง',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#ef4444',
+        confirmButtonText: 'ใช่, ลบ'
+    });
+
+    if (result.isConfirmed) {
+        const deleteBtn = $.modalDeleteBtn;
+        setButtonLoading(deleteBtn, true);
+
+        const apiResult = await callGAS('room/delete', { 
+            roomId: state.currentRoom.roomId,
+            lineUserId: state.user.lineUserId
+        });
+
+        if (apiResult.success) {
+            showToast('ลบห้องสำเร็จ');
+            const room = state.currentRoom || {};
+            await sendBookingToChat({
+                title: 'ห้องประชุม: ' + (room.name || 'ไม่ระบุ'),
+                roomName: room.name,
+                userName: state.user.displayName,
+                startTime: new Date().toISOString(),
+                endTime: new Date().toISOString(),
+                description: 'ห้องประชุมนี้ถูกลบออกจากระบบ การจองทั้งหมดอาจได้รับผลกระทบ',
+                action: 'deleted'
+            });
+            closeModal();
+            await loadRooms();
+            await loadRoomsManagement();
+            await loadAdminStats();
+        } else {
+            showToast(apiResult.message || 'ลบไม่สำเร็จ', 'error');
+        }
+
+        setButtonLoading(deleteBtn, false);
+    }
+};
+
+// ========== SETTINGS ==========
+async function loadSettings() {
+    try {
+        if (isCacheValid('settings') && state.settings) {
+            updateAppName(state.settings.appName);
+            updateSettingsUI();
+            return;
+        }
+
+        const result = await callGAS('admin/settings/get');
+        
+        if (result.success) {
+            state.settings = result.data || {
+                appName: 'Meeting Room',
+                requireApproval: 'true',
+                reminderMinutes: 'none'
+            };
+            
+            localStorage.setItem('settings_cache', JSON.stringify(state.settings));
+            updateCacheTimestamp('settings');
+            
+            updateSettingsUI();
+        } else {
+            console.error('Failed to load settings from admin/settings/get, trying old path...');
+            const fallbackResult = await callGAS('settings');
+            
+            if (fallbackResult.success) {
+                state.settings = fallbackResult.data || {
+                    appName: 'Meeting Room',
+                    requireApproval: 'true',
+                    reminderMinutes: 'none'
+                };
+                
+                updateSettingsUI();
+            } else {
+                console.error('Failed to load settings');
+                updateSettingsUI();
+            }
+        }
+    } catch (error) {
+        console.error('Load settings error:', error);
+        updateSettingsUI();
+    }
+}
+
+function updateSettingsUI() {
+    document.getElementById('setting-app-name').value = state.settings.appName || 'Meeting Room';
+    
+    if ($.settingRequireApproval) {
+        const requireApproval = state.settings.requireApproval;
+        let isChecked = false;
+        
+        if (typeof requireApproval === 'string') {
+            isChecked = requireApproval.toLowerCase() === 'true' || requireApproval === '1';
+        } else if (typeof requireApproval === 'boolean') {
+            isChecked = requireApproval;
+        } else if (typeof requireApproval === 'number') {
+            isChecked = requireApproval === 1;
+        }
+        
+        $.settingRequireApproval.checked = isChecked;
+    }
+    
+    if ($.settingReminderMinutes) {
+        $.settingReminderMinutes.value = state.settings.reminderMinutes || 'none';
+    }
+    
+    updateAppName(state.settings.appName);
+}
+
+window.saveSettings = async function(e) {
+    e.preventDefault();
+    
+    if (!state.isAdmin) {
+        showToast('เฉพาะผู้ดูแลระบบเท่านั้น', 'error');
+        return;
+    }
+    
+    const appName = document.getElementById('setting-app-name').value.trim() || 'Meeting Room';
+    const requireApproval = $.settingRequireApproval ? $.settingRequireApproval.checked : true;
+    const reminderMinutes = $.settingReminderMinutes?.value || 'none';
+
+    const saveBtn = $.settingsSaveBtn;
+    setButtonLoading(saveBtn, true);
+
+    const data = {
+        appName,
+        requireApproval: requireApproval ? 'true' : 'false',
+        reminderMinutes,
+        lineUserId: state.user.lineUserId
+    };
+
+    const result = await callGAS('admin/settings/update', data);
+    
+    if (result.success) {
+        showToast('บันทึกสำเร็จ');
+        
+        await sendBookingToChat({
+            title: 'อัปเดตการตั้งค่าระบบ',
+            roomName: 'การตั้งค่า',
+            userName: state.user.displayName,
+            startTime: new Date().toISOString(),
+            endTime: new Date().toISOString(),
+            description: 'ชื่อแอป: ' + appName + '\\nระบบอนุมัติ: ' + (requireApproval ? 'เปิดใช้งาน' : 'ปิดใช้งาน') + '\\nแจ้งเตือนล่วงหน้า: ' + (reminderMinutes === 'none' ? 'ไม่แจ้งเตือน' : reminderMinutes + ' นาที'),
+            action: 'settings_updated'
+        });
+
+        Object.assign(state.settings, data);
+        updateAppName(appName);
+        
+        localStorage.setItem('settings_cache', JSON.stringify(state.settings));
+        updateCacheTimestamp('settings');
+    } else {
+        showToast(result.message || 'บันทึกไม่สำเร็จ', 'error');
+    }
+
+    setButtonLoading(saveBtn, false);
+};
+
+// ========== PROFILE ==========
+window.showProfileSettings = function() {
+    document.getElementById('profile-phone').value = state.user?.phone || '';
+    document.getElementById('profile-department').value = state.user?.department || '';
+    
+    if ($.profileNotificationsEnabled) {
+        $.profileNotificationsEnabled.checked = state.userSettings.notificationsEnabled !== false;
+    }
+    
+    document.getElementById('profile-modal').classList.add('active');
+};
+
+window.closeProfileModal = function() {
+    document.getElementById('profile-modal').classList.remove('active');
+};
+
+window.saveProfile = async function(e) {
+    e.preventDefault();
+    
+    const saveBtn = e.submitter;
+    setButtonLoading(saveBtn, true);
+
+    if ($.profileNotificationsEnabled) {
+        state.userSettings.notificationsEnabled = $.profileNotificationsEnabled.checked;
+        saveUserSettings();
+    }
+
+    const data = {
+        phone: document.getElementById('profile-phone').value,
+        department: document.getElementById('profile-department').value,
+        lineUserId: state.user.lineUserId
+    };
+
+    const result = await callGAS('user/update', data);
+    if (result.success) {
+        showToast('บันทึกสำเร็จ');
+        Object.assign(state.user, data);
+        closeProfileModal();
+    } else {
+        showToast(result.message || 'บันทึกไม่สำเร็จ', 'error');
+    }
+
+    setButtonLoading(saveBtn, false);
+};
+
+window.logout = function() {
+    if (liff.isLoggedIn()) liff.logout();
+    location.reload();
+};
+
+// ========== TAB SWITCHING ==========
+window.switchTab = function(tab) {
+    $.navItems.forEach(i => i.classList.remove('active'));
+    document.querySelectorAll(`[data-tab="\${tab}"]`).forEach(i => i.classList.add('active'));
+    
+    document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+    document.getElementById(`tab-\${tab}`).classList.add('active');
+
+    if (tab === 'my') loadMyBookings();
+    if (tab === 'admin' && state.isManager) {
+        loadAdminStats();
+        loadUsers();
+        loadPendingBookings();
+        loadAllBookings();
+        loadRoomsManagement();
+    }
+};
+
+window.goHome = function() {
+    switchTab('home');
+};
+
+// ========== EVENT LISTENERS ==========
+// ========== OPTIMIZED SEARCH WITH DEBOUNCE ==========
+let searchTimer;
+$.searchInput.addEventListener('input', () => {
+    clearTimeout(searchTimer);
+    // ใช้ debounce เพื่อลดการเรนเดอร์ที่ไม่จำเป็น
+    searchTimer = setTimeout(() => {
+        renderRooms();
+    }, 300);
+});
+
+$.userSearch?.addEventListener('input', renderUsers);
+
+$.adminBookingSearch?.addEventListener('input', () => {
+    renderAllBookings();
+});
+
+$.refreshAdmin?.addEventListener('click', () => {
+    if (state.isManager) {
+        loadAdminStats();
+        loadUsers();
+        loadPendingBookings();
+        loadAllBookings();
+        loadRoomsManagement();
+    }
+});
+
+document.querySelectorAll('.admin-tab-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+        document.querySelectorAll('.admin-tab-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        
+        document.querySelectorAll('.admin-tab').forEach(t => t.classList.add('hidden'));
+        document.getElementById(`admin-\${btn.dataset.adminTab}-tab`).classList.remove('hidden');
+        
+        if (btn.dataset.adminTab === 'rooms') {
+            loadRoomsManagement();
+        } else if (btn.dataset.adminTab === 'bookings') {
+            loadAllBookings();
+        } else if (btn.dataset.adminTab === 'users') {
+            loadUsers();
+        } else if (btn.dataset.adminTab === 'pending') {
+            loadPendingBookings();
+        }
+    });
+});
+
+document.querySelectorAll('[data-booking-filter]').forEach(btn => {
+    btn.addEventListener('click', () => {
+        document.querySelectorAll('[data-booking-filter]').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        renderMyBookings(btn.dataset.bookingFilter);
+    });
+});
+
+$.navItems.forEach(item => {
+    item.addEventListener('click', () => {
+        switchTab(item.dataset.tab);
+    });
+});
+
+document.getElementById('profile-header').addEventListener('click', () => {
+    Swal.fire({
+        title: state.user?.displayName,
+        text: state.user?.email || 'ไม่มีอีเมล',
+        showCancelButton: true,
+        confirmButtonText: 'แก้ไขโปรไฟล์',
+        cancelButtonText: 'ออกจากระบบ'
+    }).then(async r => {
+        if (r.isConfirmed) {
+            showProfileSettings();
+        } else if (r.dismiss === Swal.DismissReason.cancel) {
+            logout();
+        }
+    });
+});
+
+$.bookingAttendees?.addEventListener('input', () => {
+    validateBookingForm();
+    checkAvailability();
+});
+
+document.getElementById('booking-room')?.addEventListener('change', () => {
+    validateBookingForm();
+    checkAvailability();
+});
+
+const todayForInput = formatDateForInput(new Date());
+if ($.bookingDate) $.bookingDate.min = todayForInput;
+if ($.bookingEndDate) $.bookingEndDate.min = todayForInput;
+
+// ========== INIT ==========
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initLIFF);
+} else {
+    initLIFF();
+}

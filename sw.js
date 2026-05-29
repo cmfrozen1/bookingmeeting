@@ -5,11 +5,14 @@ const STATIC_CACHE_NAME = 'meeting-room-static-v1';
 // ไฟล์ที่ต้องการ Cache ไว้ใช้งานแบบ Offline
 const urlsToCache = [
   '/',
+  'index.html',
+  'css/style.css',
+  'js/main.js',
   'https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css',
   'https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@300;400;500;600;700&display=swap',
   'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css',
   'https://cdn.jsdelivr.net/npm/sweetalert2@11',
-  'https://static.line-scdn.net/liff/edge/2.1/sdk.js',
+  'https://static.line-scdn.net/liff/edge/versions/2.28.0/sdk.js',
   'https://cdn-icons-png.flaticon.com/512/1040/1040244.png'
 ];
 
