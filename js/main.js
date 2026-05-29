@@ -135,7 +135,7 @@ function showToast(msg, type = 'success') {
         left: 16px;
         right: 16px;
         background: #1a1d24;
-        border-left: 4px solid \${type === 'success' ? '#06c755' : type === 'warning' ? '#f59e0b' : '#ef4444'};
+        border-left: 4px solid ${type === 'success' ? '#06c755' : type === 'warning' ? '#f59e0b' : '#ef4444'};
         border-radius: 12px;
         padding: 12px 16px;
         color: white;
@@ -209,14 +209,14 @@ function formatDateForInput(date) {
     const year = d.getFullYear();
     const month = String(d.getMonth() + 1).padStart(2, '0');
     const day = String(d.getDate()).padStart(2, '0');
-    return `\${year}-\${month}-\${day}`;
+    return `${year}-${month}-${day}`;
 }
 
 function formatTimeForInput(date) {
     const d = new Date(date);
     const hours = String(d.getHours()).padStart(2, '0');
     const minutes = String(d.getMinutes()).padStart(2, '0');
-    return `\${hours}:\${minutes}`;
+    return `${hours}:${minutes}`;
 }
 
 function formatMonthThai(date) {
@@ -234,7 +234,7 @@ function updateAppName(name) {
 
 // ========== CACHE MANAGEMENT ==========
 function isCacheValid(cacheKey, maxAge = CONFIG.CACHE_TTL) {
-    const timestamp = localStorage.getItem(`\${cacheKey}_timestamp`);
+    const timestamp = localStorage.getItem(`${cacheKey}_timestamp`);
     if (!timestamp) return false;
     
     const age = Date.now() - parseInt(timestamp);
@@ -242,7 +242,7 @@ function isCacheValid(cacheKey, maxAge = CONFIG.CACHE_TTL) {
 }
 
 function updateCacheTimestamp(cacheKey) {
-    localStorage.setItem(`\${cacheKey}_timestamp`, Date.now().toString());
+    localStorage.setItem(`${cacheKey}_timestamp`, Date.now().toString());
 }
 
 // ========== NOTIFICATION CHECK ==========
@@ -326,7 +326,7 @@ async function fetchEmailWithAccessToken() {
 
         const response = await fetch('https://api.line.me/oauth2/v2.1/userinfo', {
             headers: {
-                'Authorization': `Bearer \${accessToken}`
+                'Authorization': `Bearer ${accessToken}`
             }
         });
 
@@ -421,7 +421,7 @@ function populateTimeSelects() {
     for (let hour = startHour; hour <= endHour; hour++) {
         for (let minute = 0; minute < 60; minute += stepMinutes) {
             if (hour === endHour && minute > 0) continue;
-            const time = `\${hour.toString().padStart(2, '0')}:\${minute.toString().padStart(2, '0')}`;
+            const time = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
             const option = new Option(time, time);
             startSelect.add(option.cloneNode(true));
             endSelect.add(option.cloneNode(true));
@@ -636,7 +636,7 @@ async function callGAS(path, data = {}, retryCount = 0) {
         console.error('API Error:', error);
         
         if (retryCount < CONFIG.MAX_RETRY) {
-            console.log(`Retrying... (\${retryCount + 1}/\${CONFIG.MAX_RETRY})`);
+            console.log(`Retrying... (${retryCount + 1}/${CONFIG.MAX_RETRY})`);
             await new Promise(resolve => setTimeout(resolve, 1000 * (retryCount + 1)));
             return callGAS(path, data, retryCount + 1);
         }
@@ -765,11 +765,11 @@ async function createBookingFlexMessage(bookingData) {
     }
     
     // สร้าง URL ลิงค์สำหรับดูรายละเอียดการจองบนปฏิทิน (ใช้ liff URL พร้อม query parameter)
-    const bookingDetailUrl = `https://liff.line.me/\${CONFIG.LIFF_ID}?bookingId=\${bookingId}&view=calendar`;
+    const bookingDetailUrl = `https://liff.line.me/${CONFIG.LIFF_ID}?bookingId=${bookingId}&view=calendar`;
     
     const flexMessage = {
         type: 'flex',
-        altText: `\${statusEmoji} \${statusText} - \${title || 'การจองห้องประชุม'}`,
+        altText: `${statusEmoji} ${statusText} - ${title || 'การจองห้องประชุม'}`,
         contents: {
             type: 'bubble',
             header: {
@@ -780,7 +780,7 @@ async function createBookingFlexMessage(bookingData) {
                 contents: [
                     {
                         type: 'text',
-                        text: `\${statusEmoji} \${statusThai}`,
+                        text: `${statusEmoji} ${statusThai}`,
                         size: 'lg',
                         weight: 'bold',
                         color: '#ffffff',
@@ -975,7 +975,9 @@ async function createBookingFlexMessage(bookingData) {
                             }
                         ]
                     },
-                    footer: {
+                ]
+            },
+            footer: {
                         type: 'box',
                         layout: 'vertical',
                         spacing: 'sm',
@@ -1364,9 +1366,9 @@ function renderCalendarDay(day, isOtherMonth, hasBooking, isToday, dateStr, book
     }
     
     return `
-        <div class="\${classes}" onclick="selectDate('\${dateStr}')">
-            \${day}
-            \${hasMultiDayBooking ? '<span class="multi-day-badge">📅</span>' : ''}
+        <div class="${classes}" onclick="selectDate('${dateStr}')">
+            ${day}
+            ${hasMultiDayBooking ? '<span class="multi-day-badge">📅</span>' : ''}
         </div>
     `;
 }
@@ -1399,7 +1401,7 @@ function checkUrlForBookingId() {
                 });
             }, 100);
         } else if (attempt < 10) {
-            console.log(`Waiting for LIFF to initialize... attempt \${attempt + 1}`);
+            console.log(`Waiting for LIFF to initialize... attempt ${attempt + 1}`);
             setTimeout(() => attemptShowDetail(attempt + 1), 1000);
         } else {
             console.error('Failed to show booking detail after multiple attempts');
@@ -1442,7 +1444,7 @@ window.selectDate = async function(dateStr) {
             year: 'numeric' 
         });
         
-        $.selectedDateTitle.textContent = `📅 การจองวันที่ \${dateThai}`;
+        $.selectedDateTitle.textContent = `📅 การจองวันที่ ${dateThai}`;
         
         const processedBookings = await Promise.all(bookings.map(async (b) => {
             let approvedByName = b.approvedBy;
@@ -1466,22 +1468,22 @@ window.selectDate = async function(dateStr) {
                 ...b,
                 approvedByName,
                 isMultiDay,
-                multiDayInfo: isMultiDay ? `\${formatDateShort(b.startTime)} - \${formatDateShort(b.endTime)}` : null,
+                multiDayInfo: isMultiDay ? `${formatDateShort(b.startTime)} - ${formatDateShort(b.endTime)}` : null,
                 statusClass
             };
         }));
         
         $.selectedDateBookingsList.innerHTML = processedBookings.map(b => {
             return `
-                <div class="date-booking-item \${b.statusClass}" onclick="showBookingDetail('\${b.bookingId}')">
+                <div class="date-booking-item ${b.statusClass}" onclick="showBookingDetail('${b.bookingId}')">
                     <div class="date-booking-time">
-                        <i class="far fa-clock mr-1"></i> \${formatTime(b.startTime)} - \${formatTime(b.endTime)}
-                        \${b.isMultiDay ? '<span class="ml-2 text-yellow-500">📅 ข้ามวัน</span>' : ''}
+                        <i class="far fa-clock mr-1"></i> ${formatTime(b.startTime)} - ${formatTime(b.endTime)}
+                        ${b.isMultiDay ? '<span class="ml-2 text-yellow-500">📅 ข้ามวัน</span>' : ''}
                     </div>
-                    <div class="date-booking-title">\${b.title}</div>
-                    <div class="date-booking-room">\${b.roomName} | โดย: \${b.userName}</div>
-                    \${b.approvedByName ? `<div class="text-xs text-green-500 mt-1">✅ อนุมัติโดย: \${b.approvedByName}</div>` : ''}
-                    \${b.multiDayInfo ? `<div class="text-xs text-yellow-500 mt-1">📅 \${b.multiDayInfo}</div>` : ''}
+                    <div class="date-booking-title">${b.title}</div>
+                    <div class="date-booking-room">${b.roomName} | โดย: ${b.userName}</div>
+                    ${b.approvedByName ? `<div class="text-xs text-green-500 mt-1">✅ อนุมัติโดย: ${b.approvedByName}</div>` : ''}
+                    ${b.multiDayInfo ? `<div class="text-xs text-yellow-500 mt-1">📅 ${b.multiDayInfo}</div>` : ''}
                 </div>
             `;
         }).join('');
@@ -1490,7 +1492,7 @@ window.selectDate = async function(dateStr) {
     } else {
         $.selectedDateBookingsList.innerHTML = '<div class="text-center py-4 text-gray-400">ไม่มีการจองในวันนี้</div>';
         $.selectedDateBookings.classList.remove('hidden');
-        $.selectedDateTitle.textContent = `📅 \${new Date(dateStr).toLocaleDateString('th-TH', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}`;
+        $.selectedDateTitle.textContent = `📅 ${new Date(dateStr).toLocaleDateString('th-TH', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}`;
     }
 };
 
@@ -1810,24 +1812,24 @@ function renderRooms() {
 
     $.roomsList.innerHTML = filtered.map(r => {
         const imageHtml = r.imageUrl ? 
-            `<img src="\${r.imageUrl}" class="w-full h-full object-cover" loading="lazy" onerror="this.style.display='none'; this.parentElement.innerHTML='<i class=\\'fas fa-door-open text-4xl text-[#06c755]\\'></i>';">` : 
+            `<img src="${r.imageUrl}" class="w-full h-full object-cover" loading="lazy" onerror="this.style.display='none'; this.parentElement.innerHTML='<i class=\\'fas fa-door-open text-4xl text-[#06c755]\\'></i>';">` : 
             `<i class="fas fa-door-open text-4xl text-[#06c755]"></i>`;
         
         return `
-        <div class="room-card" onclick="showRoomDetail('\${r.roomId}')">
+        <div class="room-card" onclick="showRoomDetail('${r.roomId}')">
             <div class="room-image">
-                \${imageHtml}
+                ${imageHtml}
             </div>
             <div class="room-content">
                 <div class="flex justify-between items-start mb-2">
-                    <h3 class="font-semibold text-base">\${r.name}</h3>
-                    <span class="capacity-badge"><i class="fas fa-users mr-1"></i>\${r.capacity}</span>
+                    <h3 class="font-semibold text-base">${r.name}</h3>
+                    <span class="capacity-badge"><i class="fas fa-users mr-1"></i>${r.capacity}</span>
                 </div>
-                <p class="text-sm text-gray-400 mb-2"><i class="fas fa-map-marker-alt mr-1"></i> \${r.location || 'ไม่มีข้อมูล'}</p>
-                <p class="text-xs text-gray-500 line-clamp-2 mb-3">\${r.description || ''}</p>
+                <p class="text-sm text-gray-400 mb-2"><i class="fas fa-map-marker-alt mr-1"></i> ${r.location || 'ไม่มีข้อมูล'}</p>
+                <p class="text-xs text-gray-500 line-clamp-2 mb-3">${r.description || ''}</p>
                 <div class="flex justify-between items-center">
                     <span class="badge badge-available">ว่าง</span>
-                    <button class="text-[#06c755] text-sm" onclick="showBookingModal('\${r.roomId}'); event.stopPropagation();">
+                    <button class="text-[#06c755] text-sm" onclick="showBookingModal('${r.roomId}'); event.stopPropagation();">
                         <i class="fas fa-calendar-plus mr-1"></i>จอง
                     </button>
                 </div>
@@ -1860,16 +1862,16 @@ function renderRoomsManagement(rooms) {
         <div class="room-management-item">
             <div class="room-management-info">
                 <div class="flex items-center gap-2">
-                    <span class="font-semibold">\${room.name}</span>
-                    <span class="capacity-badge text-xs"><i class="fas fa-users mr-1"></i>\${room.capacity}</span>
+                    <span class="font-semibold">${room.name}</span>
+                    <span class="capacity-badge text-xs"><i class="fas fa-users mr-1"></i>${room.capacity}</span>
                 </div>
-                <p class="text-xs text-gray-400 mt-1">\${room.location || 'ไม่มีสถานที่'}</p>
+                <p class="text-xs text-gray-400 mt-1">${room.location || 'ไม่มีสถานที่'}</p>
             </div>
             <div class="room-management-actions">
-                <button class="text-[#06c755] text-sm" onclick="editRoom('\${room.roomId}')">
+                <button class="text-[#06c755] text-sm" onclick="editRoom('${room.roomId}')">
                     <i class="fas fa-edit"></i>
                 </button>
-                <button class="text-red-500 text-sm" onclick="deleteRoom('\${room.roomId}')">
+                <button class="text-red-500 text-sm" onclick="deleteRoom('${room.roomId}')">
                     <i class="fas fa-trash"></i>
                 </button>
             </div>
@@ -1918,42 +1920,42 @@ window.showRoomDetail = async function(roomId) {
         const todayBookings = bookingsResult.success ? bookingsResult.data.bookings : [];
 
         const imageHtml = room.imageUrl ? 
-            `<img src="\${room.imageUrl}" class="w-full max-h-80 object-cover rounded-xl mb-4" loading="lazy" onerror="this.style.display='none';">` : 
+            `<img src="${room.imageUrl}" class="w-full max-h-80 object-cover rounded-xl mb-4" loading="lazy" onerror="this.style.display='none';">` : 
             `<div class="w-full h-48 flex items-center justify-center bg-gradient-to-br from-[#2a2e36] to-[#1a1d24] rounded-xl mb-4">
                 <i class="fas fa-door-open text-6xl text-[#06c755]"></i>
             </div>`;
 
         $.modalBody.innerHTML = `
-            \${imageHtml}
+            ${imageHtml}
             <div class="flex gap-2 mb-4 flex-wrap">
-                <span class="capacity-badge"><i class="fas fa-users mr-1"></i> รองรับ \${room.capacity} คน</span>
+                <span class="capacity-badge"><i class="fas fa-users mr-1"></i> รองรับ ${room.capacity} คน</span>
                 <span class="badge badge-available">พร้อมใช้งาน</span>
             </div>
             
             <div class="mb-4">
                 <p class="text-sm text-gray-400 mb-1"><i class="fas fa-map-marker-alt mr-2"></i> สถานที่</p>
-                <p class="mb-3">\${room.location || 'ไม่มีข้อมูล'}</p>
+                <p class="mb-3">${room.location || 'ไม่มีข้อมูล'}</p>
             </div>
             
             <div class="mb-4">
                 <p class="text-sm text-gray-400 mb-1"><i class="fas fa-info-circle mr-2"></i> รายละเอียด</p>
-                <p class="whitespace-pre-wrap">\${room.description || 'ไม่มีรายละเอียด'}</p>
+                <p class="whitespace-pre-wrap">${room.description || 'ไม่มีรายละเอียด'}</p>
             </div>
             
-            \${facilities.length > 0 ? `
+            ${facilities.length > 0 ? `
                 <div class="mb-4">
                     <p class="text-sm text-gray-400 mb-2"><i class="fas fa-couch mr-2"></i> สิ่งอำนวยความสะดวก</p>
                     <div>
-                        \${facilities.map(f => `<span class="facility-tag">\${f}</span>`).join('')}
+                        ${facilities.map(f => `<span class="facility-tag">${f}</span>`).join('')}
                     </div>
                 </div>
             ` : ''}
             
-            \${todayBookings.length > 0 ? `
+            ${todayBookings.length > 0 ? `
                 <div class="mt-4 pt-4 border-t border-[#2a2e36]">
                     <p class="text-sm text-gray-400 mb-2"><i class="fas fa-clock mr-2"></i> การจองวันนี้</p>
                     <div class="space-y-2">
-                        \${todayBookings.map(b => {
+                        ${todayBookings.map(b => {
                             const statusColor = {
                                 'confirmed': 'text-green-500',
                                 'pending': 'text-yellow-500',
@@ -1974,11 +1976,11 @@ window.showRoomDetail = async function(roomId) {
                             return `
                                 <div class="bg-[#111317] p-2 rounded-lg text-sm">
                                     <div class="flex justify-between">
-                                        <span class="font-semibold">\${formatTime(b.startTime)} - \${formatTime(b.endTime)}</span>
-                                        <span class="\${statusColor}">\${statusText}</span>
+                                        <span class="font-semibold">${formatTime(b.startTime)} - ${formatTime(b.endTime)}</span>
+                                        <span class="${statusColor}">${statusText}</span>
                                     </div>
-                                    <p class="text-xs text-gray-400">\${b.title}</p>
-                                    \${approvedByName ? `<p class="text-xs text-green-500 mt-1">✅ อนุมัติโดย: \${approvedByName}</p>` : ''}
+                                    <p class="text-xs text-gray-400">${b.title}</p>
+                                    ${approvedByName ? `<p class="text-xs text-green-500 mt-1">✅ อนุมัติโดย: ${approvedByName}</p>` : ''}
                                 </div>
                             `;
                         }).join('')}
@@ -2022,7 +2024,7 @@ window.showBookingModal = function(roomId = null) {
     state.rooms.forEach(r => {
         const option = document.createElement('option');
         option.value = r.roomId;
-        option.textContent = `\${r.name} (\${r.capacity} ที่นั่ง)`;
+        option.textContent = `${r.name} (${r.capacity} ที่นั่ง)`;
         if (r.roomId === roomId) option.selected = true;
         roomSelect.appendChild(option);
     });
@@ -2068,8 +2070,8 @@ async function checkAvailability() {
         return;
     }
     
-    const startDateTime = new Date(`\${startDate}T\${start}:00`);
-    const endDateTime = new Date(`\${endDate}T\${end}:00`);
+    const startDateTime = new Date(`${startDate}T${start}:00`);
+    const endDateTime = new Date(`${endDate}T${end}:00`);
     
     if (startDateTime >= endDateTime) {
         $.availabilityStatus.innerHTML = '<span class="text-red-500">⚠️ เวลาสิ้นสุดต้องมากกว่าเวลาเริ่ม</span>';
@@ -2112,13 +2114,13 @@ async function checkAvailability() {
     }
     
     if (selectedRoom && attendees > selectedRoom.capacity) {
-        $.availabilityStatus.innerHTML = `<span class="text-red-500">⚠️ จำนวนผู้เข้าร่วม (\${attendees}) เกินความจุห้อง (\${selectedRoom.capacity} คน)</span>`;
+        $.availabilityStatus.innerHTML = `<span class="text-red-500">⚠️ จำนวนผู้เข้าร่วม (${attendees}) เกินความจุห้อง (${selectedRoom.capacity} คน)</span>`;
         $.availabilityStatus.classList.remove('hidden');
         $.saveBookingBtn.disabled = true;
         return;
     }
     
-    $.availabilityStatus.innerHTML = `<span class="text-yellow-500"><i class="fas fa-spinner fa-spin mr-2"></i>กำลังตรวจสอบห้องว่างสำหรับห้อง "\${roomName}"...</span>`;
+    $.availabilityStatus.innerHTML = `<span class="text-yellow-500"><i class="fas fa-spinner fa-spin mr-2"></i>กำลังตรวจสอบห้องว่างสำหรับห้อง "${roomName}"...</span>`;
     $.availabilityStatus.classList.remove('hidden');
     $.saveBookingBtn.disabled = true;
     
@@ -2134,18 +2136,18 @@ async function checkAvailability() {
         
         if (result.success) {
             if (result.data.available) {
-                $.availabilityStatus.innerHTML = `<span class="text-green-500">✅ ห้อง "\${roomName}" ว่างในช่วงเวลาที่เลือก</span>`;
+                $.availabilityStatus.innerHTML = `<span class="text-green-500">✅ ห้อง "${roomName}" ว่างในช่วงเวลาที่เลือก</span>`;
                 $.availabilityStatus.classList.remove('hidden');
                 $.saveBookingBtn.disabled = false;
             } else {
-                let message = `❌ ห้อง "\${roomName}" ไม่ว่างในช่วงเวลาที่เลือก`;
+                let message = `❌ ห้อง "${roomName}" ไม่ว่างในช่วงเวลาที่เลือก`;
                 if (result.data.conflictingBookings && result.data.conflictingBookings.length > 0) {
                     const times = result.data.conflictingBookings.map(c => 
-                        `\${formatTime(c.startTime)}-\${formatTime(c.endTime)}`
+                        `${formatTime(c.startTime)}-${formatTime(c.endTime)}`
                     ).join(', ');
-                    message = `❌ ห้อง "\${roomName}" มีการจองแล้วในช่วงเวลา: \${times}`;
+                    message = `❌ ห้อง "${roomName}" มีการจองแล้วในช่วงเวลา: ${times}`;
                 }
-                $.availabilityStatus.innerHTML = `<span class="text-red-500">\${message}</span>`;
+                $.availabilityStatus.innerHTML = `<span class="text-red-500">${message}</span>`;
                 $.availabilityStatus.classList.remove('hidden');
                 $.saveBookingBtn.disabled = true;
             }
@@ -2219,7 +2221,7 @@ window.adminCancelBooking = async function(bookingId, btn) {
         
         const result = await Swal.fire({
             title: 'ยกเลิกการจอง (ส่งแจ้งเตือน)',
-            text: `คุณแน่ใจหรือไม่ต้องการยกเลิกการจอง "\${booking.title}"? (ระบบจะส่งแจ้งเตือนไปยังผู้จอง)`,
+            text: `คุณแน่ใจหรือไม่ต้องการยกเลิกการจอง "${booking.title}"? (ระบบจะส่งแจ้งเตือนไปยังผู้จอง)`,
             icon: 'warning',
             showCancelButton: true,
             confirmButtonColor: '#ef4444',
@@ -2302,8 +2304,8 @@ window.saveBooking = async function(e) {
             return;
         }
         
-        const startDateTime = new Date(`\${startDate}T\${start}:00`);
-        const endDateTime = new Date(`\${endDate}T\${end}:00`);
+        const startDateTime = new Date(`${startDate}T${start}:00`);
+        const endDateTime = new Date(`${endDate}T${end}:00`);
         
         if (startDate > endDate) {
             showToast('วันที่สิ้นสุดต้องไม่ก่อนวันที่เริ่ม', 'error');
@@ -2313,7 +2315,7 @@ window.saveBooking = async function(e) {
         
         const selectedRoom = state.rooms.find(r => r.roomId === roomId);
         if (selectedRoom && attendees > selectedRoom.capacity) {
-            showToast(`จำนวนผู้เข้าร่วม (\${attendees}) เกินความจุห้อง (\${selectedRoom.capacity} คน)`, 'error');
+            showToast(`จำนวนผู้เข้าร่วม (${attendees}) เกินความจุห้อง (${selectedRoom.capacity} คน)`, 'error');
             setButtonLoading(btn, false);
             return;
         }
@@ -2330,7 +2332,7 @@ window.saveBooking = async function(e) {
         });
         
         if (!checkResult.success || !checkResult.data.available) {
-            showToast(`ห้อง "\${roomName}" ไม่ว่างในช่วงเวลาที่เลือก`, 'error');
+            showToast(`ห้อง "${roomName}" ไม่ว่างในช่วงเวลาที่เลือก`, 'error');
             setButtonLoading(btn, false);
             await checkAvailability();
             return;
@@ -2627,31 +2629,31 @@ function renderMyBookings(filter = 'all') {
         const isPastBooking = endTime < now;
         
         return `
-        <div class="bg-[#1a1d24] p-4 rounded-xl border border-[#2a2e36] cursor-pointer" onclick="showBookingDetail('\${b.bookingId}')">
+        <div class="bg-[#1a1d24] p-4 rounded-xl border border-[#2a2e36] cursor-pointer" onclick="showBookingDetail('${b.bookingId}')">
             <div class="flex justify-between items-start mb-2">
-                <h3 class="font-semibold">\${b.title}</h3>
+                <h3 class="font-semibold">${b.title}</h3>
                 <div class="flex flex-col items-end">
-                    <span class="badge \${statusClass}">\${statusText}</span>
-                    \${isPastBooking && b.status === 'confirmed' ? '<span class="text-xs text-gray-500 mt-1">(เลยเวลาแล้ว)</span>' : ''}
+                    <span class="badge ${statusClass}">${statusText}</span>
+                    ${isPastBooking && b.status === 'confirmed' ? '<span class="text-xs text-gray-500 mt-1">(เลยเวลาแล้ว)</span>' : ''}
                 </div>
             </div>
-            <p class="text-sm text-[#06c755] mb-2">\${b.roomName}</p>
+            <p class="text-sm text-[#06c755] mb-2">${b.roomName}</p>
             <p class="text-xs text-gray-400 mb-2">
-                <i class="far fa-calendar mr-1"></i> \${formatDateShort(b.startTime)} - \${formatDateShort(b.endTime)}<br>
-                <i class="far fa-clock mr-1"></i> \${formatTime(b.startTime)} - \${formatTime(b.endTime)}
+                <i class="far fa-calendar mr-1"></i> ${formatDateShort(b.startTime)} - ${formatDateShort(b.endTime)}<br>
+                <i class="far fa-clock mr-1"></i> ${formatTime(b.startTime)} - ${formatTime(b.endTime)}
             </p>
-            \${b.approvedByName ? `<p class="text-xs text-green-500 mb-2">✅ อนุมัติโดย: \${b.approvedByName}</p>` : ''}
+            ${b.approvedByName ? `<p class="text-xs text-green-500 mb-2">✅ อนุมัติโดย: ${b.approvedByName}</p>` : ''}
             <div class="flex justify-between items-center text-xs">
-                <span class="text-gray-500"><i class="fas fa-users mr-1"></i> \${b.attendees || 0} คน</span>
-                \${b.meetingLink ? '<span class="text-blue-500"><i class="fas fa-video mr-1"></i> มีลิงค์</span>' : ''}
-                \${b.status === 'confirmed' && !isPastBooking ? `
-                    <button class="text-red-500" onclick="cancelBooking('\${b.bookingId}'); event.stopPropagation();">
+                <span class="text-gray-500"><i class="fas fa-users mr-1"></i> ${b.attendees || 0} คน</span>
+                ${b.meetingLink ? '<span class="text-blue-500"><i class="fas fa-video mr-1"></i> มีลิงค์</span>' : ''}
+                ${b.status === 'confirmed' && !isPastBooking ? `
+                    <button class="text-red-500" onclick="cancelBooking('${b.bookingId}'); event.stopPropagation();">
                         <i class="fas fa-times mr-1"></i>ยกเลิก
                     </button>
                 ` : ''}
             </div>
             <div class="mt-2 flex gap-2">
-                <button class="text-xs text-[#06c755]" onclick="shareBookingViaPicker('\${b.bookingId}'); event.stopPropagation();">
+                <button class="text-xs text-[#06c755]" onclick="shareBookingViaPicker('${b.bookingId}'); event.stopPropagation();">
                     <i class="fas fa-share-alt mr-1"></i>แชร์
                 </button>
             </div>
@@ -2702,87 +2704,87 @@ window.showBookingDetail = async function(bookingId) {
 
         document.getElementById('booking-modal-body').innerHTML = `
             <div class="mb-4">
-                <span class="badge \${statusClass}">\${statusText}</span>
+                <span class="badge ${statusClass}">${statusText}</span>
             </div>
             
             <div class="mb-4">
                 <p class="text-sm text-gray-400 mb-1">หัวข้อ</p>
-                <p class="text-lg font-semibold">\${b.title}</p>
+                <p class="text-lg font-semibold">${b.title}</p>
             </div>
             
             <div class="mb-4">
                 <p class="text-sm text-gray-400 mb-1">ห้องประชุม</p>
-                <p class="text-[#06c755]">\${b.roomName}</p>
+                <p class="text-[#06c755]">${b.roomName}</p>
             </div>
             
             <div class="grid grid-cols-2 gap-3 mb-4">
                 <div>
                     <p class="text-sm text-gray-400 mb-1">วันที่เริ่ม</p>
-                    <p>\${formatDateShort(b.startTime)}</p>
+                    <p>${formatDateShort(b.startTime)}</p>
                 </div>
                 <div>
                     <p class="text-sm text-gray-400 mb-1">วันที่สิ้นสุด</p>
-                    <p>\${formatDateShort(b.endTime)}</p>
+                    <p>${formatDateShort(b.endTime)}</p>
                 </div>
             </div>
             
             <div class="grid grid-cols-2 gap-3 mb-4">
                 <div>
                     <p class="text-sm text-gray-400 mb-1">เวลาเริ่ม</p>
-                    <p>\${formatTime(b.startTime)}</p>
+                    <p>${formatTime(b.startTime)}</p>
                 </div>
                 <div>
                     <p class="text-sm text-gray-400 mb-1">เวลาสิ้นสุด</p>
-                    <p>\${formatTime(b.endTime)}</p>
+                    <p>${formatTime(b.endTime)}</p>
                 </div>
             </div>
             
             <div class="mb-4">
                 <p class="text-sm text-gray-400 mb-1">จำนวนผู้เข้าร่วม</p>
-                <p>\${b.attendees || 0} คน</p>
+                <p>${b.attendees || 0} คน</p>
             </div>
             
-            \${b.meetingLink ? `
+            ${b.meetingLink ? `
                 <div class="mb-4">
                     <p class="text-sm text-gray-400 mb-1">ลิงค์ประชุม</p>
-                    <a href="\${b.meetingLink}" target="_blank" class="text-[#06c755] underline break-all">\${b.meetingLink}</a>
+                    <a href="${b.meetingLink}" target="_blank" class="text-[#06c755] underline break-all">${b.meetingLink}</a>
                 </div>
             ` : ''}
             
-            \${b.description ? `
+            ${b.description ? `
                 <div class="mb-4">
                     <p class="text-sm text-gray-400 mb-1">รายละเอียด</p>
-                    <p class="whitespace-pre-wrap">\${b.description}</p>
+                    <p class="whitespace-pre-wrap">${b.description}</p>
                 </div>
             ` : ''}
             
-            \${approvedByName ? `
+            ${approvedByName ? `
                 <div class="mb-4 p-3 bg-green-900/20 rounded-lg">
                     <p class="text-sm text-gray-400 mb-1">✅ อนุมัติโดย</p>
-                    <p class="font-semibold text-green-500">\${approvedByName}</p>
-                    <p class="text-xs text-gray-500">\${b.approvedAt ? formatDateTime(b.approvedAt) : ''}</p>
+                    <p class="font-semibold text-green-500">${approvedByName}</p>
+                    <p class="text-xs text-gray-500">${b.approvedAt ? formatDateTime(b.approvedAt) : ''}</p>
                 </div>
             ` : ''}
             
-            \${rejectedByName ? `
+            ${rejectedByName ? `
                 <div class="mb-4 p-3 bg-red-900/20 rounded-lg">
                     <p class="text-sm text-gray-400 mb-1">❌ ปฏิเสธโดย</p>
-                    <p class="font-semibold text-red-500">\${rejectedByName}</p>
-                    \${b.rejectReason ? `<p class="text-sm mt-1">เหตุผล: \${b.rejectReason}</p>` : ''}
+                    <p class="font-semibold text-red-500">${rejectedByName}</p>
+                    ${b.rejectReason ? `<p class="text-sm mt-1">เหตุผล: ${b.rejectReason}</p>` : ''}
                 </div>
             ` : ''}
             
-            \${cancelledByName ? `
+            ${cancelledByName ? `
                 <div class="mb-4 p-3 bg-red-900/20 rounded-lg">
                     <p class="text-sm text-gray-400 mb-1">❌ ยกเลิกโดย</p>
-                    <p class="font-semibold text-red-500">\${cancelledByName}</p>
-                    \${b.cancelledBy === 'admin' ? '<p class="text-xs text-red-500 mt-1">🔴 ผู้ดูแลยกเลิก (ส่งแจ้งเตือน)</p>' : ''}
+                    <p class="font-semibold text-red-500">${cancelledByName}</p>
+                    ${b.cancelledBy === 'admin' ? '<p class="text-xs text-red-500 mt-1">🔴 ผู้ดูแลยกเลิก (ส่งแจ้งเตือน)</p>' : ''}
                 </div>
             ` : ''}
             
             <div class="text-xs text-gray-500 border-t border-[#2a2e36] pt-3">
-                <p>จองโดย: \${b.userName}</p>
-                <p class="mt-1">\${formatDateTime(b.createdAt)}</p>
+                <p>จองโดย: ${b.userName}</p>
+                <p class="mt-1">${formatDateTime(b.createdAt)}</p>
             </div>
         `;
 
@@ -2795,7 +2797,7 @@ window.showBookingDetail = async function(bookingId) {
         
         if (canCancel) {
             footerButtons += `
-                <button class="btn-danger flex-1" onclick="cancelBooking('\${b.bookingId}')">
+                <button class="btn-danger flex-1" onclick="cancelBooking('${b.bookingId}')">
                     <i class="fas fa-times mr-2"></i>ยกเลิกการจอง
                 </button>
             `;
@@ -2803,14 +2805,14 @@ window.showBookingDetail = async function(bookingId) {
         
         if (state.isManager && b.status === 'confirmed' && endTime > now) {
             footerButtons += `
-                <button class="btn-danger flex-1" onclick="adminCancelBooking('\${b.bookingId}', this)">
+                <button class="btn-danger flex-1" onclick="adminCancelBooking('${b.bookingId}', this)">
                     <i class="fas fa-ban mr-2"></i>ยกเลิก (แจ้งเตือน)
                 </button>
             `;
         }
         
         footerButtons += `
-            <button class="btn-outline flex-1" onclick="shareBookingViaPicker('\${b.bookingId}')">
+            <button class="btn-outline flex-1" onclick="shareBookingViaPicker('${b.bookingId}')">
                 <i class="fas fa-share-alt mr-2"></i>แชร์
             </button>
             <button class="btn-outline flex-1" onclick="closeBookingDetailModal()">ปิด</button>
@@ -2931,19 +2933,19 @@ function renderPendingBookings() {
         <div class="bg-[#1a1d24] p-4 rounded-xl border border-[#f59e0b]/30">
             <div class="flex justify-between mb-2">
                 <span class="badge badge-pending">⏳ รออนุมัติ</span>
-                <span class="text-xs text-gray-500">\${formatDateTime(b.createdAt)}</span>
+                <span class="text-xs text-gray-500">${formatDateTime(b.createdAt)}</span>
             </div>
-            <h3 class="font-semibold mb-1">\${b.title}</h3>
-            <p class="text-sm text-[#06c755] mb-2">\${b.roomName}</p>
+            <h3 class="font-semibold mb-1">${b.title}</h3>
+            <p class="text-sm text-[#06c755] mb-2">${b.roomName}</p>
             <p class="text-xs text-gray-400 mb-3">
-                <i class="far fa-calendar mr-1"></i> \${formatDateShort(b.startTime)} - \${formatDateShort(b.endTime)}<br>
-                <i class="far fa-clock mr-1"></i> \${formatTime(b.startTime)} - \${formatTime(b.endTime)}
+                <i class="far fa-calendar mr-1"></i> ${formatDateShort(b.startTime)} - ${formatDateShort(b.endTime)}<br>
+                <i class="far fa-clock mr-1"></i> ${formatTime(b.startTime)} - ${formatTime(b.endTime)}
             </p>
             <div class="flex justify-between items-center">
-                <span class="text-xs text-gray-500">โดย: \${b.userName}</span>
+                <span class="text-xs text-gray-500">โดย: ${b.userName}</span>
                 <div class="flex gap-2">
-                    <button class="btn-success text-xs py-2 px-3" onclick="approveBooking('\${b.bookingId}', this)">อนุมัติ</button>
-                    <button class="btn-danger text-xs py-2 px-3" onclick="rejectBooking('\${b.bookingId}', this)">ปฏิเสธ</button>
+                    <button class="btn-success text-xs py-2 px-3" onclick="approveBooking('${b.bookingId}', this)">อนุมัติ</button>
+                    <button class="btn-danger text-xs py-2 px-3" onclick="rejectBooking('${b.bookingId}', this)">ปฏิเสธ</button>
                 </div>
             </div>
         </div>
@@ -3031,9 +3033,9 @@ function renderAllBookings() {
         
         let timeRemainingText = '';
         if (daysLeft > 0) {
-            timeRemainingText = `เหลืออีก \${daysLeft} วัน \${hoursLeft} ชั่วโมง`;
+            timeRemainingText = `เหลืออีก ${daysLeft} วัน ${hoursLeft} ชั่วโมง`;
         } else if (hoursLeft > 0) {
-            timeRemainingText = `เหลืออีก \${hoursLeft} ชั่วโมง`;
+            timeRemainingText = `เหลืออีก ${hoursLeft} ชั่วโมง`;
         } else {
             timeRemainingText = `กำลังจะเริ่มในอีกไม่กี่นาที`;
         }
@@ -3043,28 +3045,28 @@ function renderAllBookings() {
             <div class="flex-1">
                 <div class="flex justify-between items-start mb-2">
                     <div>
-                        <span class="font-semibold text-sm">\${b.title}</span>
-                        <span class="text-xs text-gray-400 ml-2">\${b.roomName}</span>
+                        <span class="font-semibold text-sm">${b.title}</span>
+                        <span class="text-xs text-gray-400 ml-2">${b.roomName}</span>
                     </div>
-                    <span class="badge \${statusClass} text-xs">\${statusText}</span>
+                    <span class="badge ${statusClass} text-xs">${statusText}</span>
                 </div>
                 <div class="flex flex-wrap gap-2 text-xs text-gray-400">
-                    <span><i class="far fa-user mr-1"></i> \${b.userName}</span>
-                    <span><i class="far fa-calendar mr-1"></i> \${formatDateShort(b.startTime)}</span>
-                    <span><i class="far fa-clock mr-1"></i> \${formatTime(b.startTime)} - \${formatTime(b.endTime)}</span>
+                    <span><i class="far fa-user mr-1"></i> ${b.userName}</span>
+                    <span><i class="far fa-calendar mr-1"></i> ${formatDateShort(b.startTime)}</span>
+                    <span><i class="far fa-clock mr-1"></i> ${formatTime(b.startTime)} - ${formatTime(b.endTime)}</span>
                 </div>
                 <div class="text-xs text-yellow-500 mt-1">
-                    <i class="fas fa-hourglass-half mr-1"></i> \${timeRemainingText}
+                    <i class="fas fa-hourglass-half mr-1"></i> ${timeRemainingText}
                 </div>
-                \${b.approvedByName ? `<p class="text-xs text-green-500 mt-1">✅ อนุมัติโดย: \${b.approvedByName}</p>` : ''}
-                \${b.rejectedByName ? `<p class="text-xs text-red-500 mt-1">❌ ปฏิเสธโดย: \${b.rejectedByName}</p>` : ''}
+                ${b.approvedByName ? `<p class="text-xs text-green-500 mt-1">✅ อนุมัติโดย: ${b.approvedByName}</p>` : ''}
+                ${b.rejectedByName ? `<p class="text-xs text-red-500 mt-1">❌ ปฏิเสธโดย: ${b.rejectedByName}</p>` : ''}
             </div>
             <div class="flex flex-col gap-2 ml-2">
-                <button class="text-[#06c755] text-xs" onclick="shareBookingViaPicker('\${b.bookingId}'); event.stopPropagation();">
+                <button class="text-[#06c755] text-xs" onclick="shareBookingViaPicker('${b.bookingId}'); event.stopPropagation();">
                     <i class="fas fa-share-alt mr-1"></i>แชร์
                 </button>
-                \${canAdminCancel ? `
-                    <button class="text-red-500 text-xs" onclick="adminCancelBooking('\${b.bookingId}', this); event.stopPropagation();">
+                ${canAdminCancel ? `
+                    <button class="text-red-500 text-xs" onclick="adminCancelBooking('${b.bookingId}', this); event.stopPropagation();">
                         <i class="fas fa-ban mr-1"></i>ยกเลิก
                     </button>
                 ` : ''}
@@ -3104,17 +3106,17 @@ function renderUsers() {
 
     $.usersList.innerHTML = filtered.map(u => `
         <div class="user-row">
-            <img src="\${u.pictureUrl || 'https://via.placeholder.com/40'}" class="user-avatar-sm" loading="lazy">
+            <img src="${u.pictureUrl || 'https://via.placeholder.com/40'}" class="user-avatar-sm" loading="lazy">
             <div class="flex-1">
-                <p class="font-semibold text-sm">\${u.displayName || ''}</p>
-                <p class="text-xs text-gray-400">\${u.email || ''}</p>
+                <p class="font-semibold text-sm">${u.displayName || ''}</p>
+                <p class="text-xs text-gray-400">${u.email || ''}</p>
             </div>
-            <span class="role-badge role-\${u.role}">\${{admin:'ผู้ดูแล', manager:'ผู้จัดการ', user:'ผู้ใช้'}[u.role]}</span>
-            \${state.isAdmin ? `
-                <button class="text-[#06c755] text-xs" onclick="showRoleModal('\${u.lineUserId}', '\${u.displayName}', '\${u.role}')">
+            <span class="role-badge role-${u.role}">${{admin:'ผู้ดูแล', manager:'ผู้จัดการ', user:'ผู้ใช้'}[u.role]}</span>
+            ${state.isAdmin ? `
+                <button class="text-[#06c755] text-xs" onclick="showRoleModal('${u.lineUserId}', '${u.displayName}', '${u.role}')">
                     <i class="fas fa-cog"></i>
                 </button>
-                <button class="text-red-500 text-xs" onclick="showDeleteUserModal('\${u.lineUserId}', '\${u.displayName}')">
+                <button class="text-red-500 text-xs" onclick="showDeleteUserModal('${u.lineUserId}', '${u.displayName}')">
                     <i class="fas fa-trash"></i>
                 </button>
             ` : ''}
@@ -3128,7 +3130,7 @@ window.showRoleModal = function(userId, userName, currentRole) {
         return;
     }
     document.getElementById('role-user-id').value = userId;
-    document.getElementById('role-user-name').textContent = `จัดการสิทธิ์: \${userName}`;
+    document.getElementById('role-user-name').textContent = `จัดการสิทธิ์: ${userName}`;
     document.getElementById('user-role').value = currentRole;
     document.getElementById('role-modal').classList.add('active');
 };
@@ -3143,7 +3145,7 @@ window.showDeleteUserModal = function(userId, userName) {
         return;
     }
     state.currentUserToDelete = userId;
-    document.getElementById('delete-user-name').textContent = `คุณแน่ใจหรือไม่ว่าต้องการลบผู้ใช้: \${userName}`;
+    document.getElementById('delete-user-name').textContent = `คุณแน่ใจหรือไม่ว่าต้องการลบผู้ใช้: ${userName}`;
     document.getElementById('delete-user-modal').classList.add('active');
 };
 
@@ -3580,10 +3582,10 @@ window.logout = function() {
 // ========== TAB SWITCHING ==========
 window.switchTab = function(tab) {
     $.navItems.forEach(i => i.classList.remove('active'));
-    document.querySelectorAll(`[data-tab="\${tab}"]`).forEach(i => i.classList.add('active'));
+    document.querySelectorAll(`[data-tab="${tab}"]`).forEach(i => i.classList.add('active'));
     
     document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
-    document.getElementById(`tab-\${tab}`).classList.add('active');
+    document.getElementById(`tab-${tab}`).classList.add('active');
 
     if (tab === 'my') loadMyBookings();
     if (tab === 'admin' && state.isManager) {
@@ -3632,7 +3634,7 @@ document.querySelectorAll('.admin-tab-btn').forEach(btn => {
         btn.classList.add('active');
         
         document.querySelectorAll('.admin-tab').forEach(t => t.classList.add('hidden'));
-        document.getElementById(`admin-\${btn.dataset.adminTab}-tab`).classList.remove('hidden');
+        document.getElementById(`admin-${btn.dataset.adminTab}-tab`).classList.remove('hidden');
         
         if (btn.dataset.adminTab === 'rooms') {
             loadRoomsManagement();
