@@ -1830,12 +1830,45 @@
 
     <script>
         // ========== CONFIG ==========
-         const CONFIG = {
-            GAS_URL: 'https://script.google.com/macros/s/AKfycbwEkTSINEvnyBdapUWbJ8djVpdLt6rN7NlaXn5cKMow7RJtY3gI19-RSMyFHsWBxII-vA/exec',
+        const CONFIG = {
+            // GAS_URL: เปลี่ยนเป็น URL ของ Google Apps Script ที่ deploy แล้ว
+            GAS_URL: 'https://script.google.com/macros/s/YOUR_DEPLOYED_ID/exec',
             LIFF_ID: '2009198981-GsqxkwIK',
             PAGE_SIZE: 20,
             CACHE_TTL: 5 * 60 * 1000, // 5 นาที
-            MAX_RETRY: 3
+            MAX_RETRY: 3,
+            // กำหนด path ของ API ที่ต้องการให้ GAS รองรับ
+            API_PATHS: {
+                ROOMS: 'rooms',
+                ROOM: 'room',
+                ROOM_CREATE: 'room/create',
+                ROOM_UPDATE: 'room/update',
+                ROOM_DELETE: 'room/delete',
+                BOOKINGS: 'bookings',
+                BOOKING: 'booking',
+                BOOKING_CREATE: 'booking/create',
+                BOOKING_UPDATE: 'booking/update',
+                BOOKING_CANCEL: 'booking/cancel',
+                BOOKING_ADMIN_CANCEL: 'booking/admin-cancel',
+                BOOKING_APPROVE: 'booking/approve',
+                BOOKING_REJECT: 'booking/reject',
+                BOOKING_CHECK_AVAILABILITY: 'booking/check-availability',
+                USER_PROFILE: 'user/profile',
+                USER_UPDATE: 'user/update',
+                USER_UPDATE_EMAIL: 'user/update-email',
+                USER_BOOKINGS: 'user/bookings',
+                USER_GET_NAME: 'user/get-name',
+                ADMIN_STATS: 'admin/stats',
+                ADMIN_PENDING_BOOKINGS: 'admin/pending-bookings',
+                ADMIN_ALL_BOOKINGS: 'admin/all-bookings',
+                ADMIN_USERS: 'admin/users',
+                ADMIN_USER_ROLE: 'admin/user/role',
+                ADMIN_USER_DELETE: 'admin/user/delete',
+                ADMIN_SETTINGS_GET: 'admin/settings/get',
+                ADMIN_SETTINGS_UPDATE: 'admin/settings/update',
+                UPLOAD_IMAGE: 'uploadImage',
+                SETUP_DATABASE: 'setupDatabase'
+            }
         };
 
         // ========== STATE ==========
@@ -1846,6 +1879,7 @@
             myBookings: [],
             pendingBookings: [],
             users: [],
+            allBookings: [],
             currentDate: new Date(),
             currentMonth: new Date(),
             selectedDate: new Date(),
@@ -2129,7 +2163,7 @@
             }
             
             try {
-                const result = await callGAS('user/get-name', { userId });
+                const result = await callGAS(CONFIG.API_PATHS.USER_GET_NAME, { userId });
                 if (result.success && result.data.name) {
                     state.userNamesCache[userId] = result.data.name;
                     return result.data.name;
@@ -2161,7 +2195,7 @@
                     console.log('User info from LINE API:', userInfo);
                     
                     if (userInfo.email) {
-                        const updateResult = await callGAS('user/update-email', {
+                        const updateResult = await callGAS(CONFIG.API_PATHS.USER_UPDATE_EMAIL, {
                             lineUserId: state.user.lineUserId,
                             email: userInfo.email
                         });
@@ -2186,7 +2220,7 @@
 
                 const tokenPayload = parseJwt(idToken);
                 if (tokenPayload.email) {
-                    const updateResult = await callGAS('user/update-email', {
+                    const updateResult = await callGAS(CONFIG.API_PATHS.USER_UPDATE_EMAIL, {
                         lineUserId: state.user.lineUserId,
                         email: tokenPayload.email
                     });
@@ -3047,7 +3081,7 @@
                     reader.readAsDataURL(file);
                 });
 
-                const result = await callGAS('uploadImage', {
+                const result = await callGAS(CONFIG.API_PATHS.UPLOAD_IMAGE, {
                     fileName: file.name,
                     fileType: file.type,
                     fileData: base64
@@ -3084,7 +3118,7 @@
                 const startStr = formatDateForInput(startDate);
                 const endStr = formatDateForInput(endDate);
                 
-                const result = await callGAS('bookings', {
+                const result = await callGAS(CONFIG.API_PATHS.BOOKINGS, {
                     startDate: startStr,
                     endDate: endStr,
                     showPast: 'true',
@@ -3258,7 +3292,7 @@
                 selectedDayElement.classList.add('selected');
             }
             
-            const result = await callGAS('bookings', {
+            const result = await callGAS(CONFIG.API_PATHS.BOOKINGS, {
                 date: dateStr,
                 showPast: 'true',
                 includeMultiDay: 'true'
@@ -3365,7 +3399,7 @@
             });
 
             if (result.isConfirmed) {
-                const apiResult = await callGAS('setupDatabase');
+                const apiResult = await callGAS(CONFIG.API_PATHS.SETUP_DATABASE);
                 if (apiResult.success) {
                     showToast('รีเซ็ตฐานข้อมูลสำเร็จ');
                     setTimeout(() => location.reload(), 1500);
@@ -3425,9 +3459,10 @@
                     console.log('Email from ID Token:', tokenPayload.email);
                 }
 
+                // เรียก API พร้อมกันเพื่อเพิ่มความเร็ว
                 const [userResult, roomsResult] = await Promise.all([
-                    callGAS('user/profile', userData),
-                    callGAS('rooms')
+                    callGAS(CONFIG.API_PATHS.USER_PROFILE, userData),
+                    callGAS(CONFIG.API_PATHS.ROOMS)
                 ]);
 
                 if (userResult.success) {
@@ -3588,7 +3623,6 @@
         function loadManagerData() {
             // ========== OPTIMIZED MANAGER DATA LOADING ==========
             // โหลดข้อมูลผู้จัดการ/แอดมินพร้อมกันโดยไม่มีการหน่วงเวลา
-            // ลบ setTimeout เพื่อให้การโหลดเร็วขึ้น
             Promise.all([
                 loadUsers().catch(console.warn),
                 loadAdminStats().catch(console.warn),
@@ -3606,7 +3640,7 @@
                     return;
                 }
 
-                const result = await callGAS('rooms');
+                const result = await callGAS(CONFIG.API_PATHS.ROOMS);
                 
                 if (result.success) {
                     state.rooms = result.data || [];
@@ -3671,7 +3705,7 @@
         // ========== ROOMS MANAGEMENT ==========
         async function loadRoomsManagement() {
             try {
-                const result = await callGAS('rooms');
+                const result = await callGAS(CONFIG.API_PATHS.ROOMS);
                 
                 if (result.success) {
                     const rooms = result.data || [];
@@ -3729,7 +3763,7 @@
             $.modal.classList.add('active');
             $.modalBody.innerHTML = '<div class="flex justify-center py-10"><div class="loading-spinner w-10 h-10"></div></div>';
             
-            const result = await callGAS('room', { roomId });
+            const result = await callGAS(CONFIG.API_PATHS.ROOM, { roomId });
             
             if (result.success) {
                 const room = result.data;
@@ -3740,7 +3774,7 @@
 
                 const today = new Date();
                 const dateStr = formatDateForInput(today);
-                const bookingsResult = await callGAS('bookings', { 
+                const bookingsResult = await callGAS(CONFIG.API_PATHS.BOOKINGS, { 
                     roomId, 
                     date: dateStr,
                     showPast: 'false',
@@ -3957,7 +3991,7 @@
             try {
                 console.log('Checking availability for room:', roomId, roomName);
                 
-                const result = await callGAS('booking/check-availability', {
+                const result = await callGAS(CONFIG.API_PATHS.BOOKING_CHECK_AVAILABILITY, {
                     roomId,
                     startTime: startDateTime.toISOString(),
                     endTime: endDateTime.toISOString(),
@@ -3997,7 +4031,7 @@
         window.approveBooking = async function(bookingId, btn, skipNotification = false) {
             setButtonLoading(btn, true);
             
-            const result = await callGAS('booking/approve', { 
+            const result = await callGAS(CONFIG.API_PATHS.BOOKING_APPROVE, { 
                 bookingId,
                 lineUserId: state.user.lineUserId
             });
@@ -4039,7 +4073,7 @@
             setButtonLoading(btn, true);
             
             try {
-                const bookingInfo = await callGAS('booking', { bookingId });
+                const bookingInfo = await callGAS(CONFIG.API_PATHS.BOOKING, { bookingId });
                 
                 if (!bookingInfo.success) {
                     showToast('ไม่พบข้อมูลการจอง', 'error');
@@ -4060,7 +4094,7 @@
                 });
 
                 if (result.isConfirmed) {
-                    const apiResult = await callGAS('booking/admin-cancel', { 
+                    const apiResult = await callGAS(CONFIG.API_PATHS.BOOKING_ADMIN_CANCEL, { 
                         bookingId,
                         lineUserId: state.user.lineUserId,
                         skipNotification: false
@@ -4154,7 +4188,7 @@
                 
                 console.log('Saving booking for room:', roomId, roomName);
                 
-                const checkResult = await callGAS('booking/check-availability', {
+                const checkResult = await callGAS(CONFIG.API_PATHS.BOOKING_CHECK_AVAILABILITY, {
                     roomId,
                     startTime: startDateTime.toISOString(),
                     endTime: endDateTime.toISOString(),
@@ -4182,7 +4216,7 @@
 
                 if (id) data.bookingId = id;
 
-                const result = await callGAS(id ? 'booking/update' : 'booking/create', data);
+                const result = await callGAS(id ? CONFIG.API_PATHS.BOOKING_UPDATE : CONFIG.API_PATHS.BOOKING_CREATE, data);
 
                 if (result.success) {
                     showToast(id ? 'แก้ไขการจองสำเร็จ' : 'จองห้องสำเร็จ');
@@ -4236,7 +4270,7 @@
             setButtonLoading(btn, true);
             
             try {
-                const bookingInfo = await callGAS('booking', { bookingId });
+                const bookingInfo = await callGAS(CONFIG.API_PATHS.BOOKING, { bookingId });
                 
                 if (!bookingInfo.success) {
                     showToast('ไม่พบข้อมูลการจอง', 'error');
@@ -4268,7 +4302,7 @@
 
                     const reason = result.value || 'ไม่ระบุเหตุผล (การจองเลยเวลา)';
                     
-                    const apiResult = await callGAS('booking/reject', { 
+                    const apiResult = await callGAS(CONFIG.API_PATHS.BOOKING_REJECT, { 
                         bookingId,
                         reason,
                         lineUserId: state.user.lineUserId,
@@ -4310,7 +4344,7 @@
                 });
 
                 if (result.isConfirmed) {
-                    const apiResult = await callGAS('booking/reject', { 
+                    const apiResult = await callGAS(CONFIG.API_PATHS.BOOKING_REJECT, { 
                         bookingId,
                         reason: result.value,
                         lineUserId: state.user.lineUserId
@@ -4359,7 +4393,7 @@
                     return;
                 }
 
-                const result = await callGAS('booking', { bookingId });
+                const result = await callGAS(CONFIG.API_PATHS.BOOKING, { bookingId });
                 if (!result.success) {
                     showToast('ไม่พบข้อมูลการจอง', 'error');
                     return;
@@ -4384,7 +4418,7 @@
         // ========== MY BOOKINGS ==========
         async function loadMyBookings() {
             try {
-                const result = await callGAS('user/bookings', {
+                const result = await callGAS(CONFIG.API_PATHS.USER_BOOKINGS, {
                     lineUserId: state.user?.lineUserId
                 });
 
@@ -4495,7 +4529,7 @@
             document.getElementById('booking-modal').classList.add('active');
             document.getElementById('booking-modal-body').innerHTML = '<div class="flex justify-center py-10"><div class="loading-spinner w-10 h-10"></div></div>';
             
-            const result = await callGAS('booking', { bookingId });
+            const result = await callGAS(CONFIG.API_PATHS.BOOKING, { bookingId });
             
             if (result.success) {
                 const b = result.data;
@@ -4672,7 +4706,7 @@
             });
 
             if (result.isConfirmed) {
-                const apiResult = await callGAS('booking/cancel', { 
+                const apiResult = await callGAS(CONFIG.API_PATHS.BOOKING_CANCEL, { 
                     bookingId,
                     lineUserId: state.user.lineUserId
                 });
@@ -4708,7 +4742,7 @@
         // ========== ADMIN FUNCTIONS ==========
         async function loadAdminStats() {
             try {
-                const result = await callGAS('admin/stats');
+                const result = await callGAS(CONFIG.API_PATHS.ADMIN_STATS);
                 if (result.success) {
                     $.adminUsers.textContent = result.data.users || 0;
                     $.adminRooms.textContent = result.data.rooms || 0;
@@ -4722,7 +4756,7 @@
 
         async function loadTodayStats() {
             try {
-                const result = await callGAS('admin/stats');
+                const result = await callGAS(CONFIG.API_PATHS.ADMIN_STATS);
                 if (result.success) {
                     $.statRooms.textContent = result.data.rooms || 0;
                     $.statToday.textContent = result.data.today || 0;
@@ -4735,7 +4769,7 @@
 
         async function loadPendingBookings() {
             try {
-                const result = await callGAS('admin/pending-bookings');
+                const result = await callGAS(CONFIG.API_PATHS.ADMIN_PENDING_BOOKINGS);
                 if (result.success) {
                     state.pendingBookings = result.data || [];
                     renderPendingBookings();
@@ -4785,7 +4819,7 @@
         // ========== LOAD ALL BOOKINGS (ADMIN) ==========
         async function loadAllBookings() {
             try {
-                const result = await callGAS('admin/all-bookings');
+                const result = await callGAS(CONFIG.API_PATHS.ADMIN_ALL_BOOKINGS);
                 if (result.success) {
                     const now = new Date();
                     const upcomingBookings = (result.data || []).filter(booking => {
@@ -4907,7 +4941,7 @@
 
         async function loadUsers() {
             try {
-                const result = await callGAS('admin/users');
+                const result = await callGAS(CONFIG.API_PATHS.ADMIN_USERS);
                 if (result.success) {
                     state.users = result.data || [];
                     state.users.forEach(u => {
@@ -4994,7 +5028,7 @@
             setButtonLoading(btn, true);
 
             try {
-                const result = await callGAS('admin/user/delete', {
+                const result = await callGAS(CONFIG.API_PATHS.ADMIN_USER_DELETE, {
                     targetUserId: state.currentUserToDelete,
                     lineUserId: state.user.lineUserId
                 });
@@ -5043,7 +5077,7 @@
             const saveBtn = e.submitter;
             setButtonLoading(saveBtn, true);
 
-            const result = await callGAS('admin/user/role', {
+            const result = await callGAS(CONFIG.API_PATHS.ADMIN_USER_ROLE, {
                 targetUserId: userId,
                 role,
                 lineUserId: state.user.lineUserId
@@ -5068,7 +5102,7 @@
                 await loadUsers();
                 
                 if (userId === state.user?.lineUserId) {
-                    const userResult = await callGAS('user/profile', {
+                    const userResult = await callGAS(CONFIG.API_PATHS.USER_PROFILE, {
                         lineUserId: state.user.lineUserId,
                         forceEmailFetch: 'true'
                     });
@@ -5154,7 +5188,7 @@
 
                 if (id) data.roomId = id;
 
-                const result = await callGAS(id ? 'room/update' : 'room/create', data);
+                const result = await callGAS(id ? CONFIG.API_PATHS.ROOM_UPDATE : CONFIG.API_PATHS.ROOM_CREATE, data);
 
                 if (result.success) {
                     showToast(id ? 'แก้ไขห้องสำเร็จ' : 'เพิ่มห้องสำเร็จ');
@@ -5211,7 +5245,7 @@
                 const deleteBtn = $.modalDeleteBtn;
                 setButtonLoading(deleteBtn, true);
 
-                const apiResult = await callGAS('room/delete', { 
+                const apiResult = await callGAS(CONFIG.API_PATHS.ROOM_DELETE, { 
                     roomId: state.currentRoom.roomId,
                     lineUserId: state.user.lineUserId
                 });
@@ -5249,7 +5283,7 @@
                     return;
                 }
 
-                const result = await callGAS('admin/settings/get');
+                const result = await callGAS(CONFIG.API_PATHS.ADMIN_SETTINGS_GET);
                 
                 if (result.success) {
                     state.settings = result.data || {
@@ -5332,7 +5366,7 @@
                 lineUserId: state.user.lineUserId
             };
 
-            const result = await callGAS('admin/settings/update', data);
+            const result = await callGAS(CONFIG.API_PATHS.ADMIN_SETTINGS_UPDATE, data);
             
             if (result.success) {
                 showToast('บันทึกสำเร็จ');
@@ -5392,7 +5426,7 @@
                 lineUserId: state.user.lineUserId
             };
 
-            const result = await callGAS('user/update', data);
+            const result = await callGAS(CONFIG.API_PATHS.USER_UPDATE, data);
             if (result.success) {
                 showToast('บันทึกสำเร็จ');
                 Object.assign(state.user, data);
