@@ -1288,6 +1288,40 @@
             background: rgba(6,199,85,0.1);
             color: var(--primary);
         }
+
+        /* New: Book on this date button */
+        .book-date-btn {
+            background: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            padding: 10px 16px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .book-date-btn:hover {
+            background: var(--primary-dark);
+            transform: scale(1.02);
+        }
+        
+        .book-date-btn i {
+            font-size: 16px;
+        }
+
+        .date-bookings-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-bottom: 12px;
+        }
     </style>
 </head>
 <body>
@@ -1384,7 +1418,12 @@
                 <div class="calendar-days" id="calendar-days"></div>
                 
                 <div id="selected-date-bookings" class="date-bookings-list hidden">
-                    <h3 class="text-sm font-semibold mb-2" id="selected-date-title"></h3>
+                    <div class="date-bookings-header">
+                        <h3 class="text-sm font-semibold" id="selected-date-title"></h3>
+                        <button class="book-date-btn" onclick="bookOnSelectedDate()">
+                            <i class="fas fa-calendar-plus"></i> จองวันนี้
+                        </button>
+                    </div>
                     <div id="selected-date-bookings-list"></div>
                 </div>
             </div>
@@ -3243,6 +3282,53 @@
             attemptShowDetail();
         }
 
+        // ===== NEW: Book on Selected Date =====
+        window.bookOnSelectedDate = function() {
+            if (!state.selectedDate) {
+                showToast('กรุณาเลือกวันที่จากปฏิทิน', 'warning');
+                return;
+            }
+            
+            const dateStr = formatDateForInput(state.selectedDate);
+            const todayStr = formatDateForInput(new Date());
+            
+            if (dateStr < todayStr) {
+                showToast('ไม่สามารถจองย้อนหลังได้', 'warning');
+                return;
+            }
+            
+            // เปิดหน้าต่างจองโดยกำหนดวันที่ในปฏิทิน
+            showBookingModal();
+            
+            // ตั้งค่าวันที่ในฟอร์มให้เป็นวันที่เลือก
+            if ($.bookingDate) {
+                $.bookingDate.value = dateStr;
+            }
+            if ($.bookingEndDate) {
+                $.bookingEndDate.value = dateStr;
+            }
+            
+            // ตั้งค่าเวลาเริ่มต้นเป็น 09:00 และสิ้นสุด 10:00
+            const startSelect = document.getElementById('booking-start');
+            const endSelect = document.getElementById('booking-end');
+            if (startSelect && [...startSelect.options].some(opt => opt.value === '09:00')) {
+                startSelect.value = '09:00';
+            }
+            if (endSelect && [...endSelect.options].some(opt => opt.value === '10:00')) {
+                endSelect.value = '10:00';
+            }
+            
+            // ปิด active presets
+            $.datetimePresets.forEach(btn => btn.classList.remove('active'));
+            
+            // ตรวจสอบความถูกต้อง
+            validateBookingForm();
+            checkAvailability();
+            
+            // เลื่อนไปที่ฟอร์มจอง
+            document.getElementById('booking-create-modal').scrollTop = 0;
+        };
+
         window.selectDate = async function(dateStr) {
             state.selectedDate = new Date(dateStr);
             
@@ -3321,9 +3407,23 @@
                 
                 $.selectedDateBookings.classList.remove('hidden');
             } else {
-                $.selectedDateBookingsList.innerHTML = '<div class="text-center py-4 text-gray-400">ไม่มีการจองในวันนี้</div>';
+                const dateObj = new Date(dateStr);
+                const dateThai = dateObj.toLocaleDateString('th-TH', { 
+                    weekday: 'long', 
+                    day: 'numeric', 
+                    month: 'long', 
+                    year: 'numeric' 
+                });
+                $.selectedDateTitle.textContent = `📅 ${dateThai} (ว่าง)`;
+                $.selectedDateBookingsList.innerHTML = `
+                    <div class="text-center py-4 text-gray-400">ไม่มีตารางการจองในวันนี้</div>
+                    <div class="text-center mt-2">
+                        <button class="book-date-btn" onclick="bookOnSelectedDate()">
+                            <i class="fas fa-calendar-plus"></i> จองวันนี้
+                        </button>
+                    </div>
+                `;
                 $.selectedDateBookings.classList.remove('hidden');
-                $.selectedDateTitle.textContent = `📅 ${new Date(dateStr).toLocaleDateString('th-TH', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}`;
             }
         };
 
