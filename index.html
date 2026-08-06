@@ -1986,17 +1986,6 @@
             }
         };
 
-        function updateRoleFlags() {
-            state.isAdmin = state.role === 'admin';
-            state.isManager = state.isAdmin || state.role === 'manager';
-            console.log('Role updated:', { role: state.role, isAdmin: state.isAdmin, isManager: state.isManager });
-        }
-
-        if (state.user) {
-            state.role = state.user.role || 'user';
-            updateRoleFlags();
-        }
-
         // ========== DOM Cache ==========
         const $ = {
             initLoading: document.getElementById('initial-loading'),
@@ -2061,7 +2050,18 @@
             triggerStatusBox: document.getElementById('trigger-status-box')
         };
 
-        // ========== UTILS ==========
+        // ========== UTILITY FUNCTIONS ==========
+        function updateRoleFlags() {
+            state.isAdmin = state.role === 'admin';
+            state.isManager = state.isAdmin || state.role === 'manager';
+            console.log('Role updated:', { role: state.role, isAdmin: state.isAdmin, isManager: state.isManager });
+        }
+
+        if (state.user) {
+            state.role = state.user.role || 'user';
+            updateRoleFlags();
+        }
+
         function showToast(msg, type = 'success') {
             const toast = document.createElement('div');
             toast.style.cssText = `
@@ -2196,6 +2196,45 @@
             }
         }
 
+        // ========== API CALL ==========
+        async function callGAS(path, data = {}, retryCount = 0) {
+            try {
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 15000);
+
+                const formData = new FormData();
+                formData.append('path', path);
+                if (state.user?.lineUserId) formData.append('lineUserId', state.user.lineUserId);
+                
+                Object.keys(data).forEach(key => {
+                    if (data[key] !== undefined && data[key] !== null) {
+                        formData.append(key, data[key]);
+                    }
+                });
+
+                const res = await fetch(CONFIG.GAS_URL, { 
+                    method: 'POST', 
+                    body: formData,
+                    signal: controller.signal
+                });
+                
+                clearTimeout(timeoutId);
+                
+                const text = await res.text();
+                return JSON.parse(text);
+            } catch (error) {
+                console.error('API Error:', error);
+                
+                if (retryCount < CONFIG.MAX_RETRY) {
+                    console.log(`Retrying... (${retryCount + 1}/${CONFIG.MAX_RETRY})`);
+                    await new Promise(resolve => setTimeout(resolve, 1000 * (retryCount + 1)));
+                    return callGAS(path, data, retryCount + 1);
+                }
+                
+                return { success: false, message: 'connection error' };
+            }
+        }
+
         // ========== TRIGGER MANAGEMENT FUNCTIONS ==========
         async function setupSystemTriggers() {
             if (!state.isAdmin) {
@@ -2289,7 +2328,6 @@
             setButtonLoading(btn, true);
             
             try {
-                // Call GAS to run specific trigger function
                 let path = '';
                 let data = { lineUserId: state.user.lineUserId };
                 
@@ -2320,45 +2358,6 @@
                 showToast('เกิดข้อผิดพลาด', 'error');
             } finally {
                 setButtonLoading(btn, false);
-            }
-        }
-
-        // ========== API CALL WITH RETRY ==========
-        async function callGAS(path, data = {}, retryCount = 0) {
-            try {
-                const controller = new AbortController();
-                const timeoutId = setTimeout(() => controller.abort(), 15000);
-
-                const formData = new FormData();
-                formData.append('path', path);
-                if (state.user?.lineUserId) formData.append('lineUserId', state.user.lineUserId);
-                
-                Object.keys(data).forEach(key => {
-                    if (data[key] !== undefined && data[key] !== null) {
-                        formData.append(key, data[key]);
-                    }
-                });
-
-                const res = await fetch(CONFIG.GAS_URL, { 
-                    method: 'POST', 
-                    body: formData,
-                    signal: controller.signal
-                });
-                
-                clearTimeout(timeoutId);
-                
-                const text = await res.text();
-                return JSON.parse(text);
-            } catch (error) {
-                console.error('API Error:', error);
-                
-                if (retryCount < CONFIG.MAX_RETRY) {
-                    console.log(`Retrying... (${retryCount + 1}/${CONFIG.MAX_RETRY})`);
-                    await new Promise(resolve => setTimeout(resolve, 1000 * (retryCount + 1)));
-                    return callGAS(path, data, retryCount + 1);
-                }
-                
-                return { success: false, message: 'connection error' };
             }
         }
 
