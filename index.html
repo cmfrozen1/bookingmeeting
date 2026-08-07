@@ -736,7 +736,7 @@
             color: #ef4444;
         }
         
-        .role-manager {
+        .role-operator {
             background: rgba(245,158,11,0.2);
             color: #f59e0b;
         }
@@ -1352,6 +1352,11 @@
         .trigger-status-box .status-item .dot.inactive {
             background: var(--danger);
         }
+
+        /* Operator: hide pending tab, user management, settings */
+        .operator-hidden {
+            display: none !important;
+        }
     </style>
 </head>
 <body>
@@ -1529,16 +1534,20 @@
                 </div>
 
                 <div class="flex border-b border-[#2a2e36] mb-4 overflow-x-auto">
-                    <button class="admin-tab-btn flex-1 py-2 text-center active" data-admin-tab="pending">
+                    <!-- Pending tab - Hidden for Operator -->
+                    <button class="admin-tab-btn flex-1 py-2 text-center admin-pending-tab" data-admin-tab="pending">
                         รออนุมัติ <span id="pending-badge" class="ml-1 bg-[#06c755] text-white text-xs rounded-full px-1.5 py-0.5 hidden">0</span>
                     </button>
                     <button class="admin-tab-btn flex-1 py-2 text-center" data-admin-tab="bookings">การจองทั้งหมด</button>
                     <button class="admin-tab-btn flex-1 py-2 text-center" data-admin-tab="rooms">จัดการห้อง</button>
+                    <!-- Users tab - Hidden for Operator -->
                     <button class="admin-tab-btn flex-1 py-2 text-center admin-only-users" data-admin-tab="users" style="display: none;">จัดการผู้ใช้</button>
+                    <!-- Settings tab - Hidden for Operator -->
                     <button class="admin-tab-btn flex-1 py-2 text-center admin-only-settings" data-admin-tab="settings" style="display: none;">ตั้งค่า</button>
                 </div>
 
-                <div id="admin-pending-tab" class="admin-tab">
+                <!-- Pending tab content - Hidden for Operator -->
+                <div id="admin-pending-tab" class="admin-tab admin-pending-content">
                     <div class="flex justify-between items-center mb-3">
                         <h3 class="font-semibold">รายการรออนุมัติ</h3>
                         <button onclick="setupSystemTriggers()" class="text-[#06c755] text-sm">
@@ -1563,7 +1572,8 @@
                     <div id="rooms-management-list" class="space-y-3"></div>
                 </div>
 
-                <div id="admin-users-tab" class="admin-tab hidden">
+                <!-- Users tab - Hidden for Operator -->
+                <div id="admin-users-tab" class="admin-tab hidden admin-users-content">
                     <div class="search-box px-0 mb-4">
                         <i class="fas fa-search"></i>
                         <input type="text" id="user-search" placeholder="ค้นหาผู้ใช้...">
@@ -1571,7 +1581,8 @@
                     <div id="users-list" class="space-y-2"></div>
                 </div>
 
-                <div id="admin-settings-tab" class="admin-tab hidden">
+                <!-- Settings tab - Hidden for Operator -->
+                <div id="admin-settings-tab" class="admin-tab hidden admin-settings-content">
                     <div class="admin-section">
                         <h3 class="font-semibold mb-3">ตั้งค่าระบบ</h3>
                         <form id="settings-form" onsubmit="saveSettings(event)">
@@ -1625,7 +1636,7 @@
                         
                         <p class="text-xs text-gray-500 mt-3 leading-relaxed">
                             💡 <strong>Triggers จะทำงานอัตโนมัติ:</strong><br>
-                            • <span class="text-[#3b82f6]">Reminder</span> ส่งแจ้งเตือน Admin/Manager ทุก 10 นาที<br>
+                            • <span class="text-[#3b82f6]">Reminder</span> ส่งแจ้งเตือน Admin/Operator ทุก 10 นาที<br>
                             • <span class="text-[#f59e0b]">Auto Cancel</span> ยกเลิกการจองที่เลยเวลา ทุก 30 นาที<br>
                             • <span class="text-[#06c755]">สรุปรายเดือน</span> ส่งสรุปให้ผู้ใช้ทุกวันเวลา 20:00 น.<br>
                             • <span class="text-[#ef4444]">Cleanup</span> ลบผู้ใช้ inactive ทุกวันเวลา 03:00 น.
@@ -1884,7 +1895,7 @@
                         <p id="role-user-name" class="text-white mb-4"></p>
                         <select id="user-role" class="input-field">
                             <option value="user">👤 ผู้ใช้ทั่วไป</option>
-                            <option value="manager">👥 ผู้จัดการ</option>
+                            <option value="operator">🔧 ผู้ดำเนินการ</option>
                             <option value="admin">👑 ผู้ดูแลระบบ</option>
                         </select>
                     </form>
@@ -1929,7 +1940,7 @@
             <i class="fas fa-calendar-check"></i>
             <span>การจองของฉัน</span>
         </div>
-        <div class="nav-item hidden manager-admin" data-tab="admin">
+        <div class="nav-item hidden operator-admin" data-tab="admin">
             <i class="fas fa-cog"></i>
             <span>จัดการ</span>
         </div>
@@ -1963,7 +1974,7 @@
             currentUserToDelete: null,
             role: (JSON.parse(localStorage.getItem('user_cache')) || {}).role || 'user',
             isAdmin: false,
-            isManager: false,
+            isOperator: false,
             settings: JSON.parse(localStorage.getItem('settings_cache')) || { 
                 appName: 'Meeting Room',
                 requireApproval: 'true',
@@ -2018,9 +2029,13 @@
             modalAdminControls: document.getElementById('modal-admin-controls'),
             floatingBtn: document.getElementById('floating-book-btn'),
             quickBookBtn: document.getElementById('quick-book-btn'),
-            managerAdmin: document.querySelectorAll('.manager-admin'),
+            operatorAdmin: document.querySelectorAll('.operator-admin'),
             adminOnlyUsers: document.querySelectorAll('.admin-only-users'),
             adminOnlySettings: document.querySelectorAll('.admin-only-settings'),
+            adminPendingTab: document.querySelectorAll('.admin-pending-tab'),
+            adminPendingContent: document.querySelectorAll('.admin-pending-content'),
+            adminUsersContent: document.querySelectorAll('.admin-users-content'),
+            adminSettingsContent: document.querySelectorAll('.admin-settings-content'),
             refreshAdmin: document.getElementById('refresh-admin'),
             adminUsers: document.getElementById('admin-users'),
             adminRooms: document.getElementById('admin-rooms'),
@@ -2053,8 +2068,8 @@
         // ========== UTILITY FUNCTIONS ==========
         function updateRoleFlags() {
             state.isAdmin = state.role === 'admin';
-            state.isManager = state.isAdmin || state.role === 'manager';
-            console.log('Role updated:', { role: state.role, isAdmin: state.isAdmin, isManager: state.isManager });
+            state.isOperator = state.isAdmin || state.role === 'operator';
+            console.log('Role updated:', { role: state.role, isAdmin: state.isAdmin, isOperator: state.isOperator });
         }
 
         if (state.user) {
@@ -3522,7 +3537,10 @@
                 
                 loadInitialData();
                 
-                if (state.isManager) {
+                // Show Admin/Operator UI based on role
+                updateUIBasedOnRole();
+                
+                if (state.isOperator) {
                     loadManagerData();
                 }
                 
@@ -3541,6 +3559,46 @@
                 $.initLoading.classList.add('hide');
                 if (!state.user) showToast('ไม่สามารถเชื่อมต่อ LINE ได้', 'error');
                 checkUrlForBookingId();
+            }
+        }
+
+        // ===== UPDATE UI BASED ON ROLE =====
+        function updateUIBasedOnRole() {
+            // For Operator (not Admin) - hide pending tab, user management, and settings
+            if (state.isOperator && !state.isAdmin) {
+                // Hide pending tab button
+                document.querySelectorAll('.admin-pending-tab').forEach(el => el.classList.add('operator-hidden'));
+                // Hide pending content
+                document.querySelectorAll('.admin-pending-content').forEach(el => el.classList.add('operator-hidden'));
+                // Hide users tab button
+                document.querySelectorAll('.admin-only-users').forEach(el => el.classList.add('operator-hidden'));
+                // Hide users content
+                document.querySelectorAll('.admin-users-content').forEach(el => el.classList.add('operator-hidden'));
+                // Hide settings tab button
+                document.querySelectorAll('.admin-only-settings').forEach(el => el.classList.add('operator-hidden'));
+                // Hide settings content
+                document.querySelectorAll('.admin-settings-content').forEach(el => el.classList.add('operator-hidden'));
+                
+                // Show bookings and rooms tabs by default
+                const bookingsTab = document.querySelector('[data-admin-tab="bookings"]');
+                const roomsTab = document.querySelector('[data-admin-tab="rooms"]');
+                if (bookingsTab && roomsTab) {
+                    // Make sure bookings tab is visible and active
+                    document.querySelectorAll('.admin-tab-btn').forEach(b => b.classList.remove('active'));
+                    bookingsTab.classList.add('active');
+                    document.querySelectorAll('.admin-tab').forEach(t => t.classList.add('hidden'));
+                    document.getElementById('admin-bookings-tab').classList.remove('hidden');
+                }
+            }
+            
+            // For Admin - show all
+            if (state.isAdmin) {
+                document.querySelectorAll('.admin-pending-tab').forEach(el => el.classList.remove('operator-hidden'));
+                document.querySelectorAll('.admin-pending-content').forEach(el => el.classList.remove('operator-hidden'));
+                document.querySelectorAll('.admin-only-users').forEach(el => el.classList.remove('operator-hidden'));
+                document.querySelectorAll('.admin-users-content').forEach(el => el.classList.remove('operator-hidden'));
+                document.querySelectorAll('.admin-only-settings').forEach(el => el.classList.remove('operator-hidden'));
+                document.querySelectorAll('.admin-settings-content').forEach(el => el.classList.remove('operator-hidden'));
             }
         }
 
@@ -3588,7 +3646,7 @@
             
             const roleText = {
                 admin: '👑 ผู้ดูแลระบบ',
-                manager: '👥 ผู้จัดการ',
+                operator: '🔧 ผู้ดำเนินการ',
                 user: '👤 ผู้ใช้ทั่วไป'
             }[user.role] || '';
             
@@ -3596,18 +3654,19 @@
 
             if ($.userRoleBadge) {
                 $.userRoleBadge.textContent = roleText;
-                if (state.isAdmin || state.isManager) {
+                if (state.isAdmin || state.isOperator) {
                     $.userRoleBadge.classList.remove('hidden');
                 } else {
                     $.userRoleBadge.classList.add('hidden');
                 }
             }
 
-            $.managerAdmin.forEach(el => {
-                if (state.isManager) el.classList.remove('hidden');
+            $.operatorAdmin.forEach(el => {
+                if (state.isOperator) el.classList.remove('hidden');
                 else el.classList.add('hidden');
             });
 
+            // Show admin-only items only for admin
             $.adminOnlyUsers.forEach(el => {
                 if (state.isAdmin) el.style.display = 'block';
                 else el.style.display = 'none';
@@ -3618,10 +3677,17 @@
                 else el.style.display = 'none';
             });
 
+            // Show floating book button for non-admin users (user and operator can book)
             if (!state.isAdmin) {
                 $.floatingBtn.classList.remove('hidden');
                 if ($.quickBookBtn) $.quickBookBtn.classList.remove('hidden');
+            } else {
+                // Admins also have the button
+                $.floatingBtn.classList.remove('hidden');
+                if ($.quickBookBtn) $.quickBookBtn.classList.remove('hidden');
             }
+            
+            updateUIBasedOnRole();
         }
 
         async function loadInitialData() {
@@ -3646,7 +3712,8 @@
             Promise.all([
                 loadUsers().catch(console.warn),
                 loadAdminStats().catch(console.warn),
-                loadPendingBookings().catch(console.warn),
+                // loadPendingBookings is called only for Admin
+                state.isAdmin ? loadPendingBookings().catch(console.warn) : Promise.resolve(),
                 loadAllBookings().catch(console.warn),
                 loadRoomsManagement().catch(console.warn)
             ]).catch(console.warn);
@@ -3875,7 +3942,7 @@
 
                 $.modalBookBtn.onclick = () => showBookingModal(roomId);
 
-                if (state.isManager) {
+                if (state.isOperator) {
                     $.modalAdminControls.classList.remove('hidden');
                     $.modalEditBtn.disabled = false;
                     $.modalDeleteBtn.disabled = false;
@@ -4047,6 +4114,11 @@
         }
 
         window.approveBooking = async function(bookingId, btn, skipNotification = false) {
+            if (!state.isAdmin) {
+                showToast('เฉพาะผู้ดูแลระบบเท่านั้น', 'error');
+                return;
+            }
+            
             setButtonLoading(btn, true);
             
             const result = await callGAS('booking/approve', { 
@@ -4087,6 +4159,11 @@
         };
 
         window.adminCancelBooking = async function(bookingId, btn) {
+            if (!state.isAdmin) {
+                showToast('เฉพาะผู้ดูแลระบบเท่านั้น', 'error');
+                return;
+            }
+            
             setButtonLoading(btn, true);
             
             try {
@@ -4272,6 +4349,11 @@
         };
 
         window.rejectBooking = async function(bookingId, btn) {
+            if (!state.isAdmin) {
+                showToast('เฉพาะผู้ดูแลระบบเท่านั้น', 'error');
+                return;
+            }
+            
             setButtonLoading(btn, true);
             
             try {
@@ -4672,7 +4754,7 @@
                     `;
                 }
                 
-                if (state.isManager && b.status === 'confirmed' && endTime > now) {
+                if (state.isAdmin && b.status === 'confirmed' && endTime > now) {
                     footerButtons += `
                         <button class="btn-danger flex-1" onclick="adminCancelBooking('${b.bookingId}', this)">
                             <i class="fas fa-ban mr-2"></i>ยกเลิก (แจ้งเตือน)
@@ -4773,6 +4855,9 @@
         }
 
         async function loadPendingBookings() {
+            // Only Admin can see pending bookings
+            if (!state.isAdmin) return;
+            
             try {
                 const result = await callGAS('admin/pending-bookings');
                 if (result.success) {
@@ -4884,7 +4969,7 @@
                 
                 const now = new Date();
                 const endTime = new Date(b.endTime);
-                const canAdminCancel = state.isManager && b.status === 'confirmed' && endTime >= now;
+                const canAdminCancel = state.isAdmin && b.status === 'confirmed' && endTime >= now;
                 
                 const statusText = {
                     'confirmed': '✅ อนุมัติแล้ว',
@@ -4944,6 +5029,9 @@
         }
 
         async function loadUsers() {
+            // Only Admin can see users
+            if (!state.isAdmin) return;
+            
             try {
                 const result = await callGAS('admin/users');
                 if (result.success) {
@@ -4979,7 +5067,7 @@
                         <p class="font-semibold text-sm">${u.displayName || ''}</p>
                         <p class="text-xs text-gray-400">${u.email || ''}</p>
                     </div>
-                    <span class="role-badge role-${u.role}">${{admin:'ผู้ดูแล', manager:'ผู้จัดการ', user:'ผู้ใช้'}[u.role]}</span>
+                    <span class="role-badge role-${u.role}">${{admin:'ผู้ดูแล', operator:'ผู้ดำเนินการ', user:'ผู้ใช้'}[u.role]}</span>
                     ${state.isAdmin ? `
                         <button class="text-[#06c755] text-xs" onclick="showRoleModal('${u.lineUserId}', '${u.displayName}', '${u.role}')">
                             <i class="fas fa-cog"></i>
@@ -5091,7 +5179,7 @@
                 showToast('อัปเดตสิทธิ์สำเร็จ');
                 
                 const targetUser = state.users.find(u => u.lineUserId === userId) || {};
-                const roleNames = { admin: 'ผู้ดูแลระบบ', manager: 'ผู้จัดการ', user: 'ผู้ใช้ทั่วไป' };
+                const roleNames = { admin: 'ผู้ดูแลระบบ', operator: 'ผู้ดำเนินการ', user: 'ผู้ใช้ทั่วไป' };
                 await sendBookingToChat({
                     title: 'เปลี่ยนสิทธิ์ผู้ใช้งาน: ' + (targetUser.displayName || 'ไม่ระบุ'),
                     roomName: 'ระบบจัดการสิทธิ์',
@@ -5117,12 +5205,12 @@
                         
                         $.profileRole.textContent = {
                             admin: '👑 ผู้ดูแลระบบ',
-                            manager: '👥 ผู้จัดการ',
+                            operator: '🔧 ผู้ดำเนินการ',
                             user: '👤 ผู้ใช้ทั่วไป'
                         }[state.user.role] || '';
                         
-                        $.managerAdmin.forEach(el => {
-                            if (state.isManager) el.classList.remove('hidden');
+                        $.operatorAdmin.forEach(el => {
+                            if (state.isOperator) el.classList.remove('hidden');
                             else el.classList.add('hidden');
                         });
 
@@ -5135,6 +5223,8 @@
                             if (state.isAdmin) el.style.display = 'block';
                             else el.style.display = 'none';
                         });
+                        
+                        updateUIBasedOnRole();
                     }
                 }
             } else {
@@ -5454,13 +5544,17 @@
             document.getElementById(`tab-${tab}`).classList.add('active');
 
             if (tab === 'my') loadMyBookings();
-            if (tab === 'admin' && state.isManager) {
+            if (tab === 'admin' && state.isOperator) {
                 loadAdminStats();
-                loadUsers();
-                loadPendingBookings();
+                if (state.isAdmin) {
+                    loadUsers();
+                    loadPendingBookings();
+                }
                 loadAllBookings();
                 loadRoomsManagement();
-                checkTriggerStatus();
+                if (state.isAdmin) {
+                    checkTriggerStatus();
+                }
             }
         };
 
@@ -5484,33 +5578,43 @@
         });
 
         $.refreshAdmin?.addEventListener('click', () => {
-            if (state.isManager) {
+            if (state.isOperator) {
                 loadAdminStats();
-                loadUsers();
-                loadPendingBookings();
+                if (state.isAdmin) {
+                    loadUsers();
+                    loadPendingBookings();
+                }
                 loadAllBookings();
                 loadRoomsManagement();
-                checkTriggerStatus();
+                if (state.isAdmin) {
+                    checkTriggerStatus();
+                }
             }
         });
 
         document.querySelectorAll('.admin-tab-btn').forEach(btn => {
             btn.addEventListener('click', () => {
+                // Skip if button is hidden for operator
+                if (btn.classList.contains('operator-hidden')) return;
+                
                 document.querySelectorAll('.admin-tab-btn').forEach(b => b.classList.remove('active'));
                 btn.classList.add('active');
                 
                 document.querySelectorAll('.admin-tab').forEach(t => t.classList.add('hidden'));
-                document.getElementById(`admin-${btn.dataset.adminTab}-tab`).classList.remove('hidden');
+                const targetTab = document.getElementById(`admin-${btn.dataset.adminTab}-tab`);
+                if (targetTab) {
+                    targetTab.classList.remove('hidden');
+                }
                 
                 if (btn.dataset.adminTab === 'rooms') {
                     loadRoomsManagement();
                 } else if (btn.dataset.adminTab === 'bookings') {
                     loadAllBookings();
-                } else if (btn.dataset.adminTab === 'users') {
+                } else if (btn.dataset.adminTab === 'users' && state.isAdmin) {
                     loadUsers();
-                } else if (btn.dataset.adminTab === 'pending') {
+                } else if (btn.dataset.adminTab === 'pending' && state.isAdmin) {
                     loadPendingBookings();
-                } else if (btn.dataset.adminTab === 'settings') {
+                } else if (btn.dataset.adminTab === 'settings' && state.isAdmin) {
                     checkTriggerStatus();
                 }
             });
