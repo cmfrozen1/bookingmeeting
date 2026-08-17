@@ -5489,7 +5489,9 @@
             const data = {
                 phone: document.getElementById('profile-phone').value,
                 department: document.getElementById('profile-department').value,
-                lineUserId: state.user.lineUserId
+                lineUserId: state.user.lineUserId,
+                // ส่งค่าปิด/เปิดการแจ้งเตือนไปที่ server ด้วย (ไม่ใช่เก็บแค่ localStorage)
+                notificationsEnabled: $.profileNotificationsEnabled ? $.profileNotificationsEnabled.checked : true
             };
 
             const result = await callGAS('user/update', data);
