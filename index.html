@@ -1784,22 +1784,40 @@
                         <input type="url" id="booking-meeting-link" placeholder="ลิงค์ประชุม (Zoom, Teams, etc.)"
                             class="input-field hidden" pattern="https?://.*">
 
-                        <div class="flex flex-col gap-2 mb-3 px-2">
+                        <div id="equipment-onsite-section" class="flex flex-col gap-2 mb-3 px-2">
                             <span class="text-sm text-gray-400 block">อุปกรณ์เพิ่มเติม</span>
                             <div class="flex flex-wrap gap-4">
                                 <label class="flex items-center gap-2 text-sm text-gray-300 cursor-pointer">
-                                    <input type="radio" name="booking-computer" id="booking-use-computer" value="use" class="text-primary focus:ring-primary bg-gray-800 border-gray-600">
+                                    <input type="radio" name="booking-computer" id="booking-use-computer" value="use" class="text-primary focus:ring-primary bg-gray-800 border-gray-600" onchange="toggleProjector()">
                                     ใช้คอมพิวเตอร์
                                 </label>
                                 <label class="flex items-center gap-2 text-sm text-gray-300 cursor-pointer">
-                                    <input type="radio" name="booking-computer" id="booking-no-computer" value="no" class="text-primary focus:ring-primary bg-gray-800 border-gray-600" checked>
+                                    <input type="radio" name="booking-computer" id="booking-no-computer" value="no" class="text-primary focus:ring-primary bg-gray-800 border-gray-600" checked onchange="toggleProjector()">
                                     ไม่ใช้คอมพิวเตอร์
                                 </label>
                             </div>
-                            <div class="flex gap-4 mt-1">
+                            <div class="flex gap-4 mt-1 hidden" id="projector-container">
                                 <label class="flex items-center gap-2 text-sm text-gray-300 cursor-pointer">
                                     <input type="checkbox" id="booking-use-projector" class="rounded text-primary focus:ring-primary bg-gray-800 border-gray-600">
                                     ใช้โปรเจคเตอร์
+                                </label>
+                            </div>
+                        </div>
+
+                        <div id="equipment-online-section" class="flex flex-col gap-2 mb-3 px-2 hidden">
+                            <span class="text-sm text-gray-400 block">อุปกรณ์สำหรับออนไลน์</span>
+                            <div class="flex flex-wrap gap-4">
+                                <label class="flex items-center gap-2 text-sm text-gray-300 cursor-pointer">
+                                    <input type="checkbox" id="booking-online-camera" class="rounded text-primary focus:ring-primary bg-gray-800 border-gray-600">
+                                    กล้อง
+                                </label>
+                                <label class="flex items-center gap-2 text-sm text-gray-300 cursor-pointer">
+                                    <input type="checkbox" id="booking-online-mic" class="rounded text-primary focus:ring-primary bg-gray-800 border-gray-600">
+                                    ไมค์
+                                </label>
+                                <label class="flex items-center gap-2 text-sm text-gray-300 cursor-pointer">
+                                    <input type="checkbox" id="booking-online-computer" class="rounded text-primary focus:ring-primary bg-gray-800 border-gray-600">
+                                    คอมพิวเตอร์
                                 </label>
                             </div>
                         </div>
@@ -4008,7 +4026,11 @@
             document.getElementById('booking-use-computer').checked = false;
             if(document.getElementById('booking-no-computer')) document.getElementById('booking-no-computer').checked = true;
             document.getElementById('booking-use-projector').checked = false;
+            if(document.getElementById('booking-online-camera')) document.getElementById('booking-online-camera').checked = false;
+            if(document.getElementById('booking-online-mic')) document.getElementById('booking-online-mic').checked = false;
+            if(document.getElementById('booking-online-computer')) document.getElementById('booking-online-computer').checked = false;
             toggleZoomLink();
+            if(typeof toggleProjector === 'function') toggleProjector();
             document.getElementById('booking-attendees').value = '';
             document.getElementById('availability-status').classList.add('hidden');
             document.getElementById('save-booking-btn').disabled = true;
@@ -4273,16 +4295,37 @@
             }
         };
 
+        window.toggleProjector = function() {
+            const useComp = document.getElementById('booking-use-computer')?.checked;
+            const projectorContainer = document.getElementById('projector-container');
+            if (projectorContainer) {
+                if (useComp) {
+                    projectorContainer.classList.remove('hidden');
+                } else {
+                    projectorContainer.classList.add('hidden');
+                    const projCheckbox = document.getElementById('booking-use-projector');
+                    if(projCheckbox) projCheckbox.checked = false;
+                }
+            }
+        };
+
         window.toggleZoomLink = function() {
             const format = document.getElementById('booking-format').value;
             const linkInput = document.getElementById('booking-meeting-link');
+            const onsiteSection = document.getElementById('equipment-onsite-section');
+            const onlineSection = document.getElementById('equipment-online-section');
+            
             if (format === 'online') {
                 linkInput.classList.remove('hidden');
                 linkInput.required = true;
+                if (onsiteSection) onsiteSection.classList.add('hidden');
+                if (onlineSection) onlineSection.classList.remove('hidden');
             } else {
                 linkInput.classList.add('hidden');
                 linkInput.required = false;
                 linkInput.value = '';
+                if (onsiteSection) onsiteSection.classList.remove('hidden');
+                if (onlineSection) onlineSection.classList.add('hidden');
             }
         };
 
@@ -4342,12 +4385,19 @@
                 }
 
                 let desc = document.getElementById('booking-description').value;
-                const useComp = document.getElementById('booking-use-computer').checked;
-                const useProj = document.getElementById('booking-use-projector').checked;
-                
+                const format = document.getElementById('booking-format').value;
                 let extras = [];
-                if (useComp) extras.push('คอมพิวเตอร์');
-                if (useProj) extras.push('โปรเจคเตอร์');
+                
+                if (format === 'onsite') {
+                    const useComp = document.getElementById('booking-use-computer')?.checked;
+                    const useProj = document.getElementById('booking-use-projector')?.checked;
+                    if (useComp) extras.push('คอมพิวเตอร์');
+                    if (useComp && useProj) extras.push('โปรเจคเตอร์');
+                } else if (format === 'online') {
+                    if (document.getElementById('booking-online-camera')?.checked) extras.push('กล้อง');
+                    if (document.getElementById('booking-online-mic')?.checked) extras.push('ไมค์');
+                    if (document.getElementById('booking-online-computer')?.checked) extras.push('คอมพิวเตอร์');
+                }
                 if (extras.length > 0) {
                     desc += `\n* ต้องการใช้: ${extras.join(', ')}`;
                 }
