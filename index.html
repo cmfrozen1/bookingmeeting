@@ -1773,7 +1773,7 @@
                         <input type="text" id="booking-title" placeholder="หัวข้อการประชุม" class="input-field" required
                             maxlength="100">
                         <textarea id="booking-description"
-                            placeholder="รายละเอียด (เช่น ตั้งซูม,ประชุมเฉยๆ,หรือต้องการให้ตั้งคอมพิวเตอร์)"
+                            placeholder="รายละเอียด"
                             class="input-field" rows="3" maxlength="500" required></textarea>
 
                         <select id="booking-format" class="input-field" onchange="toggleZoomLink()">
@@ -1784,15 +1784,24 @@
                         <input type="url" id="booking-meeting-link" placeholder="ลิงค์ประชุม (Zoom, Teams, etc.)"
                             class="input-field hidden" pattern="https?://.*">
 
-                        <div class="flex gap-4 mb-3 px-2">
-                            <label class="flex items-center gap-2 text-sm text-gray-300 cursor-pointer">
-                                <input type="checkbox" id="booking-use-computer" class="rounded text-primary focus:ring-primary bg-gray-800 border-gray-600">
-                                ใช้คอมพิวเตอร์
-                            </label>
-                            <label class="flex items-center gap-2 text-sm text-gray-300 cursor-pointer">
-                                <input type="checkbox" id="booking-use-projector" class="rounded text-primary focus:ring-primary bg-gray-800 border-gray-600">
-                                ใช้โปรเจคเตอร์
-                            </label>
+                        <div class="flex flex-col gap-2 mb-3 px-2">
+                            <span class="text-sm text-gray-400 block">อุปกรณ์เพิ่มเติม</span>
+                            <div class="flex flex-wrap gap-4">
+                                <label class="flex items-center gap-2 text-sm text-gray-300 cursor-pointer">
+                                    <input type="radio" name="booking-computer" id="booking-use-computer" value="use" class="text-primary focus:ring-primary bg-gray-800 border-gray-600">
+                                    ใช้คอมพิวเตอร์
+                                </label>
+                                <label class="flex items-center gap-2 text-sm text-gray-300 cursor-pointer">
+                                    <input type="radio" name="booking-computer" id="booking-no-computer" value="no" class="text-primary focus:ring-primary bg-gray-800 border-gray-600" checked>
+                                    ไม่ใช้คอมพิวเตอร์
+                                </label>
+                            </div>
+                            <div class="flex gap-4 mt-1">
+                                <label class="flex items-center gap-2 text-sm text-gray-300 cursor-pointer">
+                                    <input type="checkbox" id="booking-use-projector" class="rounded text-primary focus:ring-primary bg-gray-800 border-gray-600">
+                                    ใช้โปรเจคเตอร์
+                                </label>
+                            </div>
                         </div>
 
                         <div class="grid grid-cols-2 gap-2">
@@ -3997,9 +4006,10 @@
             document.getElementById('booking-meeting-link').value = '';
             document.getElementById('booking-format').value = 'onsite';
             document.getElementById('booking-use-computer').checked = false;
+            if(document.getElementById('booking-no-computer')) document.getElementById('booking-no-computer').checked = true;
             document.getElementById('booking-use-projector').checked = false;
             toggleZoomLink();
-            document.getElementById('booking-attendees').value = '4';
+            document.getElementById('booking-attendees').value = '';
             document.getElementById('availability-status').classList.add('hidden');
             document.getElementById('save-booking-btn').disabled = true;
 
