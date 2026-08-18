@@ -1776,8 +1776,24 @@
                             placeholder="รายละเอียด (เช่น ตั้งซูม,ประชุมเฉยๆ,หรือต้องการให้ตั้งคอมพิวเตอร์)"
                             class="input-field" rows="3" maxlength="500" required></textarea>
 
-                        <input type="text" id="booking-meeting-link" placeholder="ลิงค์ประชุม (Zoom, Teams, etc.)"
-                            class="input-field">
+                        <select id="booking-format" class="input-field" onchange="toggleZoomLink()">
+                            <option value="onsite">ประชุมออนไซต์ (Onsite)</option>
+                            <option value="online">ประชุมออนไลน์ (Online)</option>
+                        </select>
+
+                        <input type="url" id="booking-meeting-link" placeholder="ลิงค์ประชุม (Zoom, Teams, etc.)"
+                            class="input-field hidden" pattern="https?://.*">
+
+                        <div class="flex gap-4 mb-3 px-2">
+                            <label class="flex items-center gap-2 text-sm text-gray-300 cursor-pointer">
+                                <input type="checkbox" id="booking-use-computer" class="rounded text-primary focus:ring-primary bg-gray-800 border-gray-600">
+                                ใช้คอมพิวเตอร์
+                            </label>
+                            <label class="flex items-center gap-2 text-sm text-gray-300 cursor-pointer">
+                                <input type="checkbox" id="booking-use-projector" class="rounded text-primary focus:ring-primary bg-gray-800 border-gray-600">
+                                ใช้โปรเจคเตอร์
+                            </label>
+                        </div>
 
                         <div class="grid grid-cols-2 gap-2">
                             <div>
@@ -3979,6 +3995,10 @@
             document.getElementById('booking-title').value = '';
             document.getElementById('booking-description').value = '';
             document.getElementById('booking-meeting-link').value = '';
+            document.getElementById('booking-format').value = 'onsite';
+            document.getElementById('booking-use-computer').checked = false;
+            document.getElementById('booking-use-projector').checked = false;
+            toggleZoomLink();
             document.getElementById('booking-attendees').value = '4';
             document.getElementById('availability-status').classList.add('hidden');
             document.getElementById('save-booking-btn').disabled = true;
@@ -4243,6 +4263,19 @@
             }
         };
 
+        window.toggleZoomLink = function() {
+            const format = document.getElementById('booking-format').value;
+            const linkInput = document.getElementById('booking-meeting-link');
+            if (format === 'online') {
+                linkInput.classList.remove('hidden');
+                linkInput.required = true;
+            } else {
+                linkInput.classList.add('hidden');
+                linkInput.required = false;
+                linkInput.value = '';
+            }
+        };
+
         window.saveBooking = async function (e) {
             e.preventDefault();
 
@@ -4298,10 +4331,21 @@
                     return;
                 }
 
+                let desc = document.getElementById('booking-description').value;
+                const useComp = document.getElementById('booking-use-computer').checked;
+                const useProj = document.getElementById('booking-use-projector').checked;
+                
+                let extras = [];
+                if (useComp) extras.push('คอมพิวเตอร์');
+                if (useProj) extras.push('โปรเจคเตอร์');
+                if (extras.length > 0) {
+                    desc += `\n* ต้องการใช้: ${extras.join(', ')}`;
+                }
+
                 const data = {
                     roomId,
                     title: document.getElementById('booking-title').value,
-                    description: document.getElementById('booking-description').value,
+                    description: desc,
                     meetingLink: document.getElementById('booking-meeting-link').value,
                     startTime: startDateTime.toISOString(),
                     endTime: endDateTime.toISOString(),
@@ -4317,21 +4361,17 @@
                 if (result.success) {
                     showToast(id ? 'แก้ไขการจองสำเร็จ' : 'จองห้องสำเร็จ');
 
-                    if (!id && state.isAdmin && result.data?.bookingData?.bookingId) {
-                        await approveBooking(result.data.bookingData.bookingId, null, true);
-                    } else {
-                        if (!id && result.data?.bookingData && !state.isAdmin) {
-                            const bookingData = {
-                                ...result.data.bookingData,
-                                action: 'created',
-                                createdAt: new Date().toISOString(),
-                                bookingId: result.data.bookingData.bookingId || result.data.bookingData.id,
-                                approvedBy: result.data.bookingData.approvedBy,
-                                rejectedBy: result.data.bookingData.rejectedBy,
-                                cancelledBy: result.data.bookingData.cancelledBy
-                            };
-                            await sendBookingToChat(bookingData).catch(e => console.warn('Send booking to chat warning:', e));
-                        }
+                    if (!id && result.data?.bookingData && !state.isAdmin) {
+                        const bookingData = {
+                            ...result.data.bookingData,
+                            action: 'created',
+                            createdAt: new Date().toISOString(),
+                            bookingId: result.data.bookingData.bookingId || result.data.bookingData.id,
+                            approvedBy: result.data.bookingData.approvedBy,
+                            rejectedBy: result.data.bookingData.rejectedBy,
+                            cancelledBy: result.data.bookingData.cancelledBy
+                        };
+                        await sendBookingToChat(bookingData).catch(e => console.warn('Send booking to chat warning:', e));
                     }
 
                     closeBookingCreateModal();
