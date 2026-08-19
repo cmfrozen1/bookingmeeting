@@ -2195,10 +2195,11 @@
             `;
             toast.textContent = msg;
             document.body.appendChild(toast);
+            const duration = msg && msg.length > 40 ? 7000 : 3000;
             setTimeout(() => {
                 toast.style.animation = 'slideDown 0.3s ease';
                 setTimeout(() => toast.remove(), 300);
-            }, 3000);
+            }, duration);
         }
 
         function setButtonLoading(button, isLoading) {
@@ -4189,7 +4190,7 @@
             });
 
             if (result.success) {
-                showToast('อนุมัติการจองสำเร็จ');
+                showToast(result.message || 'อนุมัติการจองสำเร็จ');
                 const booking = state.pendingBookings.find(b => b.bookingId === bookingId) || {};
                 if (!skipNotification) {
                     await sendBookingToChat({
@@ -4252,7 +4253,7 @@
                     });
 
                     if (apiResult.success) {
-                        showToast('ยกเลิกการจองสำเร็จ (ส่งแจ้งเตือนไปยังผู้จองแล้ว)');
+                        showToast(apiResult.message || 'ยกเลิกการจองสำเร็จ (ส่งแจ้งเตือนไปยังผู้จองแล้ว)');
 
                         await sendBookingToChat({
                             title: booking.title,
@@ -4419,7 +4420,7 @@
                 const result = await callGAS(id ? 'booking/update' : 'booking/create', data);
 
                 if (result.success) {
-                    showToast(id ? 'แก้ไขการจองสำเร็จ' : 'จองห้องสำเร็จ');
+                    showToast(result.message || (id ? 'แก้ไขการจองสำเร็จ' : 'จองห้องสำเร็จ'));
 
                     if (!id && result.data?.bookingData && !state.isAdmin) {
                         const bookingData = {
@@ -4497,7 +4498,7 @@
                     });
 
                     if (apiResult.success) {
-                        showToast('ปฏิเสธการจองสำเร็จ (ไม่มีการแจ้งเตือน)');
+                        showToast(apiResult.message || 'ปฏิเสธการจองสำเร็จ (ไม่มีการแจ้งเตือน)');
 
                         await Promise.all([
                             loadPendingBookings(),
@@ -4538,7 +4539,7 @@
                     });
 
                     if (apiResult.success) {
-                        showToast('ปฏิเสธการจองสำเร็จ');
+                        showToast(apiResult.message || 'ปฏิเสธการจองสำเร็จ');
 
                         await sendBookingToChat({
                             title: booking.title,
