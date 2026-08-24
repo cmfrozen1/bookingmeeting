@@ -4224,8 +4224,6 @@
 
             // สร้างรายการวันที่ทั้งหมดระหว่าง startDate ถึง endDate
             const multiDayDates = [];
-            const [sY, sM, sD] = startDate.split('-');
-            const [eY, eM, eD] = endDate.split('-');
             const tmpDate = new Date(sY, sM - 1, sD);
             const endDateObj = new Date(eY, eM - 1, eD);
             while (tmpDate <= endDateObj) {
