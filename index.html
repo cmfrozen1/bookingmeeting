@@ -2272,6 +2272,7 @@
         function formatDateThai(dateStr) {
             if (!dateStr) return '';
             const date = new Date(dateStr);
+            if (isNaN(date.getTime())) return '';
             return date.toLocaleDateString('th-TH', {
                 day: 'numeric',
                 month: 'long',
@@ -2283,6 +2284,7 @@
         function formatDateShort(dateStr) {
             if (!dateStr) return '';
             const date = new Date(dateStr);
+            if (isNaN(date.getTime())) return '';
             return date.toLocaleDateString('th-TH', {
                 day: 'numeric',
                 month: 'short',
@@ -2292,7 +2294,9 @@
 
         function formatTime(dateStr) {
             if (!dateStr) return '';
-            return new Date(dateStr).toLocaleTimeString('th-TH', {
+            const date = new Date(dateStr);
+            if (isNaN(date.getTime())) return '';
+            return date.toLocaleTimeString('th-TH', {
                 hour: '2-digit',
                 minute: '2-digit'
             });
@@ -2300,7 +2304,9 @@
 
         function formatDateTime(dateStr) {
             if (!dateStr) return '';
-            return new Date(dateStr).toLocaleString('th-TH', {
+            const date = new Date(dateStr);
+            if (isNaN(date.getTime())) return '';
+            return date.toLocaleString('th-TH', {
                 day: 'numeric',
                 month: 'short',
                 year: 'numeric',
@@ -2311,6 +2317,7 @@
 
         function formatDateForInput(date) {
             const d = new Date(date);
+            if (isNaN(d.getTime())) return '';
             const year = d.getFullYear();
             const month = String(d.getMonth() + 1).padStart(2, '0');
             const day = String(d.getDate()).padStart(2, '0');
@@ -2319,6 +2326,7 @@
 
         function formatTimeForInput(date) {
             const d = new Date(date);
+            if (isNaN(d.getTime())) return '';
             const hours = String(d.getHours()).padStart(2, '0');
             const minutes = String(d.getMinutes()).padStart(2, '0');
             return `${hours}:${minutes}`;
