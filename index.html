@@ -18,7 +18,8 @@
     <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
 
     <!-- Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@300;400;500;600;700&display=swap"
+        rel="stylesheet">
 
     <!-- LINE LIFF (v2.28.0) -->
     <script src="https://static.line-scdn.net/liff/edge/versions/2.28.0/sdk.js"></script>
@@ -811,6 +812,7 @@
             0% {
                 background-position: 200% 0;
             }
+
             100% {
                 background-position: -200% 0;
             }
@@ -905,25 +907,68 @@
         .calendar-day.other-month {
             opacity: 0.3;
         }
-
         .calendar-day.has-booking {
             background: rgba(6, 199, 85, 0.1);
             border: 1px solid var(--primary);
+            cursor: pointer;
         }
 
         .calendar-day.has-booking::after {
             content: '';
             position: absolute;
-            bottom: 4px;
-            width: 4px;
+            bottom: 0;
+            left: 0;
+            width: 100%;
             height: 4px;
-            border-radius: 2px;
             background: var(--primary);
         }
 
-        .calendar-day.has-booking.multiple::after {
+        /* Status Colors for Calendar Days */
+        .calendar-day.status-pending {
+            background: rgba(245, 158, 11, 0.1);
+            border-color: #f59e0b;
+        }
+
+        .calendar-day.status-pending::after {
+            background: #f59e0b;
+        }
+
+        .calendar-day.status-confirmed {
+            background: rgba(6, 199, 85, 0.1);
+            border-color: #06c755;
+        }
+
+        .calendar-day.status-confirmed::after {
+            background: #06c755;
+        }
+
+        .calendar-day.status-cancelled {
+            background: rgba(239, 68, 68, 0.1);
+            border-color: #ef4444;
+        }
+
+        .calendar-day.status-cancelled::after {
+            background: #ef4444;
+        }
+
+        .status-indicator {
             width: 8px;
+            height: 4px;
+            border-radius: 2px;
             background: var(--primary);
+            margin-top: 4px;
+        }
+
+        .status-pending .status-indicator {
+            background: #f59e0b;
+        }
+
+        .status-confirmed .status-indicator {
+            background: #06c755;
+        }
+
+        .status-cancelled .status-indicator {
+            background: #ef4444;
         }
 
         .date-bookings-list {
@@ -1079,6 +1124,7 @@
                 transform: translateY(100%);
                 opacity: 0;
             }
+
             to {
                 transform: translateY(0);
                 opacity: 1;
@@ -1090,6 +1136,7 @@
                 transform: translateY(0);
                 opacity: 1;
             }
+
             to {
                 transform: translateY(100%);
                 opacity: 0;
@@ -1374,81 +1421,6 @@
         .trigger-status-box .status-item .dot.inactive {
             background: var(--danger);
         }
-
-        /* Date chips for multi-day selection */
-        .date-chip {
-            background: var(--bg-card);
-            border: 1px solid var(--border);
-            border-radius: 16px;
-            padding: 4px 12px;
-            font-size: 11px;
-            color: var(--text-secondary);
-            display: inline-flex;
-            align-items: center;
-            gap: 4px;
-        }
-
-        .date-chip .date-num {
-            color: var(--text);
-            font-weight: 500;
-        }
-
-        .date-chip .date-dow {
-            color: var(--text-secondary);
-            font-size: 9px;
-        }
-
-        .date-chip.conflict {
-            border-color: var(--danger);
-            background: rgba(239, 68, 68, 0.1);
-        }
-
-        .date-chip.conflict .date-num {
-            color: var(--danger);
-        }
-
-        .date-chip.available {
-            border-color: var(--primary);
-            background: rgba(6, 199, 85, 0.05);
-        }
-
-        .date-chip.available .date-num {
-            color: var(--primary);
-        }
-
-        /* Multi-day summary */
-        .booking-summary-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 8px;
-            margin-top: 8px;
-        }
-
-        .booking-summary-item {
-            background: var(--bg);
-            border-radius: 8px;
-            padding: 8px 12px;
-            text-align: center;
-        }
-
-        .booking-summary-item .label {
-            font-size: 10px;
-            color: var(--text-secondary);
-        }
-
-        .booking-summary-item .value {
-            font-size: 16px;
-            font-weight: 600;
-            color: var(--primary);
-        }
-
-        .booking-summary-item .value.danger {
-            color: var(--danger);
-        }
-
-        .booking-summary-item .value.warning {
-            color: var(--warning);
-        }
     </style>
 </head>
 
@@ -1480,7 +1452,8 @@
         <div id="tab-home" class="tab-content active">
             <!-- Profile Header -->
             <div class="profile-header" id="profile-header">
-                <img id="profile-avatar" src="https://via.placeholder.com/60/2a2e36/06c755?text=..." alt="avatar" class="profile-avatar">
+                <img id="profile-avatar" src="https://via.placeholder.com/60/2a2e36/06c755?text=..." alt="avatar"
+                    class="profile-avatar">
                 <div class="flex-1">
                     <h2 id="profile-name" class="text-lg font-bold">กำลังโหลด...</h2>
                     <p id="profile-email" class="text-sm text-gray-400"></p>
@@ -1574,7 +1547,8 @@
         <div id="tab-my" class="tab-content">
             <div class="flex justify-between items-center max-w-7xl mx-auto px-4 mb-4">
                 <h2 class="text-xl font-bold text-[#06c755]">การจองของฉัน</h2>
-                <button id="quick-book-btn" class="bg-[#06c755] text-white px-4 py-2 rounded-xl text-sm hidden" onclick="showBookingModal()">
+                <button id="quick-book-btn" class="bg-[#06c755] text-white px-4 py-2 rounded-xl text-sm hidden"
+                    onclick="showBookingModal()">
                     <i class="fas fa-plus mr-1"></i>จองด่วน
                 </button>
             </div>
@@ -1627,13 +1601,18 @@
                 </div>
 
                 <div class="flex border-b border-[#2a2e36] mb-4 overflow-x-auto">
-                    <button class="admin-tab-btn flex-1 py-2 text-center active admin-only-pending" data-admin-tab="pending">
-                        รออนุมัติ <span id="pending-badge" class="ml-1 bg-[#06c755] text-white text-xs rounded-full px-1.5 py-0.5 hidden">0</span>
+                    <button class="admin-tab-btn flex-1 py-2 text-center active admin-only-pending"
+                        data-admin-tab="pending">
+                        รออนุมัติ <span id="pending-badge"
+                            class="ml-1 bg-[#06c755] text-white text-xs rounded-full px-1.5 py-0.5 hidden">0</span>
                     </button>
-                    <button class="admin-tab-btn flex-1 py-2 text-center" data-admin-tab="bookings">การจองทั้งหมด</button>
+                    <button class="admin-tab-btn flex-1 py-2 text-center"
+                        data-admin-tab="bookings">การจองทั้งหมด</button>
                     <button class="admin-tab-btn flex-1 py-2 text-center" data-admin-tab="rooms">จัดการห้อง</button>
-                    <button class="admin-tab-btn flex-1 py-2 text-center admin-only-users" data-admin-tab="users" style="display: none;">จัดการผู้ใช้</button>
-                    <button class="admin-tab-btn flex-1 py-2 text-center admin-only-settings" data-admin-tab="settings" style="display: none;">ตั้งค่า</button>
+                    <button class="admin-tab-btn flex-1 py-2 text-center admin-only-users" data-admin-tab="users"
+                        style="display: none;">จัดการผู้ใช้</button>
+                    <button class="admin-tab-btn flex-1 py-2 text-center admin-only-settings" data-admin-tab="settings"
+                        style="display: none;">ตั้งค่า</button>
                 </div>
 
                 <div id="admin-pending-tab" class="admin-tab admin-only-pending">
@@ -1678,7 +1657,8 @@
 
                             <div class="mb-4">
                                 <label class="flex items-center gap-2 cursor-pointer">
-                                    <input type="checkbox" id="setting-require-approval" class="w-4 h-4 text-[#06c755] rounded border-gray-600 focus:ring-[#06c755] focus:ring-2">
+                                    <input type="checkbox" id="setting-require-approval"
+                                        class="w-4 h-4 text-[#06c755] rounded border-gray-600 focus:ring-[#06c755] focus:ring-2">
                                     <span class="text-sm text-gray-400 select-none">ต้องอนุมัติการจองก่อน</span>
                                 </label>
                             </div>
@@ -1693,11 +1673,12 @@
                                 <option value="1440">1 วัน</option>
                             </select>
 
-                            <button type="submit" class="btn-primary w-full" id="settings-save-btn">บันทึกการตั้งค่า</button>
+                            <button type="submit" class="btn-primary w-full"
+                                id="settings-save-btn">บันทึกการตั้งค่า</button>
                         </form>
                     </div>
 
-                    <!-- Trigger Management Section -->
+                    <!-- ====== TRIGGER MANAGEMENT SECTION ====== -->
                     <div class="admin-section mt-4 border-[#3b82f6] border-opacity-50">
                         <h3 class="font-semibold mb-3 text-[#3b82f6]">⏰ ระบบแจ้งเตือนอัตโนมัติ (Triggers)</h3>
 
@@ -1716,7 +1697,8 @@
                             <button onclick="runTriggerNow('sendMeetingReminders')" class="btn-outline text-xs py-1.5">
                                 <i class="fas fa-bell mr-1"></i>ทดสอบ Reminder
                             </button>
-                            <button onclick="runTriggerNow('autoCancelOverdueBookings')" class="btn-outline text-xs py-1.5">
+                            <button onclick="runTriggerNow('autoCancelOverdueBookings')"
+                                class="btn-outline text-xs py-1.5">
                                 <i class="fas fa-clock mr-1"></i>ทดสอบ Auto Cancel
                             </button>
                         </div>
@@ -1735,7 +1717,8 @@
                         <button onclick="resetDatabase()" class="btn-danger w-full">
                             <i class="fas fa-database mr-2"></i>รีเซ็ตฐานข้อมูล (ล้างข้อมูลทั้งหมด)
                         </button>
-                        <p class="text-xs text-gray-400 mt-2">คำเตือน: การกดปุ่มนี้จะล้างข้อมูลทั้งหมดและตั้งค่าเริ่มต้นใหม่</p>
+                        <p class="text-xs text-gray-400 mt-2">คำเตือน:
+                            การกดปุ่มนี้จะล้างข้อมูลทั้งหมดและตั้งค่าเริ่มต้นใหม่</p>
                     </div>
                 </div>
             </div>
@@ -1756,7 +1739,8 @@
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button class="btn-primary" onclick="showBookingModal(state.currentRoom?.roomId)" id="modal-book-btn">
+                    <button class="btn-primary" onclick="showBookingModal(state.currentRoom?.roomId)"
+                        id="modal-book-btn">
                         <i class="fas fa-calendar-check"></i> จองห้อง
                     </button>
                     <button class="btn-outline" onclick="closeModal()">ปิด</button>
@@ -1764,10 +1748,12 @@
                 <div id="modal-admin-controls" class="px-4 pb-4 hidden">
                     <p class="text-sm text-gray-400 mb-2">จัดการห้อง</p>
                     <div class="flex gap-2">
-                        <button id="modal-edit-btn" class="btn-outline flex-1 text-sm" onclick="editCurrentRoom()" disabled>
+                        <button id="modal-edit-btn" class="btn-outline flex-1 text-sm" onclick="editCurrentRoom()"
+                            disabled>
                             <i class="fas fa-edit mr-2"></i>แก้ไข
                         </button>
-                        <button id="modal-delete-btn" class="btn-danger flex-1 text-sm" onclick="deleteCurrentRoom()" disabled>
+                        <button id="modal-delete-btn" class="btn-danger flex-1 text-sm" onclick="deleteCurrentRoom()"
+                            disabled>
                             <i class="fas fa-trash mr-2"></i>ลบ
                         </button>
                     </div>
@@ -1805,7 +1791,6 @@
                     </button>
                 </div>
                 <div class="modal-body">
-                    <!-- Quick Date Presets -->
                     <div class="datetime-presets" id="datetime-presets">
                         <button class="datetime-preset active" onclick="setQuickDateTime('now')">
                             <i class="fas fa-clock mr-1"></i>เดี๋ยวนี้
@@ -1822,49 +1807,46 @@
                         <button class="datetime-preset" onclick="setQuickDateTime('tomorrow')">
                             <i class="fas fa-calendar-day mr-1"></i>พรุ่งนี้
                         </button>
-                        <button class="datetime-preset" onclick="setQuickDateTime('3days')">
-                            <i class="fas fa-calendar-week mr-1"></i>3 วัน
-                        </button>
-                        <button class="datetime-preset" onclick="setQuickDateTime('week')">
-                            <i class="fas fa-calendar-week mr-1"></i>1 สัปดาห์
-                        </button>
                     </div>
 
                     <form id="booking-form" onsubmit="saveBooking(event)">
                         <input type="hidden" id="edit-booking-id">
-                        
-                        <!-- Room Selection -->
                         <select id="booking-room" class="input-field" required>
                             <option value="">เลือกห้องประชุม</option>
                         </select>
-                        
-                        <!-- Title & Description -->
-                        <input type="text" id="booking-title" placeholder="หัวข้อการประชุม" class="input-field" required maxlength="100">
-                        <textarea id="booking-description" placeholder="รายละเอียด" class="input-field" rows="3" maxlength="500"></textarea>
+                        <input type="text" id="booking-title" placeholder="หัวข้อการประชุม" class="input-field" required
+                            maxlength="100">
+                        <textarea id="booking-description" placeholder="รายละเอียด" class="input-field" rows="3"
+                            maxlength="500" required></textarea>
 
-                        <!-- Meeting Format -->
                         <select id="booking-format" class="input-field" onchange="toggleZoomLink()">
                             <option value="onsite">ประชุมออนไซต์ (Onsite)</option>
                             <option value="online">ประชุมออนไลน์ (Online)</option>
                         </select>
-                        <input type="url" id="booking-meeting-link" placeholder="ลิงค์ประชุม (Zoom, Teams, etc.)" class="input-field hidden" pattern="https?://.*">
 
-                        <!-- Equipment -->
+                        <input type="url" id="booking-meeting-link" placeholder="ลิงค์ประชุม (Zoom, Teams, etc.)"
+                            class="input-field hidden" pattern="https?://.*">
+
                         <div id="equipment-onsite-section" class="flex flex-col gap-2 mb-3 px-2">
                             <span class="text-sm text-gray-400 block">อุปกรณ์เพิ่มเติม</span>
                             <div class="flex flex-wrap gap-4">
                                 <label class="flex items-center gap-2 text-sm text-gray-300 cursor-pointer">
-                                    <input type="radio" name="booking-computer" id="booking-use-computer" value="use" class="text-primary focus:ring-primary bg-gray-800 border-gray-600" onchange="toggleProjector()">
+                                    <input type="radio" name="booking-computer" id="booking-use-computer" value="use"
+                                        class="text-primary focus:ring-primary bg-gray-800 border-gray-600"
+                                        onchange="toggleProjector()">
                                     ใช้คอมพิวเตอร์
                                 </label>
                                 <label class="flex items-center gap-2 text-sm text-gray-300 cursor-pointer">
-                                    <input type="radio" name="booking-computer" id="booking-no-computer" value="no" class="text-primary focus:ring-primary bg-gray-800 border-gray-600" checked onchange="toggleProjector()">
+                                    <input type="radio" name="booking-computer" id="booking-no-computer" value="no"
+                                        class="text-primary focus:ring-primary bg-gray-800 border-gray-600" checked
+                                        onchange="toggleProjector()">
                                     ไม่ใช้คอมพิวเตอร์
                                 </label>
                             </div>
                             <div class="flex gap-4 mt-1 hidden" id="projector-container">
                                 <label class="flex items-center gap-2 text-sm text-gray-300 cursor-pointer">
-                                    <input type="checkbox" id="booking-use-projector" class="rounded text-primary focus:ring-primary bg-gray-800 border-gray-600">
+                                    <input type="checkbox" id="booking-use-projector"
+                                        class="rounded text-primary focus:ring-primary bg-gray-800 border-gray-600">
                                     ใช้โปรเจคเตอร์
                                 </label>
                             </div>
@@ -1874,89 +1856,79 @@
                             <span class="text-sm text-gray-400 block">อุปกรณ์สำหรับออนไลน์</span>
                             <div class="flex flex-wrap gap-4">
                                 <label class="flex items-center gap-2 text-sm text-gray-300 cursor-pointer">
-                                    <input type="checkbox" id="booking-online-camera" class="rounded text-primary focus:ring-primary bg-gray-800 border-gray-600"> กล้อง
+                                    <input type="checkbox" id="booking-online-camera"
+                                        class="rounded text-primary focus:ring-primary bg-gray-800 border-gray-600">
+                                    กล้อง
                                 </label>
                                 <label class="flex items-center gap-2 text-sm text-gray-300 cursor-pointer">
-                                    <input type="checkbox" id="booking-online-mic" class="rounded text-primary focus:ring-primary bg-gray-800 border-gray-600"> ไมค์
+                                    <input type="checkbox" id="booking-online-mic"
+                                        class="rounded text-primary focus:ring-primary bg-gray-800 border-gray-600">
+                                    ไมค์
                                 </label>
                                 <label class="flex items-center gap-2 text-sm text-gray-300 cursor-pointer">
-                                    <input type="checkbox" id="booking-online-computer" class="rounded text-primary focus:ring-primary bg-gray-800 border-gray-600"> คอมพิวเตอร์
+                                    <input type="checkbox" id="booking-online-computer"
+                                        class="rounded text-primary focus:ring-primary bg-gray-800 border-gray-600">
+                                    คอมพิวเตอร์
                                 </label>
                             </div>
                         </div>
 
-                        <!-- Date Range Selection (Like Flight Booking) -->
-                        <div class="bg-[#111317] p-3 rounded-xl border border-[#2a2e36] mb-3">
-                            <div class="flex items-center justify-between mb-2">
-                                <span class="text-sm font-semibold text-[#06c755]">
-                                    <i class="fas fa-calendar-alt mr-2"></i>เลือกช่วงวันที่
-                                </span>
-                                <span id="booking-days-count" class="text-xs text-gray-400">0 วัน</span>
-                            </div>
-                            
-                            <div class="grid grid-cols-2 gap-3">
-                                <div>
-                                    <label class="text-xs text-gray-400 mb-1 block">📅 วันที่เริ่มต้น</label>
-                                    <input type="date" id="booking-date" class="input-field" required min="" onchange="updateDateRange(); validateBookingForm(); checkMultiDayAvailability();">
-                                </div>
-                                <div>
-                                    <label class="text-xs text-gray-400 mb-1 block">📅 วันที่สิ้นสุด</label>
-                                    <input type="date" id="booking-end-date" class="input-field" required min="" onchange="updateDateRange(); validateBookingForm(); checkMultiDayAvailability();">
-                                </div>
-                            </div>
-
-                            <!-- Selected Dates Display -->
-                            <div id="selected-dates-display" class="mt-2 flex flex-wrap gap-1"></div>
-
-                            <!-- Date Range Presets -->
-                            <div class="flex gap-1 mt-2 flex-wrap">
-                                <button type="button" class="quick-datetime-btn text-xs" onclick="setDateRangePreset(1)">1 วัน</button>
-                                <button type="button" class="quick-datetime-btn text-xs" onclick="setDateRangePreset(3)">3 วัน</button>
-                                <button type="button" class="quick-datetime-btn text-xs" onclick="setDateRangePreset(5)">5 วัน</button>
-                                <button type="button" class="quick-datetime-btn text-xs" onclick="setDateRangePreset(7)">7 วัน</button>
-                                <button type="button" class="quick-datetime-btn text-xs" onclick="setDateRangePreset(14)">14 วัน</button>
-                                <button type="button" class="quick-datetime-btn text-xs" onclick="setDateRangePreset(30)">30 วัน</button>
-                            </div>
-                        </div>
-
-                        <!-- Time Selection -->
                         <div class="grid grid-cols-2 gap-2">
                             <div>
-                                <label class="text-xs text-gray-400 mb-1 block">⏰ เวลาเริ่มต้น</label>
-                                <select id="booking-start" class="input-field" required onchange="validateBookingForm(); checkMultiDayAvailability();"></select>
+                                <label class="text-xs text-gray-400 mb-1 block">วันที่เริ่ม</label>
+                                <input type="date" id="booking-date" class="input-field" required min=""
+                                    onchange="validateBookingForm(); checkAvailability();">
+                            </div>
+                            <div>
+                                <label class="text-xs text-gray-400 mb-1 block">วันที่สิ้นสุด</label>
+                                <input type="date" id="booking-end-date" class="input-field" required min=""
+                                    onchange="validateBookingForm(); checkAvailability();">
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-2">
+                            <div>
+                                <label class="text-xs text-gray-400 mb-1 block">เวลาเริ่ม</label>
+                                <select id="booking-start" class="input-field" required
+                                    onchange="validateBookingForm(); checkAvailability();"></select>
                                 <div class="flex gap-1 mt-1">
-                                    <button type="button" class="quick-datetime-btn" onclick="adjustTime('start', -30)"><i class="fas fa-minus"></i>-30น.</button>
-                                    <button type="button" class="quick-datetime-btn" onclick="adjustTime('start', 30)"><i class="fas fa-plus"></i>+30น.</button>
+                                    <button type="button" class="quick-datetime-btn" onclick="adjustTime('start', -30)">
+                                        <i class="fas fa-minus"></i>-30น.
+                                    </button>
+                                    <button type="button" class="quick-datetime-btn" onclick="adjustTime('start', 30)">
+                                        <i class="fas fa-plus"></i>+30น.
+                                    </button>
                                 </div>
                             </div>
                             <div>
-                                <label class="text-xs text-gray-400 mb-1 block">⏰ เวลาสิ้นสุด</label>
-                                <select id="booking-end" class="input-field" required onchange="validateBookingForm(); checkMultiDayAvailability();"></select>
+                                <label class="text-xs text-gray-400 mb-1 block">เวลาสิ้นสุด</label>
+                                <select id="booking-end" class="input-field" required
+                                    onchange="validateBookingForm(); checkAvailability();"></select>
                                 <div class="flex gap-1 mt-1">
-                                    <button type="button" class="quick-datetime-btn" onclick="adjustTime('end', -30)"><i class="fas fa-minus"></i>-30น.</button>
-                                    <button type="button" class="quick-datetime-btn" onclick="adjustTime('end', 30)"><i class="fas fa-plus"></i>+30น.</button>
+                                    <button type="button" class="quick-datetime-btn" onclick="adjustTime('end', -30)">
+                                        <i class="fas fa-minus"></i>-30น.
+                                    </button>
+                                    <button type="button" class="quick-datetime-btn" onclick="adjustTime('end', 30)">
+                                        <i class="fas fa-plus"></i>+30น.
+                                    </button>
                                 </div>
                             </div>
                         </div>
 
-                        <!-- Attendees -->
-                        <div>
-                            <label class="text-xs text-gray-400 mb-1 block">👥 จำนวนผู้เข้าร่วม</label>
-                            <input type="number" id="booking-attendees" class="input-field" placeholder="จำนวน" min="1" required oninput="validateBookingForm(); checkMultiDayAvailability();">
+                        <div class="grid grid-cols-2 gap-2">
+                            <div>
+                                <label class="text-xs text-gray-400 mb-1 block">จำนวนผู้เข้าร่วม</label>
+                                <input type="number" id="booking-attendees" class="input-field" placeholder="จำนวน"
+                                    min="1" required oninput="validateBookingForm(); checkAvailability();">
+                            </div>
                         </div>
 
-                        <!-- Availability Status -->
                         <div id="availability-status" class="text-sm mb-3 hidden"></div>
-                        
-                        <!-- Booking Summary -->
-                        <div id="booking-summary" class="hidden bg-[#0a0a0f] border border-[#2a2e36] rounded-xl p-3 mb-3">
-                            <h4 class="text-sm font-semibold text-[#06c755] mb-2"><i class="fas fa-info-circle mr-2"></i>สรุปการจอง</h4>
-                            <div id="booking-summary-content"></div>
-                        </div>
                     </form>
                 </div>
                 <div class="modal-footer">
-                    <button type="submit" form="booking-form" class="btn-primary flex-1" id="save-booking-btn" disabled>จอง</button>
+                    <button type="submit" form="booking-form" class="btn-primary flex-1" id="save-booking-btn"
+                        disabled>จอง</button>
                     <button type="button" class="btn-outline flex-1" onclick="closeBookingCreateModal()">ยกเลิก</button>
                 </div>
             </div>
@@ -1974,17 +1946,23 @@
                 <div class="modal-body">
                     <form id="room-form" onsubmit="saveRoom(event)">
                         <input type="hidden" id="edit-room-id">
-                        <input type="text" id="room-name" placeholder="ชื่อห้อง" class="input-field" required maxlength="50">
-                        <input type="number" id="room-capacity" placeholder="ความจุ (คน)" class="input-field" required min="1">
+                        <input type="text" id="room-name" placeholder="ชื่อห้อง" class="input-field" required
+                            maxlength="50">
+                        <input type="number" id="room-capacity" placeholder="ความจุ (คน)" class="input-field" required
+                            min="1">
                         <input type="text" id="room-location" placeholder="สถานที่/ชั้น" class="input-field" required>
-                        <textarea id="room-description" placeholder="รายละเอียดห้อง" class="input-field" rows="3"></textarea>
-                        <input type="text" id="room-facilities" placeholder="สิ่งอำนวยความสะดวก (คั่นด้วย , เช่น โปรเจคเตอร์, จอ, ไวท์บอร์ด)" class="input-field">
+                        <textarea id="room-description" placeholder="รายละเอียดห้อง" class="input-field"
+                            rows="3"></textarea>
+                        <input type="text" id="room-facilities"
+                            placeholder="สิ่งอำนวยความสะดวก (คั่นด้วย , เช่น โปรเจคเตอร์, จอ, ไวท์บอร์ด)"
+                            class="input-field">
 
                         <div class="upload-area" onclick="document.getElementById('room-image-file').click()">
                             <i class="fas fa-cloud-upload-alt text-3xl text-gray-400 mb-2"></i>
                             <p class="text-sm text-gray-400">คลิกเพื่ออัปโหลดรูปภาพห้อง</p>
                         </div>
-                        <input type="file" id="room-image-file" accept="image/*" style="display: none" onchange="previewRoomImage(this)">
+                        <input type="file" id="room-image-file" accept="image/*" style="display: none"
+                            onchange="previewRoomImage(this)">
                         <img id="room-image-preview" class="image-preview">
                         <input type="hidden" id="room-image">
                     </form>
@@ -2009,18 +1987,21 @@
                     <form id="profile-form" onsubmit="saveProfile(event)">
                         <div class="mb-4">
                             <label class="text-sm text-gray-400 mb-1 block">เบอร์โทรศัพท์</label>
-                            <input type="text" id="profile-phone" placeholder="เช่น 0812345678" class="input-field" maxlength="10">
+                            <input type="text" id="profile-phone" placeholder="เช่น 0812345678" class="input-field"
+                                maxlength="10">
                         </div>
 
                         <div class="mb-4">
                             <label class="text-sm text-gray-400 mb-1 block">แผนก/หน่วยงาน</label>
-                            <input type="text" id="profile-department" placeholder="เช่น ไอที, ฝ่ายขาย" class="input-field" maxlength="50">
+                            <input type="text" id="profile-department" placeholder="เช่น ไอที, ฝ่ายขาย"
+                                class="input-field" maxlength="50">
                         </div>
 
                         <div class="settings-item">
                             <div>
                                 <div class="settings-item-label">การแจ้งเตือน LINE</div>
-                                <div class="settings-item-desc">รับข้อความแจ้งเตือนเมื่อมีการจอง อนุมัติ หรือเปลี่ยนแปลง</div>
+                                <div class="settings-item-desc">รับข้อความแจ้งเตือนเมื่อมีการจอง อนุมัติ หรือเปลี่ยนแปลง
+                                </div>
                             </div>
                             <label class="toggle-switch">
                                 <input type="checkbox" id="profile-notifications-enabled" checked>
@@ -2074,7 +2055,8 @@
                 </div>
                 <div class="modal-body">
                     <p id="delete-user-name" class="text-white mb-4"></p>
-                    <p class="text-sm text-gray-400">การลบผู้ใช้จะส่งผลต่อการจองที่เกี่ยวข้องทั้งหมด การดำเนินการนี้ไม่สามารถย้อนกลับได้</p>
+                    <p class="text-sm text-gray-400">การลบผู้ใช้จะส่งผลต่อการจองที่เกี่ยวข้องทั้งหมด
+                        การดำเนินการนี้ไม่สามารถย้อนกลับได้</p>
                 </div>
                 <div class="modal-footer">
                     <button onclick="confirmDeleteUser()" class="btn-danger flex-1">
@@ -2150,10 +2132,7 @@
             cacheTimestamps: {
                 rooms: localStorage.getItem('rooms_cache_timestamp'),
                 settings: localStorage.getItem('settings_cache_timestamp')
-            },
-            // Multi-day selection state
-            selectedDates: [],
-            dateAvailability: {}
+            }
         };
 
         // ========== DOM Cache ==========
@@ -2217,11 +2196,7 @@
             availabilityStatus: document.getElementById('availability-status'),
             userRoleBadge: document.getElementById('user-role-badge'),
             datetimePresets: document.querySelectorAll('.datetime-preset'),
-            triggerStatusBox: document.getElementById('trigger-status-box'),
-            selectedDatesDisplay: document.getElementById('selected-dates-display'),
-            bookingDaysCount: document.getElementById('booking-days-count'),
-            bookingSummary: document.getElementById('booking-summary'),
-            bookingSummaryContent: document.getElementById('booking-summary-content')
+            triggerStatusBox: document.getElementById('trigger-status-box')
         };
 
         // ========== UTILITY FUNCTIONS ==========
@@ -2376,7 +2351,7 @@
             try {
                 const base64Url = token.split('.')[1];
                 const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
-                const jsonPayload = decodeURIComponent(atob(base64).split('').map(function(c) {
+                const jsonPayload = decodeURIComponent(atob(base64).split('').map(function (c) {
                     return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
                 }).join(''));
                 return JSON.parse(jsonPayload);
@@ -2714,259 +2689,8 @@
             }
         }
 
-        // ========== MULTI-DAY DATE FUNCTIONS ==========
-        function updateDateRange() {
-            const startDate = $.bookingDate?.value;
-            const endDate = $.bookingEndDate?.value;
-
-            if (!startDate || !endDate) {
-                $.selectedDatesDisplay.innerHTML = '';
-                $.bookingDaysCount.textContent = '0 วัน';
-                state.selectedDates = [];
-                return;
-            }
-
-            const start = new Date(startDate);
-            const end = new Date(endDate);
-
-            if (start > end) {
-                $.selectedDatesDisplay.innerHTML = '<span class="text-red-500 text-xs">⚠️ วันที่สิ้นสุดต้องไม่ก่อนวันที่เริ่ม</span>';
-                $.bookingDaysCount.textContent = '0 วัน';
-                state.selectedDates = [];
-                return;
-            }
-
-            const dates = [];
-            let current = new Date(start);
-            while (current <= end) {
-                dates.push(formatDateForInput(current));
-                current.setDate(current.getDate() + 1);
-            }
-
-            state.selectedDates = dates;
-            $.bookingDaysCount.textContent = `${dates.length} วัน`;
-
-            // Display date chips
-            const dayNames = ['อา', 'จ', 'อ', 'พ', 'พฤ', 'ศ', 'ส'];
-            $.selectedDatesDisplay.innerHTML = dates.map(d => {
-                const dateObj = new Date(d + 'T00:00:00');
-                const day = dateObj.getDate();
-                const month = dateObj.getMonth() + 1;
-                const dow = dayNames[dateObj.getDay()];
-                const isToday = formatDateForInput(new Date()) === d;
-                const status = state.dateAvailability[d] || 'checking';
-                let statusClass = '';
-                if (status === 'available') statusClass = 'available';
-                else if (status === 'conflict') statusClass = 'conflict';
-                return `<span class="date-chip ${statusClass} ${isToday ? 'border-[#06c755]' : ''}">
-                    <span class="date-num">${day}</span>
-                    <span class="date-dow">${dow}</span>
-                    ${status === 'conflict' ? '⚠️' : ''}
-                    ${isToday ? '⭐' : ''}
-                </span>`;
-            }).join('');
-
-            // Update booking summary
-            updateBookingSummary();
-        }
-
-        function setDateRangePreset(days) {
-            const today = new Date();
-            const startDate = new Date(today);
-            const endDate = new Date(today);
-            endDate.setDate(endDate.getDate() + days - 1);
-
-            $.bookingDate.value = formatDateForInput(startDate);
-            $.bookingEndDate.value = formatDateForInput(endDate);
-
-            // Update quick presets
-            $.datetimePresets.forEach(btn => btn.classList.remove('active'));
-
-            updateDateRange();
-            validateBookingForm();
-            checkMultiDayAvailability();
-        }
-
-        function updateBookingSummary() {
-            const startDate = $.bookingDate?.value;
-            const endDate = $.bookingEndDate?.value;
-            const start = $.bookingStart?.value;
-            const end = $.bookingEnd?.value;
-            const attendees = parseInt($.bookingAttendees?.value) || 0;
-            const roomId = document.getElementById('booking-room')?.value;
-
-            if (!startDate || !endDate || !start || !end || !roomId) {
-                $.bookingSummary.classList.add('hidden');
-                return;
-            }
-
-            const startDateTime = new Date(`${startDate}T${start}:00`);
-            const endDateTime = new Date(`${endDate}T${end}:00`);
-            const durationMs = endDateTime - startDateTime;
-            const durationHours = Math.round(durationMs / (1000 * 60 * 60));
-
-            const dates = state.selectedDates || [];
-            const totalDays = dates.length;
-
-            const room = state.rooms.find(r => r.roomId === roomId);
-            const roomName = room?.name || 'ไม่ระบุ';
-
-            // Count available vs conflict
-            let availableCount = 0;
-            let conflictCount = 0;
-            dates.forEach(d => {
-                const status = state.dateAvailability[d] || 'checking';
-                if (status === 'available') availableCount++;
-                else if (status === 'conflict') conflictCount++;
-            });
-
-            let statusHtml = '';
-            if (conflictCount === 0 && availableCount === totalDays && totalDays > 0) {
-                statusHtml = `<span class="text-[#06c755]">✅ พร้อมใช้งานทุกวัน</span>`;
-            } else if (conflictCount > 0) {
-                statusHtml = `<span class="text-[#ef4444]">⚠️ มี ${conflictCount} วันที่มีการจองซ้อน</span>`;
-            } else if (availableCount < totalDays) {
-                statusHtml = `<span class="text-[#f59e0b]">⏳ กำลังตรวจสอบ...</span>`;
-            } else {
-                statusHtml = `<span class="text-gray-400">กรุณาเลือกวันที่</span>`;
-            }
-
-            $.bookingSummaryContent.innerHTML = `
-                <div class="booking-summary-grid">
-                    <div class="booking-summary-item">
-                        <div class="label">ห้องประชุม</div>
-                        <div class="value text-sm">${roomName}</div>
-                    </div>
-                    <div class="booking-summary-item">
-                        <div class="label">จำนวนวัน</div>
-                        <div class="value">${totalDays} วัน</div>
-                    </div>
-                    <div class="booking-summary-item">
-                        <div class="label">ระยะเวลา</div>
-                        <div class="value text-sm">${durationHours} ชั่วโมง</div>
-                    </div>
-                    <div class="booking-summary-item">
-                        <div class="label">ผู้เข้าร่วม</div>
-                        <div class="value">${attendees || 0} คน</div>
-                    </div>
-                </div>
-                <div class="text-center mt-2 text-sm">${statusHtml}</div>
-                ${conflictCount > 0 ? `<div class="text-xs text-center text-red-500 mt-1">⚠️ กรุณาเลือกช่วงเวลาหรือห้องอื่น</div>` : ''}
-            `;
-
-            $.bookingSummary.classList.remove('hidden');
-        }
-
-        // ========== MULTI-DAY AVAILABILITY CHECK ==========
-        async function checkMultiDayAvailability() {
-            const roomId = document.getElementById('booking-room')?.value;
-            const startDate = $.bookingDate?.value;
-            const endDate = $.bookingEndDate?.value;
-            const start = $.bookingStart?.value;
-            const end = $.bookingEnd?.value;
-            const attendees = parseInt($.bookingAttendees?.value) || 0;
-            const editBookingId = document.getElementById('edit-booking-id')?.value;
-
-            if (!roomId || !startDate || !endDate || !start || !end) {
-                $.availabilityStatus.classList.add('hidden');
-                $.saveBookingBtn.disabled = true;
-                return;
-            }
-
-            const selectedRoom = state.rooms.find(r => r.roomId === roomId);
-            if (!selectedRoom) {
-                $.availabilityStatus.classList.add('hidden');
-                $.saveBookingBtn.disabled = true;
-                return;
-            }
-
-            if (attendees < 1) {
-                $.availabilityStatus.innerHTML = '<span class="text-red-500">⚠️ จำนวนผู้เข้าร่วมต้องมีอย่างน้อย 1 คน</span>';
-                $.availabilityStatus.classList.remove('hidden');
-                $.saveBookingBtn.disabled = true;
-                return;
-            }
-
-            if (attendees > selectedRoom.capacity) {
-                $.availabilityStatus.innerHTML = `<span class="text-red-500">⚠️ จำนวนผู้เข้าร่วม (${attendees}) เกินความจุห้อง (${selectedRoom.capacity} คน)</span>`;
-                $.availabilityStatus.classList.remove('hidden');
-                $.saveBookingBtn.disabled = true;
-                return;
-            }
-
-            const startDateTime = new Date(`${startDate}T${start}:00`);
-            const endDateTime = new Date(`${endDate}T${end}:00`);
-            if (startDateTime >= endDateTime) {
-                $.availabilityStatus.innerHTML = '<span class="text-red-500">⚠️ เวลาสิ้นสุดต้องมากกว่าเวลาเริ่ม</span>';
-                $.availabilityStatus.classList.remove('hidden');
-                $.saveBookingBtn.disabled = true;
-                return;
-            }
-
-            const dates = state.selectedDates || [];
-            if (dates.length === 0) {
-                $.availabilityStatus.classList.add('hidden');
-                $.saveBookingBtn.disabled = true;
-                return;
-            }
-
-            // Check availability for each date
-            $.availabilityStatus.innerHTML = `<span class="text-yellow-500"><i class="fas fa-spinner fa-spin mr-2"></i>กำลังตรวจสอบห้อง "${selectedRoom.name}" ใน ${dates.length} วัน...</span>`;
-            $.availabilityStatus.classList.remove('hidden');
-            $.saveBookingBtn.disabled = true;
-
-            try {
-                const result = await callGAS('booking/check-multi-day-availability', {
-                    roomId,
-                    dates: JSON.stringify(dates),
-                    startTime: start,
-                    endTime: end,
-                    bookingId: editBookingId || undefined
-                });
-
-                if (result.success) {
-                    const data = result.data;
-                    state.dateAvailability = {};
-
-                    dates.forEach(d => {
-                        if (data.conflictingByDate && data.conflictingByDate[d]) {
-                            state.dateAvailability[d] = 'conflict';
-                        } else {
-                            state.dateAvailability[d] = 'available';
-                        }
-                    });
-
-                    updateDateRange();
-
-                    if (data.available) {
-                        $.availabilityStatus.innerHTML = `<span class="text-green-500">✅ ห้อง "${selectedRoom.name}" ว่างทุกวันในช่วงเวลาที่เลือก (${dates.length} วัน)</span>`;
-                        $.availabilityStatus.classList.remove('hidden');
-                        $.saveBookingBtn.disabled = false;
-                    } else {
-                        const conflictDates = Object.keys(data.conflictingByDate || {});
-                        $.availabilityStatus.innerHTML = `<span class="text-red-500">❌ ห้อง "${selectedRoom.name}" ไม่ว่างในวันที่: ${conflictDates.join(', ')}</span>`;
-                        $.availabilityStatus.classList.remove('hidden');
-                        $.saveBookingBtn.disabled = true;
-                    }
-
-                    // Update booking summary with conflict info
-                    updateBookingSummary();
-
-                } else {
-                    $.availabilityStatus.innerHTML = `<span class="text-red-500">❌ ${result.message || 'ไม่สามารถตรวจสอบห้องว่างได้'}</span>`;
-                    $.availabilityStatus.classList.remove('hidden');
-                    $.saveBookingBtn.disabled = true;
-                }
-            } catch (error) {
-                console.error('Check multi-day availability error:', error);
-                $.availabilityStatus.innerHTML = '<span class="text-red-500">❌ เกิดข้อผิดพลาดในการตรวจสอบ</span>';
-                $.availabilityStatus.classList.remove('hidden');
-                $.saveBookingBtn.disabled = true;
-            }
-        }
-
         // ========== QUICK DATETIME ==========
-        window.setQuickDateTime = function(type) {
+        window.setQuickDateTime = function (type) {
             const now = new Date();
             let startDate = new Date(now);
             let endDate = new Date(now);
@@ -3016,24 +2740,6 @@
                     endDate = new Date(startDate);
                     endDate.setHours(10, 0, 0, 0);
                     break;
-
-                case '3days':
-                    startDate = new Date(now);
-                    startDate.setDate(now.getDate() + 1);
-                    startDate.setHours(9, 0, 0, 0);
-                    endDate = new Date(startDate);
-                    endDate.setDate(startDate.getDate() + 2);
-                    endDate.setHours(10, 0, 0, 0);
-                    break;
-
-                case 'week':
-                    startDate = new Date(now);
-                    startDate.setDate(now.getDate() + 1);
-                    startDate.setHours(9, 0, 0, 0);
-                    endDate = new Date(startDate);
-                    endDate.setDate(startDate.getDate() + 6);
-                    endDate.setHours(10, 0, 0, 0);
-                    break;
             }
 
             if ($.bookingDate) {
@@ -3057,12 +2763,11 @@
                 endSelect.value = endTime;
             }
 
-            updateDateRange();
             validateBookingForm();
-            checkMultiDayAvailability();
+            checkAvailability();
         };
 
-        window.adjustTime = function(target, minutes) {
+        window.adjustTime = function (target, minutes) {
             const select = target === 'start' ? document.getElementById('booking-start') : document.getElementById('booking-end');
             if (!select || !select.value) return;
 
@@ -3094,7 +2799,7 @@
             }
 
             validateBookingForm();
-            checkMultiDayAvailability();
+            checkAvailability();
         };
 
         // ========== VALIDATE BOOKING FORM ==========
@@ -3130,20 +2835,6 @@
                 return false;
             }
 
-            // Check if all dates are available
-            const dates = state.selectedDates || [];
-            let allAvailable = true;
-            dates.forEach(d => {
-                if (state.dateAvailability[d] !== 'available') {
-                    allAvailable = false;
-                }
-            });
-
-            if (dates.length > 0 && !allAvailable) {
-                $.saveBookingBtn.disabled = true;
-                return false;
-            }
-
             $.saveBookingBtn.disabled = false;
             return true;
         }
@@ -3167,9 +2858,7 @@
                 rejectedBy,
                 cancelledBy,
                 createdAt,
-                bookingId,
-                isMultiDay,
-                multiDayCount
+                bookingId
             } = bookingData;
 
             let statusColor = '#06c755';
@@ -3375,17 +3064,7 @@
                                             { type: 'text', text: 'รหัสการจอง:', size: 'sm', color: '#8c8c8c', flex: 2 },
                                             { type: 'text', text: bookingId?.substring(0, 8) + '...' || 'ไม่ระบุ', size: 'sm', flex: 4 }
                                         ]
-                                    },
-                                    ...(isMultiDay && multiDayCount ? [{
-                                        type: 'box',
-                                        layout: 'baseline',
-                                        spacing: 'sm',
-                                        contents: [
-                                            { type: 'text', text: '📆', size: 'md', flex: 0 },
-                                            { type: 'text', text: 'จองต่อเนื่อง:', size: 'sm', color: '#8c8c8c', flex: 2 },
-                                            { type: 'text', text: `${multiDayCount} วัน`, size: 'sm', color: '#f59e0b', weight: 'bold', flex: 4 }
-                                        ]
-                                    }] : [])
+                                    }
                                 ]
                             },
                             {
@@ -3567,7 +3246,7 @@
             }
         }
 
-        window.previewRoomImage = function(input) {
+        window.previewRoomImage = function (input) {
             const preview = document.getElementById('room-image-preview');
             if (input.files?.[0]) {
                 const reader = new FileReader();
@@ -3601,10 +3280,6 @@
                     result.data.bookings.forEach(booking => {
                         const startDateObj = new Date(booking.startTime);
                         const endDateObj = new Date(booking.endTime);
-                        if (isNaN(startDateObj.getTime()) || isNaN(endDateObj.getTime())) {
-                            console.warn('⚠️ loadMonthBookings: Skipping booking with invalid dates', booking.bookingId);
-                            return;
-                        }
 
                         let currentDate = new Date(startDateObj);
                         while (currentDate <= endDateObj) {
@@ -3631,9 +3306,55 @@
                     renderCalendar();
                 }
             } catch (error) {
-                console.error('Load month bookings error:', error);
+                console.error('Error loading month bookings:', error);
                 renderCalendar();
             }
+        }
+
+        // Show booking details modal for a specific date
+        // Show booking details modal for a specific date
+        window.showBookingDetails = function(dateStr) {
+            const bookings = state.dateBookings[dateStr] || [];
+            if (bookings.length === 0) return;
+            const modal = document.getElementById('booking-modal');
+            const body = document.getElementById('booking-modal-body');
+            const footer = document.getElementById('booking-modal-footer');
+            const titleEl = document.querySelector('#booking-modal .modal-title');
+            
+            const dateObj = new Date(dateStr);
+            const dateThai = dateObj.toLocaleDateString('th-TH', {
+                day: 'numeric',
+                month: 'long',
+                year: 'numeric'
+            });
+            
+            if (titleEl) titleEl.textContent = `รายการจองวันที่ ${dateThai}`;
+            
+            // Build list of bookings in card format
+            let html = '<div class="space-y-3 max-h-[60vh] overflow-y-auto pr-1">';
+            bookings.forEach(b => {
+                let statusClass = '';
+                let statusText = b.status;
+                if (b.status === 'confirmed') { statusClass = 'text-green-500'; statusText = 'อนุมัติแล้ว'; }
+                else if (b.status === 'pending') { statusClass = 'text-yellow-500'; statusText = 'รออนุมัติ'; }
+                else if (b.status === 'cancelled') { statusClass = 'text-red-500'; statusText = 'ยกเลิก'; }
+                else if (b.status === 'rejected') { statusClass = 'text-red-500'; statusText = 'ปฏิเสธ'; }
+                else if (b.status === 'auto_cancelled') { statusClass = 'text-red-500'; statusText = 'ระบบยกเลิกอัตโนมัติ'; }
+
+                html += `
+                    <div class="p-3 bg-[#1a1d24] border border-[#2a2e36] rounded-lg cursor-pointer hover:border-[#06c755] transition" onclick="showBookingDetail('${b.bookingId}')">
+                        <div class="font-semibold text-[#06c755]">${b.title || 'ไม่มีหัวข้อ'}</div>
+                        <div class="text-sm text-gray-300 mt-1">ห้อง: ${b.roomName || '–'} | ผู้จอง: ${b.userName || '–'}</div>
+                        <div class="text-xs text-gray-400 mt-1">เวลา: ${formatTime(b.startTime)} - ${formatTime(b.endTime)}</div>
+                        <div class="text-xs mt-1">สถานะ: <span class="${statusClass}">${statusText}</span></div>
+                    </div>
+                `;
+            });
+            html += '</div>';
+            
+            body.innerHTML = html;
+            footer.innerHTML = '<button class="btn-outline w-full" onclick="closeBookingDetailModal()">ปิด</button>';
+            modal.classList.add('active');
         }
 
         function renderCalendar() {
@@ -3661,7 +3382,7 @@
                 const hasMultiDayBooking = bookings.some(b => b.isPartOfMultiDay);
                 const isToday = isSameDay(date, new Date());
 
-                html += renderCalendarDay(day, true, hasBooking, isToday, dateStr, bookings.length, false, hasMultiDayBooking);
+                html += renderCalendarDay(day, true, hasBooking, isToday, dateStr, bookings.length, false, hasMultiDayBooking, bookings);
             }
 
             for (let day = 1; day <= totalDays; day++) {
@@ -3673,7 +3394,7 @@
                 const isToday = isSameDay(date, new Date());
                 const isSelected = isSameDay(date, state.selectedDate);
 
-                html += renderCalendarDay(day, false, hasBooking, isToday, dateStr, bookings.length, isSelected, hasMultiDayBooking);
+                html += renderCalendarDay(day, false, hasBooking, isToday, dateStr, bookings.length, isSelected, hasMultiDayBooking, bookings);
             }
 
             const totalCells = 42;
@@ -3685,28 +3406,44 @@
                 const hasBooking = bookings.length > 0;
                 const hasMultiDayBooking = bookings.some(b => b.isPartOfMultiDay);
 
-                html += renderCalendarDay(day, true, hasBooking, false, dateStr, bookings.length, false, hasMultiDayBooking);
+                html += renderCalendarDay(day, true, hasBooking, false, dateStr, bookings.length, false, hasMultiDayBooking, bookings);
             }
 
             $.calendarDays.innerHTML = html;
         }
 
-        function renderCalendarDay(day, isOtherMonth, hasBooking, isToday, dateStr, bookingCount = 0, isSelected = false, hasMultiDayBooking = false) {
+        function renderCalendarDay(day, isOtherMonth, hasBooking, isToday, dateStr, bookingCount = 0, isSelected = false, hasMultiDayBooking = false, bookings = []) {
             let classes = 'calendar-day';
             if (isOtherMonth) classes += ' other-month';
             if (isToday) classes += ' today';
             if (isSelected) classes += ' selected';
+            let titleAttr = '';
+            let dataAttr = '';
+            let clickHandler = `selectDate('${dateStr}')`;
             if (hasBooking) {
                 classes += ' has-booking';
                 if (bookingCount > 1 || hasMultiDayBooking) {
                     classes += ' multiple';
                 }
+                // Status classes
+                let statusClass = '';
+                if (bookings.some(b => b.status === 'pending')) statusClass = ' status-pending';
+                else if (bookings.some(b => b.status === 'confirmed')) statusClass = ' status-confirmed';
+                else if (bookings.some(b => b.status === 'cancelled' || b.status === 'rejected' || b.status === 'auto_cancelled')) statusClass = ' status-cancelled';
+                if (statusClass) classes += statusClass;
+                // Tooltip
+                const tooltipLines = bookings.map(b => `ID: ${b.bookingId || '–'} (${b.status})`);
+                titleAttr = `title="${tooltipLines.join(' | ')}"`;
+                const safeJson = JSON.stringify(bookings).replace(/"/g, '&quot;');
+                dataAttr = `data-bookings='${safeJson}'`;
+                // Use detail view on click
+                clickHandler = `showBookingDetails('${dateStr}')`;
             }
-
             return `
-                <div class="${classes}" onclick="selectDate('${dateStr}')">
+                <div class="${classes}" onclick="${clickHandler}" ${titleAttr} ${dataAttr}>
                     ${day}
                     ${hasMultiDayBooking ? '<span class="multi-day-badge">📅</span>' : ''}
+                    ${hasBooking ? '<span class="status-indicator"></span>' : ''}
                 </div>
             `;
         }
@@ -3743,7 +3480,7 @@
         }
 
         // ===== BOOK ON SELECTED DATE =====
-        window.bookOnSelectedDate = function() {
+        window.bookOnSelectedDate = function () {
             if (!state.selectedDate) {
                 showToast('กรุณาเลือกวันที่จากปฏิทิน', 'warning');
                 return;
@@ -3777,12 +3514,11 @@
 
             $.datetimePresets.forEach(btn => btn.classList.remove('active'));
 
-            updateDateRange();
             validateBookingForm();
-            checkMultiDayAvailability();
+            checkAvailability();
         };
 
-        window.selectDate = async function(dateStr) {
+        window.selectDate = async function (dateStr) {
             state.selectedDate = new Date(dateStr);
 
             document.querySelectorAll('.calendar-day').forEach(day => {
@@ -3880,26 +3616,26 @@
             }
         };
 
-        window.changeMonth = function(delta) {
+        window.changeMonth = function (delta) {
             const newMonth = new Date(state.currentMonth);
             newMonth.setMonth(newMonth.getMonth() + delta);
             state.currentMonth = newMonth;
             loadMonthBookings(newMonth.getFullYear(), newMonth.getMonth());
         };
 
-        window.goToToday = function() {
+        window.goToToday = function () {
             state.currentMonth = new Date();
             state.selectedDate = new Date();
             loadMonthBookings(state.currentMonth.getFullYear(), state.currentMonth.getMonth());
             selectDate(formatDateForInput(new Date()));
         };
 
-        window.showAllRooms = function() {
+        window.showAllRooms = function () {
             $.searchInput.value = '';
             renderRooms();
         };
 
-        window.resetDatabase = async function() {
+        window.resetDatabase = async function () {
             if (!state.isAdmin) {
                 showToast('เฉพาะผู้ดูแลระบบเท่านั้น', 'error');
                 return;
@@ -3959,6 +3695,7 @@
                         scope: 'openid email profile',
                         prompt: 'consent'
                     });
+                    $.initLoading?.classList.add('hide'); // hide spinner before returning
                     return;
                 }
 
@@ -4029,10 +3766,9 @@
 
             } catch (error) {
                 console.error('LIFF init error:', error);
+                $.initLoading.classList.add('hide');
                 if (!state.user) showToast('ไม่สามารถเชื่อมต่อ LINE ได้', 'error');
                 checkUrlForBookingId();
-            } finally {
-                $.initLoading?.classList.add('hide');
             }
         }
 
@@ -4138,6 +3874,8 @@
         }
 
         function loadManagerData() {
+            // Operators retain booking/room operations, while admin-only data
+            // (pending approvals, users, and settings) is never loaded.
             const requests = [
                 loadAllBookings().catch(console.warn),
                 loadRoomsManagement().catch(console.warn)
@@ -4265,7 +4003,7 @@
             `).join('');
         }
 
-        window.editRoom = function(roomId) {
+        window.editRoom = function (roomId) {
             const room = state.rooms.find(r => r.roomId === roomId);
             if (room) {
                 state.currentRoom = room;
@@ -4273,7 +4011,7 @@
             }
         };
 
-        window.deleteRoom = async function(roomId) {
+        window.deleteRoom = async function (roomId) {
             const room = state.rooms.find(r => r.roomId === roomId);
             if (room) {
                 state.currentRoom = room;
@@ -4281,7 +4019,7 @@
             }
         };
 
-        window.showRoomDetail = async function(roomId) {
+        window.showRoomDetail = async function (roomId) {
             $.modal.classList.add('active');
             $.modalBody.innerHTML = '<div class="flex justify-center py-10"><div class="loading-spinner w-10 h-10"></div></div>';
 
@@ -4387,13 +4125,13 @@
             }
         };
 
-        window.closeModal = function() {
+        window.closeModal = function () {
             $.modal.classList.remove('active');
             state.currentRoom = null;
         };
 
         // ========== BOOKINGS ==========
-        window.showBookingModal = function(roomId = null) {
+        window.showBookingModal = function (roomId = null) {
             document.getElementById('booking-modal-title').textContent = 'จองห้องประชุม';
             document.getElementById('edit-booking-id').value = '';
             document.getElementById('booking-title').value = '';
@@ -4411,11 +4149,6 @@
             document.getElementById('booking-attendees').value = '';
             document.getElementById('availability-status').classList.add('hidden');
             document.getElementById('save-booking-btn').disabled = true;
-            document.getElementById('booking-summary').classList.add('hidden');
-
-            // Reset date availability
-            state.dateAvailability = {};
-            state.selectedDates = [];
 
             populateTimeSelects();
 
@@ -4439,23 +4172,131 @@
             });
 
             document.getElementById('booking-create-modal').classList.add('active');
-
-            // Set min dates
-            const today = formatDateForInput(new Date());
-            if ($.bookingDate) $.bookingDate.min = today;
-            if ($.bookingEndDate) $.bookingEndDate.min = today;
         };
 
-        window.closeBookingCreateModal = function() {
+        window.closeBookingCreateModal = function () {
             document.getElementById('booking-create-modal').classList.remove('active');
         };
 
         async function checkAvailability() {
-            // Legacy function - now we use checkMultiDayAvailability for multi-day
-            checkMultiDayAvailability();
+            const roomId = document.getElementById('booking-room').value;
+            const startDate = $.bookingDate?.value;
+            const endDate = $.bookingEndDate?.value;
+            const start = $.bookingStart?.value;
+            const end = $.bookingEnd?.value;
+            const attendees = parseInt($.bookingAttendees?.value) || 0;
+            const editBookingId = document.getElementById('edit-booking-id')?.value;
+
+            if (!roomId || !startDate || !endDate || !start || !end) {
+                $.availabilityStatus.classList.add('hidden');
+                $.saveBookingBtn.disabled = true;
+                return;
+            }
+
+            const selectedRoom = state.rooms.find(r => r.roomId === roomId);
+            const roomName = selectedRoom ? selectedRoom.name : 'ห้องที่เลือก';
+
+            if (attendees < 1) {
+                $.availabilityStatus.innerHTML = '<span class="text-red-500">⚠️ จำนวนผู้เข้าร่วมต้องมีอย่างน้อย 1 คน</span>';
+                $.availabilityStatus.classList.remove('hidden');
+                $.saveBookingBtn.disabled = true;
+                return;
+            }
+
+            const startDateTime = new Date(`${startDate}T${start}:00`);
+            const endDateTime = new Date(`${endDate}T${end}:00`);
+
+            if (startDateTime >= endDateTime) {
+                $.availabilityStatus.innerHTML = '<span class="text-red-500">⚠️ เวลาสิ้นสุดต้องมากกว่าเวลาเริ่ม</span>';
+                $.availabilityStatus.classList.remove('hidden');
+                $.saveBookingBtn.disabled = true;
+                return;
+            }
+
+            if (startDate > endDate) {
+                $.availabilityStatus.innerHTML = '<span class="text-red-500">⚠️ วันที่สิ้นสุดต้องไม่ก่อนวันที่เริ่ม</span>';
+                $.availabilityStatus.classList.remove('hidden');
+                $.saveBookingBtn.disabled = true;
+                return;
+            }
+
+            const startHour = startDateTime.getHours();
+            const endHour = endDateTime.getHours();
+            const endMinutes = endDateTime.getMinutes();
+
+            if (startHour < 8 || startHour > 20 || (startHour === 20 && startDateTime.getMinutes() > 0)) {
+                $.availabilityStatus.innerHTML = '<span class="text-red-500">⚠️ เวลาทำการ 08:00 - 20:00 น.</span>';
+                $.availabilityStatus.classList.remove('hidden');
+                $.saveBookingBtn.disabled = true;
+                return;
+            }
+
+            if (endHour < 8 || endHour > 20 || (endHour === 20 && endMinutes > 0)) {
+                $.availabilityStatus.innerHTML = '<span class="text-red-500">⚠️ เวลาทำการ 08:00 - 20:00 น.</span>';
+                $.availabilityStatus.classList.remove('hidden');
+                $.saveBookingBtn.disabled = true;
+                return;
+            }
+
+            const durationHours = (endDateTime - startDateTime) / (1000 * 60 * 60);
+            // Allow bookings up to 168 hours (7 days)
+            if (durationHours > 168) {
+                $.availabilityStatus.innerHTML = '<span class="text-red-500">⚠️ จองได้ครั้งละไม่เกิน 7 วัน (168 ชั่วโมง)</span>';
+                $.availabilityStatus.classList.remove('hidden');
+                $.saveBookingBtn.disabled = true;
+                return;
+            }
+
+            if (selectedRoom && attendees > selectedRoom.capacity) {
+                $.availabilityStatus.innerHTML = `<span class="text-red-500">⚠️ จำนวนผู้เข้าร่วม (${attendees}) เกินความจุห้อง (${selectedRoom.capacity} คน)</span>`;
+                $.availabilityStatus.classList.remove('hidden');
+                $.saveBookingBtn.disabled = true;
+                return;
+            }
+
+            $.availabilityStatus.innerHTML = `<span class="text-yellow-500"><i class="fas fa-spinner fa-spin mr-2"></i>กำลังตรวจสอบห้องว่างสำหรับห้อง "${roomName}"...</span>`;
+            $.availabilityStatus.classList.remove('hidden');
+            $.saveBookingBtn.disabled = true;
+
+            try {
+                const result = await callGAS('booking/check-availability', {
+                    roomId,
+                    startTime: startDateTime.toISOString(),
+                    endTime: endDateTime.toISOString(),
+                    bookingId: editBookingId || undefined
+                });
+
+                if (result.success) {
+                    if (result.data.available) {
+                        $.availabilityStatus.innerHTML = `<span class="text-green-500">✅ ห้อง "${roomName}" ว่างในช่วงเวลาที่เลือก</span>`;
+                        $.availabilityStatus.classList.remove('hidden');
+                        $.saveBookingBtn.disabled = false;
+                    } else {
+                        let message = `❌ ห้อง "${roomName}" ไม่ว่างในช่วงเวลาที่เลือก`;
+                        if (result.data.conflictingBookings && result.data.conflictingBookings.length > 0) {
+                            const times = result.data.conflictingBookings.map(c =>
+                                `${formatTime(c.startTime)}-${formatTime(c.endTime)}`
+                            ).join(', ');
+                            message = `❌ ห้อง "${roomName}" มีการจองแล้วในช่วงเวลา: ${times}`;
+                        }
+                        $.availabilityStatus.innerHTML = `<span class="text-red-500">${message}</span>`;
+                        $.availabilityStatus.classList.remove('hidden');
+                        $.saveBookingBtn.disabled = true;
+                    }
+                } else {
+                    $.availabilityStatus.innerHTML = '<span class="text-red-500">❌ ไม่สามารถตรวจสอบห้องว่างได้ กรุณาลองใหม่อีกครั้ง</span>';
+                    $.availabilityStatus.classList.remove('hidden');
+                    $.saveBookingBtn.disabled = true;
+                }
+            } catch (error) {
+                console.error('Check availability error:', error);
+                $.availabilityStatus.innerHTML = '<span class="text-red-500">❌ เกิดข้อผิดพลาดในการตรวจสอบ</span>';
+                $.availabilityStatus.classList.remove('hidden');
+                $.saveBookingBtn.disabled = true;
+            }
         }
 
-        window.approveBooking = async function(bookingId, btn, skipNotification = false) {
+        window.approveBooking = async function (bookingId, btn, skipNotification = false) {
             setButtonLoading(btn, true);
 
             const result = await callGAS('booking/approve', {
@@ -4478,9 +4319,7 @@
                         meetingLink: booking.meetingLink,
                         approvedBy: state.user.displayName,
                         approvedAt: new Date().toISOString(),
-                        action: 'approved',
-                        isMultiDay: booking.isMultiDay,
-                        multiDayCount: booking.multiDayCount
+                        action: 'approved'
                     });
                 }
                 await Promise.all([
@@ -4497,7 +4336,7 @@
             setButtonLoading(btn, false);
         };
 
-        window.adminCancelBooking = async function(bookingId, btn) {
+        window.adminCancelBooking = async function (bookingId, btn) {
             setButtonLoading(btn, true);
 
             try {
@@ -4542,9 +4381,7 @@
                             meetingLink: booking.meetingLink,
                             cancelledBy: state.user.displayName + ' (ผู้ดูแลระบบ)',
                             reason: 'ผู้ดูแลระบบยกเลิกการจอง',
-                            action: 'admin_cancelled',
-                            isMultiDay: booking.isMultiDay,
-                            multiDayCount: booking.multiDayCount
+                            action: 'admin_cancelled'
                         });
 
                         if (state.currentBooking && state.currentBooking.bookingId === bookingId) {
@@ -4574,7 +4411,7 @@
             }
         };
 
-        window.toggleProjector = function() {
+        window.toggleProjector = function () {
             const useComp = document.getElementById('booking-use-computer')?.checked;
             const projectorContainer = document.getElementById('projector-container');
             if (projectorContainer) {
@@ -4588,7 +4425,7 @@
             }
         };
 
-        window.toggleZoomLink = function() {
+        window.toggleZoomLink = function () {
             const format = document.getElementById('booking-format').value;
             const linkInput = document.getElementById('booking-meeting-link');
             const onsiteSection = document.getElementById('equipment-onsite-section');
@@ -4608,7 +4445,7 @@
             }
         };
 
-        window.saveBooking = async function(e) {
+        window.saveBooking = async function (e) {
             e.preventDefault();
 
             const btn = document.getElementById('save-booking-btn');
@@ -4631,33 +4468,11 @@
                     return;
                 }
 
-                if (!startDate) {
-                    showToast('กรุณาเลือกวันที่เริ่มต้น', 'error');
-                    setButtonLoading(btn, false);
-                    return;
-                }
-                if (!endDate) {
-                    showToast('กรุณาเลือกวันที่สิ้นสุด', 'error');
-                    setButtonLoading(btn, false);
-                    return;
-                }
-                if (!start) {
-                    showToast('กรุณาเลือกเวลาเริ่มต้น', 'error');
-                    setButtonLoading(btn, false);
-                    return;
-                }
-                const endTime = end || '23:59';
-
                 const startDateTime = new Date(`${startDate}T${start}:00`);
-                const endDateTime = new Date(`${endDate}T${endTime}:00`);
+                const endDateTime = new Date(`${endDate}T${end}:00`);
 
                 if (startDate > endDate) {
                     showToast('วันที่สิ้นสุดต้องไม่ก่อนวันที่เริ่ม', 'error');
-                    setButtonLoading(btn, false);
-                    return;
-                }
-                if (startDateTime >= endDateTime) {
-                    showToast('เวลาสิ้นสุดต้องมากกว่าเวลาเริ่ม', 'error');
                     setButtonLoading(btn, false);
                     return;
                 }
@@ -4669,27 +4484,19 @@
                     return;
                 }
 
-                // Check multi-day availability
-                const dates = state.selectedDates || [];
-                if (dates.length === 0) {
-                    showToast('กรุณาเลือกช่วงวันที่', 'error');
-                    setButtonLoading(btn, false);
-                    return;
-                }
+                const roomName = selectedRoom ? selectedRoom.name : 'ห้องที่เลือก';
 
-                // Check if all dates are available
-                let allAvailable = true;
-                let conflictDates = [];
-                dates.forEach(d => {
-                    if (state.dateAvailability[d] !== 'available') {
-                        allAvailable = false;
-                        conflictDates.push(d);
-                    }
+                const checkResult = await callGAS('booking/check-availability', {
+                    roomId,
+                    startTime: startDateTime.toISOString(),
+                    endTime: endDateTime.toISOString(),
+                    bookingId: id || undefined
                 });
 
-                if (!allAvailable) {
-                    showToast(`ไม่สามารถจองได้ เนื่องจากมีการจองซ้อนในวันที่: ${conflictDates.join(', ')}`, 'error');
+                if (!checkResult.success || !checkResult.data.available) {
+                    showToast(`ห้อง "${roomName}" ไม่ว่างในช่วงเวลาที่เลือก`, 'error');
                     setButtonLoading(btn, false);
+                    await checkAvailability();
                     return;
                 }
 
@@ -4720,9 +4527,7 @@
                     endTime: endDateTime.toISOString(),
                     attendees: attendees,
                     userName: state.user.displayName,
-                    lineUserId: state.user.lineUserId,
-                    isMultiDay: dates.length > 1,
-                    multiDayDates: JSON.stringify(dates)
+                    lineUserId: state.user.lineUserId
                 };
 
                 if (id) data.bookingId = id;
@@ -4740,9 +4545,7 @@
                             bookingId: result.data.bookingData.bookingId || result.data.bookingData.id,
                             approvedBy: result.data.bookingData.approvedBy,
                             rejectedBy: result.data.bookingData.rejectedBy,
-                            cancelledBy: result.data.bookingData.cancelledBy,
-                            isMultiDay: dates.length > 1,
-                            multiDayCount: dates.length
+                            cancelledBy: result.data.bookingData.cancelledBy
                         };
                         await sendBookingToChat(bookingData).catch(e => console.warn('Send booking to chat warning:', e));
                     }
@@ -4766,7 +4569,7 @@
             }
         };
 
-        window.rejectBooking = async function(bookingId, btn) {
+        window.rejectBooking = async function (bookingId, btn) {
             setButtonLoading(btn, true);
 
             try {
@@ -4864,9 +4667,7 @@
                             meetingLink: booking.meetingLink,
                             rejectedBy: state.user.displayName,
                             reason: result.value,
-                            action: 'rejected',
-                            isMultiDay: booking.isMultiDay,
-                            multiDayCount: booking.multiDayCount
+                            action: 'rejected'
                         });
 
                         await Promise.all([
@@ -4888,7 +4689,7 @@
             }
         };
 
-        window.shareBookingViaPicker = async function(bookingId) {
+        window.shareBookingViaPicker = async function (bookingId) {
             try {
                 if (!liff.isInClient()) {
                     showToast('กรุณาเปิดใน LINE', 'warning');
@@ -4913,7 +4714,7 @@
             }
         };
 
-        window.shareBooking = async function(bookingId) {
+        window.shareBooking = async function (bookingId) {
             await shareBookingViaPicker(bookingId);
         };
 
@@ -4994,8 +4795,6 @@
                 const endTime = new Date(b.endTime);
                 const isPastBooking = endTime < now;
 
-                const isMultiDay = b.isMultiDay && b.multiDayCount && b.multiDayCount > 1;
-
                 return `
                 <div class="bg-[#1a1d24] p-4 rounded-xl border border-[#2a2e36] cursor-pointer" onclick="showBookingDetail('${b.bookingId}')">
                     <div class="flex justify-between items-start mb-2">
@@ -5007,7 +4806,7 @@
                     </div>
                     <p class="text-sm text-[#06c755] mb-2">${b.roomName}</p>
                     <p class="text-xs text-gray-400 mb-2">
-                        <i class="far fa-calendar mr-1"></i> ${formatDateShort(b.startTime)} - ${formatDateShort(b.endTime)}${isMultiDay ? ` (${b.multiDayCount} วัน)` : ''}<br>
+                        <i class="far fa-calendar mr-1"></i> ${formatDateShort(b.startTime)} - ${formatDateShort(b.endTime)}<br>
                         <i class="far fa-clock mr-1"></i> ${formatTime(b.startTime)} - ${formatTime(b.endTime)}
                     </p>
                     ${b.approvedByName ? `<p class="text-xs text-green-500 mb-2">✅ อนุมัติโดย: ${b.approvedByName}</p>` : ''}
@@ -5029,7 +4828,9 @@
             `}).join('');
         }
 
-        window.showBookingDetail = async function(bookingId) {
+        window.showBookingDetail = async function (bookingId) {
+            const titleEl = document.querySelector('#booking-modal .modal-title');
+            if (titleEl) titleEl.textContent = 'รายละเอียดการจอง';
             document.getElementById('booking-modal').classList.add('active');
             document.getElementById('booking-modal-body').innerHTML = '<div class="flex justify-center py-10"><div class="loading-spinner w-10 h-10"></div></div>';
 
@@ -5070,12 +4871,9 @@
                     cancelledByName = await getUserNameFromCache(cancelledByName);
                 }
 
-                const isMultiDay = b.isMultiDay && b.multiDayCount && b.multiDayCount > 1;
-
                 document.getElementById('booking-modal-body').innerHTML = `
                     <div class="mb-4">
                         <span class="badge ${statusClass}">${statusText}</span>
-                        ${isMultiDay ? `<span class="badge badge-pending ml-2">📆 ${b.multiDayCount} วัน</span>` : ''}
                     </div>
                     
                     <div class="mb-4">
@@ -5095,7 +4893,7 @@
                         </div>
                         <div>
                             <p class="text-sm text-gray-400 mb-1">วันที่สิ้นสุด</p>
-                            <p>${formatDateShort(b.endTime)}${isMultiDay ? ` <span class="text-yellow-500 text-xs">(${b.multiDayCount} วัน)</span>` : ''}</p>
+                            <p>${formatDateShort(b.endTime)}</p>
                         </div>
                     </div>
                     
@@ -5196,12 +4994,12 @@
             }
         };
 
-        window.closeBookingDetailModal = function() {
+        window.closeBookingDetailModal = function () {
             document.getElementById('booking-modal').classList.remove('active');
             state.currentBooking = null;
         };
 
-        window.cancelBooking = async function(bookingId) {
+        window.cancelBooking = async function (bookingId) {
             const result = await Swal.fire({
                 title: 'ยกเลิกการจอง',
                 text: 'คุณแน่ใจหรือไม่ว่าต้องการยกเลิกการจองนี้?',
@@ -5231,9 +5029,7 @@
                         description: booking.description,
                         meetingLink: booking.meetingLink,
                         cancelledBy: state.user.displayName,
-                        action: 'cancelled',
-                        isMultiDay: booking.isMultiDay,
-                        multiDayCount: booking.multiDayCount
+                        action: 'cancelled'
                     });
                     closeBookingDetailModal();
                     await Promise.all([
@@ -5302,18 +5098,16 @@
                 return;
             }
 
-            $.pendingBookingsList.innerHTML = state.pendingBookings.map(b => {
-                const isMultiDay = b.isMultiDay && b.multiDayCount && b.multiDayCount > 1;
-                return `
+            $.pendingBookingsList.innerHTML = state.pendingBookings.map(b => `
                 <div class="bg-[#1a1d24] p-4 rounded-xl border border-[#f59e0b]/30">
                     <div class="flex justify-between mb-2">
-                        <span class="badge badge-pending">⏳ รออนุมัติ${isMultiDay ? ` 📆 ${b.multiDayCount} วัน` : ''}</span>
+                        <span class="badge badge-pending">⏳ รออนุมัติ</span>
                         <span class="text-xs text-gray-500">${formatDateTime(b.createdAt)}</span>
                     </div>
                     <h3 class="font-semibold mb-1">${b.title}</h3>
                     <p class="text-sm text-[#06c755] mb-2">${b.roomName}</p>
                     <p class="text-xs text-gray-400 mb-3">
-                        <i class="far fa-calendar mr-1"></i> ${formatDateShort(b.startTime)} - ${formatDateShort(b.endTime)}${isMultiDay ? ` (${b.multiDayCount} วัน)` : ''}<br>
+                        <i class="far fa-calendar mr-1"></i> ${formatDateShort(b.startTime)} - ${formatDateShort(b.endTime)}<br>
                         <i class="far fa-clock mr-1"></i> ${formatTime(b.startTime)} - ${formatTime(b.endTime)}
                     </p>
                     <div class="flex justify-between items-center">
@@ -5324,7 +5118,7 @@
                         </div>
                     </div>
                 </div>
-            `}).join('');
+            `).join('');
         }
 
         async function loadAllBookings() {
@@ -5414,8 +5208,6 @@
                     timeRemainingText = `กำลังจะเริ่มในอีกไม่กี่นาที`;
                 }
 
-                const isMultiDay = b.isMultiDay && b.multiDayCount && b.multiDayCount > 1;
-
                 return `
                 <div class="bg-[#1a1d24] p-3 rounded-lg border border-[#2a2e36] flex justify-between items-center hover:border-[#06c755] transition-all">
                     <div class="flex-1">
@@ -5423,7 +5215,6 @@
                             <div>
                                 <span class="font-semibold text-sm">${b.title}</span>
                                 <span class="text-xs text-gray-400 ml-2">${b.roomName}</span>
-                                ${isMultiDay ? `<span class="text-xs text-yellow-500 ml-1">📆 ${b.multiDayCount} วัน</span>` : ''}
                             </div>
                             <span class="badge ${statusClass} text-xs">${statusText}</span>
                         </div>
@@ -5501,7 +5292,7 @@
             `).join('');
         }
 
-        window.showRoleModal = function(userId, userName, currentRole) {
+        window.showRoleModal = function (userId, userName, currentRole) {
             if (!state.isAdmin) {
                 showToast('เฉพาะผู้ดูแลระบบเท่านั้น', 'error');
                 return;
@@ -5512,11 +5303,11 @@
             document.getElementById('role-modal').classList.add('active');
         };
 
-        window.closeRoleModal = function() {
+        window.closeRoleModal = function () {
             document.getElementById('role-modal').classList.remove('active');
         };
 
-        window.showDeleteUserModal = function(userId, userName) {
+        window.showDeleteUserModal = function (userId, userName) {
             if (!state.isAdmin) {
                 showToast('เฉพาะผู้ดูแลระบบเท่านั้น', 'error');
                 return;
@@ -5526,12 +5317,12 @@
             document.getElementById('delete-user-modal').classList.add('active');
         };
 
-        window.closeDeleteUserModal = function() {
+        window.closeDeleteUserModal = function () {
             document.getElementById('delete-user-modal').classList.remove('active');
             state.currentUserToDelete = null;
         };
 
-        window.confirmDeleteUser = async function() {
+        window.confirmDeleteUser = async function () {
             if (!state.isAdmin || !state.currentUserToDelete) {
                 closeDeleteUserModal();
                 return;
@@ -5576,7 +5367,7 @@
             }
         };
 
-        window.saveUserRole = async function(e) {
+        window.saveUserRole = async function (e) {
             e.preventDefault();
 
             if (!state.isAdmin) {
@@ -5636,7 +5427,7 @@
         };
 
         // ========== ROOM MANAGEMENT ==========
-        window.showCreateRoomModal = function() {
+        window.showCreateRoomModal = function () {
             document.getElementById('room-modal-title').textContent = 'เพิ่มห้องใหม่';
             document.getElementById('edit-room-id').value = '';
             document.getElementById('room-name').value = '';
@@ -5649,11 +5440,11 @@
             document.getElementById('room-create-modal').classList.add('active');
         };
 
-        window.closeRoomModal = function() {
+        window.closeRoomModal = function () {
             document.getElementById('room-create-modal').classList.remove('active');
         };
 
-        window.saveRoom = async function(e) {
+        window.saveRoom = async function (e) {
             e.preventDefault();
 
             const btn = document.getElementById('save-room-btn');
@@ -5702,7 +5493,7 @@
             }
         };
 
-        window.editCurrentRoom = function() {
+        window.editCurrentRoom = function () {
             if (!state.currentRoom) return;
 
             const r = state.currentRoom;
@@ -5724,7 +5515,7 @@
             document.getElementById('room-create-modal').classList.add('active');
         };
 
-        window.deleteCurrentRoom = async function() {
+        window.deleteCurrentRoom = async function () {
             if (!state.currentRoom) return;
 
             const result = await Swal.fire({
@@ -5837,7 +5628,7 @@
             updateAppName(state.settings.appName);
         }
 
-        window.saveSettings = async function(e) {
+        window.saveSettings = async function (e) {
             e.preventDefault();
 
             if (!state.isAdmin) {
@@ -5887,7 +5678,7 @@
         };
 
         // ========== PROFILE ==========
-        window.showProfileSettings = function() {
+        window.showProfileSettings = function () {
             document.getElementById('profile-phone').value = state.user?.phone || '';
             document.getElementById('profile-department').value = state.user?.department || '';
 
@@ -5898,11 +5689,11 @@
             document.getElementById('profile-modal').classList.add('active');
         };
 
-        window.closeProfileModal = function() {
+        window.closeProfileModal = function () {
             document.getElementById('profile-modal').classList.remove('active');
         };
 
-        window.saveProfile = async function(e) {
+        window.saveProfile = async function (e) {
             e.preventDefault();
 
             const saveBtn = e.submitter;
@@ -5917,6 +5708,7 @@
                 phone: document.getElementById('profile-phone').value,
                 department: document.getElementById('profile-department').value,
                 lineUserId: state.user.lineUserId,
+                // ส่งค่าปิด/เปิดการแจ้งเตือนไปที่ server ด้วย (ไม่ใช่เก็บแค่ localStorage)
                 notificationsEnabled: $.profileNotificationsEnabled ? $.profileNotificationsEnabled.checked : true
             };
 
@@ -5932,13 +5724,13 @@
             setButtonLoading(saveBtn, false);
         };
 
-        window.logout = function() {
+        window.logout = function () {
             if (liff.isLoggedIn()) liff.logout();
             location.reload();
         };
 
         // ========== TAB SWITCHING ==========
-        window.switchTab = function(tab) {
+        window.switchTab = function (tab) {
             $.navItems.forEach(i => i.classList.remove('active'));
             document.querySelectorAll(`[data-tab="${tab}"]`).forEach(i => i.classList.add('active'));
 
@@ -5952,7 +5744,7 @@
             }
         };
 
-        window.goHome = function() {
+        window.goHome = function () {
             switchTab('home');
         };
 
@@ -6034,62 +5826,24 @@
 
         $.bookingAttendees?.addEventListener('input', () => {
             validateBookingForm();
-            checkMultiDayAvailability();
+            checkAvailability();
         });
 
         document.getElementById('booking-room')?.addEventListener('change', () => {
             validateBookingForm();
-            checkMultiDayAvailability();
+            checkAvailability();
         });
-
-        // Date input change listeners for multi-day
-        if ($.bookingDate && $.bookingEndDate) {
-            $.bookingDate.addEventListener('change', () => {
-                const startVal = $.bookingDate.value;
-                if (startVal) {
-                    $.bookingEndDate.min = startVal;
-                    if ($.bookingEndDate.value && $.bookingEndDate.value < startVal) {
-                        $.bookingEndDate.value = startVal;
-                    }
-                }
-                updateDateRange();
-                validateBookingForm();
-                checkMultiDayAvailability();
-            });
-
-            $.bookingEndDate.addEventListener('change', () => {
-                updateDateRange();
-                validateBookingForm();
-                checkMultiDayAvailability();
-            });
-        }
-
-        // Time change listeners for multi-day
-        if ($.bookingStart && $.bookingEnd) {
-            $.bookingStart.addEventListener('change', () => {
-                validateBookingForm();
-                checkMultiDayAvailability();
-            });
-
-            $.bookingEnd.addEventListener('change', () => {
-                validateBookingForm();
-                checkMultiDayAvailability();
-            });
-        }
 
         const todayForInput = formatDateForInput(new Date());
         if ($.bookingDate) $.bookingDate.min = todayForInput;
         if ($.bookingEndDate) $.bookingEndDate.min = todayForInput;
 
-        // ========== START ==========
-        document.addEventListener('DOMContentLoaded', () => {
-            // Set today as default for date inputs
-            const today = formatDateForInput(new Date());
-            if ($.bookingDate) $.bookingDate.value = today;
-            if ($.bookingEndDate) $.bookingEndDate.value = today;
-
+        // ========== INIT ==========
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initLIFF);
+        } else {
             initLIFF();
-        });
+        }
     </script>
 </body>
 
