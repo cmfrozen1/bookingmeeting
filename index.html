@@ -908,22 +908,16 @@
             opacity: 0.3;
         }
 
-        .calendar-day.has-booking:not(.has-multi-day) {
+        .calendar-day.has-booking {
             background: rgba(6, 199, 85, 0.1);
             border: 1px solid var(--primary);
-        }
-
-        /* วันที่มี multi-day booking: ไม่ทาพื้นหลัง ให้แถบ bar แสดงแทน */
-        .calendar-day.has-multi-day {
-            background: transparent;
-            border: 1px solid transparent;
         }
 
         .calendar-day.has-multi-day:hover {
             border-color: var(--primary);
         }
 
-        .calendar-day.has-booking:not(.has-multi-day)::after {
+        .calendar-day.has-booking::after {
             content: '';
             position: absolute;
             bottom: 4px;
@@ -933,7 +927,7 @@
             background: var(--primary);
         }
 
-        .calendar-day.has-booking.multiple:not(.has-multi-day)::after {
+        .calendar-day.has-booking.multiple::after {
             width: 8px;
             background: var(--primary);
         }
@@ -3298,9 +3292,16 @@
                         const startDateObj = new Date(booking.startTime);
                         const endDateObj = new Date(booking.endTime);
 
+                        // ข้าม booking ที่ startTime/endTime เป็น Invalid Date
+                        if (isNaN(startDateObj.getTime()) || isNaN(endDateObj.getTime())) {
+                            console.warn('⚠️ loadMonthBookings: Invalid date in booking', booking.bookingId, booking.startTime, booking.endTime);
+                            return;
+                        }
+
                         let currentDate = new Date(startDateObj);
                         while (currentDate <= endDateObj) {
                             const dateStr = formatDateForInput(currentDate);
+                            if (!dateStr) break; // ป้องกัน infinite loop
 
                             if (!state.dateBookings[dateStr]) {
                                 state.dateBookings[dateStr] = [];
@@ -3336,8 +3337,9 @@
 
             // ใช้ booking ตัวแรกที่เป็น multi-day
             const b = multiDayBookings[0];
-            const prevDate = new Date(new Date(dateStr + 'T00:00:00').getTime() - 86400000);
-            const nextDate = new Date(new Date(dateStr + 'T00:00:00').getTime() + 86400000);
+            const [y, m, d] = dateStr.split('-');
+            const prevDate = new Date(y, m - 1, d - 1);
+            const nextDate = new Date(y, m - 1, Number(d) + 1);
             const prevStr = formatDateForInput(prevDate);
             const nextStr = formatDateForInput(nextDate);
 
@@ -3554,7 +3556,9 @@
 
                     const startDate = new Date(b.startTime);
                     const endDate = new Date(b.endTime);
-                    const isMultiDay = formatDateForInput(startDate) !== formatDateForInput(endDate);
+                    const startDateStr = (!isNaN(startDate.getTime())) ? formatDateForInput(startDate) : '';
+                    const endDateStr = (!isNaN(endDate.getTime())) ? formatDateForInput(endDate) : '';
+                    const isMultiDay = startDateStr !== '' && endDateStr !== '' && startDateStr !== endDateStr;
 
                     let statusClass = '';
                     if (b.status === 'confirmed') statusClass = 'confirmed';
@@ -4214,10 +4218,12 @@
 
             // สร้างรายการวันที่ทั้งหมดระหว่าง startDate ถึง endDate
             const multiDayDates = [];
-            const tmpDate = new Date(startDate + 'T00:00:00');
-            const endDateObj = new Date(endDate + 'T00:00:00');
+            const [sY, sM, sD] = startDate.split('-');
+            const [eY, eM, eD] = endDate.split('-');
+            const tmpDate = new Date(sY, sM - 1, sD);
+            const endDateObj = new Date(eY, eM - 1, eD);
             while (tmpDate <= endDateObj) {
-                multiDayDates.push(tmpDate.toISOString().split('T')[0]);
+                multiDayDates.push(formatDateForInput(tmpDate));
                 tmpDate.setDate(tmpDate.getDate() + 1);
             }
             const isMultiDay = multiDayDates.length > 1;
@@ -4483,10 +4489,12 @@
 
                 // สร้างรายการวันที่ทั้งหมดสำหรับจองข้ามวัน
                 const saveMultiDayDates = [];
-                const tmpSaveDate = new Date(startDate + 'T00:00:00');
-                const saveEndDateObj = new Date(endDate + 'T00:00:00');
+                const [ssY, ssM, ssD] = startDate.split('-');
+                const [seY, seM, seD] = endDate.split('-');
+                const tmpSaveDate = new Date(ssY, ssM - 1, ssD);
+                const saveEndDateObj = new Date(seY, seM - 1, seD);
                 while (tmpSaveDate <= saveEndDateObj) {
-                    saveMultiDayDates.push(tmpSaveDate.toISOString().split('T')[0]);
+                    saveMultiDayDates.push(formatDateForInput(tmpSaveDate));
                     tmpSaveDate.setDate(tmpSaveDate.getDate() + 1);
                 }
                 const saveIsMultiDay = saveMultiDayDates.length > 1;
