@@ -913,7 +913,7 @@
             border: 1px solid var(--primary);
         }
 
-        .calendar-day.has-booking::after {
+        .calendar-day.has-booking:not(.has-multi-day)::after {
             content: '';
             position: absolute;
             bottom: 4px;
@@ -923,9 +923,55 @@
             background: var(--primary);
         }
 
-        .calendar-day.has-booking.multiple::after {
+        .calendar-day.has-booking.multiple:not(.has-multi-day)::after {
             width: 8px;
             background: var(--primary);
+        }
+
+        /* Multi-day bar: แถบเชื่อมระหว่างวันที่จองข้ามวัน */
+        .calendar-day .multi-day-bar {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            height: 18px;
+            background: rgba(6, 199, 85, 0.18);
+            z-index: 0;
+        }
+
+        .calendar-day .multi-day-bar.bar-start {
+            left: 0;
+            right: -1px;
+            border-radius: 6px 0 0 6px;
+        }
+
+        .calendar-day .multi-day-bar.bar-middle {
+            left: -1px;
+            right: -1px;
+            border-radius: 0;
+        }
+
+        .calendar-day .multi-day-bar.bar-end {
+            left: -1px;
+            right: 0;
+            border-radius: 0 6px 6px 0;
+        }
+
+        .calendar-day .multi-day-bar.bar-single {
+            left: 0;
+            right: 0;
+            border-radius: 6px;
+        }
+
+        .calendar-day .multi-day-dot {
+            position: absolute;
+            bottom: 4px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 6px;
+            height: 6px;
+            border-radius: 3px;
+            background: var(--primary);
+            z-index: 1;
         }
 
         .date-bookings-list {
@@ -3260,6 +3306,31 @@
             }
         }
 
+        // คำนวณตำแหน่งแถบ multi-day สำหรับวันที่กำหนด
+        function getMultiDayBarInfo(dateStr) {
+            const bookings = state.dateBookings[dateStr] || [];
+            const multiDayBookings = bookings.filter(b => b.isPartOfMultiDay);
+            if (multiDayBookings.length === 0) return null;
+
+            // ใช้ booking ตัวแรกที่เป็น multi-day
+            const b = multiDayBookings[0];
+            const prevDate = new Date(new Date(dateStr + 'T00:00:00').getTime() - 86400000);
+            const nextDate = new Date(new Date(dateStr + 'T00:00:00').getTime() + 86400000);
+            const prevStr = formatDateForInput(prevDate);
+            const nextStr = formatDateForInput(nextDate);
+
+            const prevBookings = state.dateBookings[prevStr] || [];
+            const nextBookings = state.dateBookings[nextStr] || [];
+
+            const hasPrev = prevBookings.some(pb => pb.bookingId === b.bookingId && pb.isPartOfMultiDay);
+            const hasNext = nextBookings.some(nb => nb.bookingId === b.bookingId && nb.isPartOfMultiDay);
+
+            if (hasPrev && hasNext) return 'middle';
+            if (!hasPrev && hasNext) return 'start';
+            if (hasPrev && !hasNext) return 'end';
+            return 'single';
+        }
+
         function renderCalendar() {
             const year = state.currentMonth.getFullYear();
             const month = state.currentMonth.getMonth();
@@ -3284,8 +3355,9 @@
                 const hasBooking = bookings.length > 0;
                 const hasMultiDayBooking = bookings.some(b => b.isPartOfMultiDay);
                 const isToday = isSameDay(date, new Date());
+                const barInfo = getMultiDayBarInfo(dateStr);
 
-                html += renderCalendarDay(day, true, hasBooking, isToday, dateStr, bookings.length, false, hasMultiDayBooking);
+                html += renderCalendarDay(day, true, hasBooking, isToday, dateStr, bookings.length, false, hasMultiDayBooking, barInfo);
             }
 
             for (let day = 1; day <= totalDays; day++) {
@@ -3296,8 +3368,9 @@
                 const hasMultiDayBooking = bookings.some(b => b.isPartOfMultiDay);
                 const isToday = isSameDay(date, new Date());
                 const isSelected = isSameDay(date, state.selectedDate);
+                const barInfo = getMultiDayBarInfo(dateStr);
 
-                html += renderCalendarDay(day, false, hasBooking, isToday, dateStr, bookings.length, isSelected, hasMultiDayBooking);
+                html += renderCalendarDay(day, false, hasBooking, isToday, dateStr, bookings.length, isSelected, hasMultiDayBooking, barInfo);
             }
 
             const totalCells = 42;
@@ -3308,14 +3381,15 @@
                 const bookings = state.dateBookings[dateStr] || [];
                 const hasBooking = bookings.length > 0;
                 const hasMultiDayBooking = bookings.some(b => b.isPartOfMultiDay);
+                const barInfo = getMultiDayBarInfo(dateStr);
 
-                html += renderCalendarDay(day, true, hasBooking, false, dateStr, bookings.length, false, hasMultiDayBooking);
+                html += renderCalendarDay(day, true, hasBooking, false, dateStr, bookings.length, false, hasMultiDayBooking, barInfo);
             }
 
             $.calendarDays.innerHTML = html;
         }
 
-        function renderCalendarDay(day, isOtherMonth, hasBooking, isToday, dateStr, bookingCount = 0, isSelected = false, hasMultiDayBooking = false) {
+        function renderCalendarDay(day, isOtherMonth, hasBooking, isToday, dateStr, bookingCount = 0, isSelected = false, hasMultiDayBooking = false, barInfo = null) {
             let classes = 'calendar-day';
             if (isOtherMonth) classes += ' other-month';
             if (isToday) classes += ' today';
@@ -3325,12 +3399,22 @@
                 if (bookingCount > 1 || hasMultiDayBooking) {
                     classes += ' multiple';
                 }
+                if (hasMultiDayBooking) {
+                    classes += ' has-multi-day';
+                }
+            }
+
+            // สร้างแถบเชื่อม multi-day
+            let barHtml = '';
+            if (barInfo) {
+                barHtml = `<span class="multi-day-bar bar-${barInfo}"></span>`;
             }
 
             return `
                 <div class="${classes}" onclick="selectDate('${dateStr}')">
-                    ${day}
-                    ${hasMultiDayBooking ? '<span class="multi-day-badge">📅</span>' : ''}
+                    ${barHtml}
+                    <span style="position:relative;z-index:1;">${day}</span>
+                    ${hasMultiDayBooking && barInfo === 'start' ? '<span class="multi-day-badge" style="position:relative;z-index:1;">📅</span>' : ''}
                 </div>
             `;
         }
