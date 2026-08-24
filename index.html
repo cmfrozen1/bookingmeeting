@@ -978,23 +978,23 @@
             position: absolute;
             left: -2px;
             right: -2px;
-            top: 50%;
-            transform: translateY(-50%);
-            height: 24px;
+            top: 0;
+            bottom: 0;
+            height: 100%;
             z-index: -1;
             pointer-events: none;
         }
 
         .multi-day-bar.bar-start {
-            left: 20%;
-            border-top-left-radius: 8px;
-            border-bottom-left-radius: 8px;
+            left: 0;
+            border-top-left-radius: 12px;
+            border-bottom-left-radius: 12px;
         }
 
         .multi-day-bar.bar-end {
-            right: 20%;
-            border-top-right-radius: 8px;
-            border-bottom-right-radius: 8px;
+            right: 0;
+            border-top-right-radius: 12px;
+            border-bottom-right-radius: 12px;
         }
 
         .multi-day-bar.bar-middle {
@@ -1005,9 +1005,9 @@
         }
 
         .multi-day-bar.bar-single {
-            left: 20%;
-            right: 20%;
-            border-radius: 8px;
+            left: 0;
+            right: 0;
+            border-radius: 12px;
         }
 
         .multi-day-bar.status-pending {
@@ -3531,7 +3531,6 @@
             return `
                 <div class="${classes}" onclick="${clickHandler}" ${titleAttr} ${dataAttr}>
                     ${day}
-                    ${hasMultiDayBooking ? '<span class="multi-day-badge">📅</span>' : ''}
                     ${hasBooking ? '<span class="status-indicator"></span>' : ''}
                     ${barInfo ? `<span class="multi-day-bar bar-${barInfo.type} status-${barInfo.status}"></span>` : ''}
                 </div>
