@@ -885,6 +885,7 @@
             cursor: pointer;
             font-size: 14px;
             position: relative;
+            z-index: 1;
             transition: all 0.2s;
             border: 1px solid transparent;
         }
@@ -892,6 +893,7 @@
         .calendar-day:hover {
             border-color: var(--primary);
             transform: scale(1.02);
+            z-index: 2;
         }
 
         .calendar-day.today {
@@ -969,6 +971,90 @@
 
         .status-cancelled .status-indicator {
             background: #ef4444;
+        }
+
+        /* Multi-day Connecting Bar Styles */
+        .multi-day-bar {
+            position: absolute;
+            left: -2px;
+            right: -2px;
+            top: 50%;
+            transform: translateY(-50%);
+            height: 24px;
+            z-index: -1;
+            pointer-events: none;
+        }
+
+        .multi-day-bar.bar-start {
+            left: 20%;
+            border-top-left-radius: 8px;
+            border-bottom-left-radius: 8px;
+        }
+
+        .multi-day-bar.bar-end {
+            right: 20%;
+            border-top-right-radius: 8px;
+            border-bottom-right-radius: 8px;
+        }
+
+        .multi-day-bar.bar-middle {
+            /* Full width spanning across columns */
+            left: -2px;
+            right: -2px;
+            border-radius: 0;
+        }
+
+        .multi-day-bar.bar-single {
+            left: 20%;
+            right: 20%;
+            border-radius: 8px;
+        }
+
+        .multi-day-bar.status-pending {
+            background: rgba(245, 158, 11, 0.25);
+            border-top: 1px dashed #f59e0b;
+            border-bottom: 1px dashed #f59e0b;
+        }
+        .multi-day-bar.status-pending.bar-start {
+            border-left: 1px dashed #f59e0b;
+        }
+        .multi-day-bar.status-pending.bar-end {
+            border-right: 1px dashed #f59e0b;
+        }
+        .multi-day-bar.status-pending.bar-single {
+            border: 1px dashed #f59e0b;
+        }
+
+        .multi-day-bar.status-confirmed {
+            background: rgba(6, 199, 85, 0.25);
+            border-top: 1px solid #06c755;
+            border-bottom: 1px solid #06c755;
+        }
+        .multi-day-bar.status-confirmed.bar-start {
+            border-left: 1px solid #06c755;
+        }
+        .multi-day-bar.status-confirmed.bar-end {
+            border-right: 1px solid #06c755;
+        }
+        .multi-day-bar.status-confirmed.bar-single {
+            border: 1px solid #06c755;
+        }
+
+        .multi-day-bar.status-cancelled,
+        .multi-day-bar.status-rejected,
+        .multi-day-bar.status-auto_cancelled {
+            background: rgba(239, 68, 68, 0.25);
+            border-top: 1px solid #ef4444;
+            border-bottom: 1px solid #ef4444;
+        }
+        .multi-day-bar.status-cancelled.bar-start {
+            border-left: 1px solid #ef4444;
+        }
+        .multi-day-bar.status-cancelled.bar-end {
+            border-right: 1px solid #ef4444;
+        }
+        .multi-day-bar.status-cancelled.bar-single {
+            border: 1px solid #ef4444;
         }
 
         .date-bookings-list {
@@ -3420,6 +3506,7 @@
             let titleAttr = '';
             let dataAttr = '';
             let clickHandler = `selectDate('${dateStr}')`;
+            let barInfo = null;
             if (hasBooking) {
                 classes += ' has-booking';
                 if (bookingCount > 1 || hasMultiDayBooking) {
@@ -3431,6 +3518,8 @@
                 else if (bookings.some(b => b.status === 'confirmed')) statusClass = ' status-confirmed';
                 else if (bookings.some(b => b.status === 'cancelled' || b.status === 'rejected' || b.status === 'auto_cancelled')) statusClass = ' status-cancelled';
                 if (statusClass) classes += statusClass;
+                // Determine multi-day bar info
+                barInfo = getMultiDayBarInfo(dateStr);
                 // Tooltip
                 const tooltipLines = bookings.map(b => `ID: ${b.bookingId || '–'} (${b.status})`);
                 titleAttr = `title="${tooltipLines.join(' | ')}"`;
@@ -3444,14 +3533,47 @@
                     ${day}
                     ${hasMultiDayBooking ? '<span class="multi-day-badge">📅</span>' : ''}
                     ${hasBooking ? '<span class="status-indicator"></span>' : ''}
+                    ${barInfo ? `<span class="multi-day-bar bar-${barInfo.type} status-${barInfo.status}"></span>` : ''}
                 </div>
             `;
         }
+
 
         function isSameDay(date1, date2) {
             return date1.getFullYear() === date2.getFullYear() &&
                 date1.getMonth() === date2.getMonth() &&
                 date1.getDate() === date2.getDate();
+        }
+
+        // Calculate multi-day bar segment type and status for a given date
+        function getMultiDayBarInfo(dateStr) {
+            const bookings = state.dateBookings[dateStr] || [];
+            const multiDayBookings = bookings.filter(b => b.isPartOfMultiDay);
+            if (multiDayBookings.length === 0) return null;
+
+            // Use the first multi-day booking
+            const b = multiDayBookings[0];
+            const [y, m, d] = dateStr.split('-');
+            const prevDate = new Date(y, m - 1, d - 1);
+            const nextDate = new Date(y, m - 1, Number(d) + 1);
+            const prevStr = formatDateForInput(prevDate);
+            const nextStr = formatDateForInput(nextDate);
+
+            const prevBookings = state.dateBookings[prevStr] || [];
+            const nextBookings = state.dateBookings[nextStr] || [];
+
+            const hasPrev = prevBookings.some(pb => pb.bookingId === b.bookingId && pb.isPartOfMultiDay);
+            const hasNext = nextBookings.some(nb => nb.bookingId === b.bookingId && nb.isPartOfMultiDay);
+
+            let type = 'single';
+            if (hasPrev && hasNext) type = 'middle';
+            else if (!hasPrev && hasNext) type = 'start';
+            else if (hasPrev && !hasNext) type = 'end';
+
+            return {
+                type: type,
+                status: b.status || 'pending'
+            };
         }
 
         // ========== URL BOOKING POPUP ==========
