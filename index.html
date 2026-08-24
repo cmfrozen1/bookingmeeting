@@ -986,27 +986,31 @@
         }
 
         .multi-day-bar.bar-start {
-            left: 0;
+            /* Start: rounded left edge, extend right into gap */
+            left: 4px;
+            right: -2px;
             border-top-left-radius: 12px;
             border-bottom-left-radius: 12px;
         }
 
         .multi-day-bar.bar-end {
-            right: 0;
+            /* End: rounded right edge, extend left into gap */
+            left: -2px;
+            right: 4px;
             border-top-right-radius: 12px;
             border-bottom-right-radius: 12px;
         }
 
         .multi-day-bar.bar-middle {
-            /* Full width spanning across columns */
+            /* Middle: stretch across both gaps to connect seamlessly */
             left: -2px;
             right: -2px;
             border-radius: 0;
         }
 
         .multi-day-bar.bar-single {
-            left: 0;
-            right: 0;
+            left: 4px;
+            right: 4px;
             border-radius: 12px;
         }
 
@@ -3550,24 +3554,19 @@
             const multiDayBookings = bookings.filter(b => b.isPartOfMultiDay);
             if (multiDayBookings.length === 0) return null;
 
-            // Use the first multi-day booking
+            // Use the first multi-day booking — determine segment using original date range directly
             const b = multiDayBookings[0];
-            const [y, m, d] = dateStr.split('-');
-            const prevDate = new Date(y, m - 1, d - 1);
-            const nextDate = new Date(y, m - 1, Number(d) + 1);
-            const prevStr = formatDateForInput(prevDate);
-            const nextStr = formatDateForInput(nextDate);
+            const startStr = formatDateForInput(new Date(b.originalStartDate || b.startTime));
+            const endStr = formatDateForInput(new Date(b.originalEndDate || b.endTime));
 
-            const prevBookings = state.dateBookings[prevStr] || [];
-            const nextBookings = state.dateBookings[nextStr] || [];
+            const isStart = dateStr === startStr;
+            const isEnd = dateStr === endStr;
 
-            const hasPrev = prevBookings.some(pb => pb.bookingId === b.bookingId && pb.isPartOfMultiDay);
-            const hasNext = nextBookings.some(nb => nb.bookingId === b.bookingId && nb.isPartOfMultiDay);
-
-            let type = 'single';
-            if (hasPrev && hasNext) type = 'middle';
-            else if (!hasPrev && hasNext) type = 'start';
-            else if (hasPrev && !hasNext) type = 'end';
+            let type;
+            if (isStart && isEnd) type = 'single';
+            else if (isStart) type = 'start';
+            else if (isEnd) type = 'end';
+            else type = 'middle';
 
             return {
                 type: type,
@@ -4650,6 +4649,20 @@
                     userName: state.user.displayName,
                     lineUserId: state.user.lineUserId
                 };
+
+                const isMultiDayBooking = startDate !== endDate;
+                if (isMultiDayBooking) {
+                    data.isMultiDay = true;
+                    const datesArr = [];
+                    let d = new Date(startDateTime);
+                    while (d <= endDateTime) {
+                        datesArr.push(formatDateForInput(d));
+                        d.setDate(d.getDate() + 1);
+                    }
+                    data.multiDayDates = JSON.stringify(datesArr);
+                } else {
+                    data.isMultiDay = false;
+                }
 
                 if (id) data.bookingId = id;
 
