@@ -4208,6 +4208,15 @@
             const [eH, eMin] = end.split(':');
             const endDateTime = new Date(eY, eM - 1, eD, eH, eMin, 0);
 
+            // Validation: ensure dates are valid
+            function isValid(d) { return d instanceof Date && !isNaN(d.getTime()); }
+            if (!isValid(startDateTime) || !isValid(endDateTime)) {
+                $.availabilityStatus.innerHTML = '<span class="text-red-500">⚠️ วันที่หรือเวลาไม่ถูกต้อง</span>';
+                $.availabilityStatus.classList.remove('hidden');
+                $.saveBookingBtn.disabled = true;
+                return;
+            }
+
             if (startDateTime >= endDateTime) {
                 $.availabilityStatus.innerHTML = '<span class="text-red-500">⚠️ เวลาสิ้นสุดต้องมากกว่าเวลาเริ่ม</span>';
                 $.availabilityStatus.classList.remove('hidden');
@@ -4489,6 +4498,14 @@
                 const [eY, eM, eD] = endDate.split('-');
                 const [eH, eMin] = end.split(':');
                 const endDateTime = new Date(eY, eM - 1, eD, eH, eMin, 0);
+
+                // Validation: ensure dates are valid
+                function isValid(d) { return d instanceof Date && !isNaN(d.getTime()); }
+                if (!isValid(startDateTime) || !isValid(endDateTime)) {
+                    showToast('⚠️ วันที่หรือเวลาไม่ถูกต้อง', 'error');
+                    setButtonLoading(btn, false);
+                    return;
+                }
 
                 if (startDate > endDate) {
                     showToast('วันที่สิ้นสุดต้องไม่ก่อนวันที่เริ่ม', 'error');
