@@ -909,12 +909,8 @@
         }
 
         .calendar-day.has-booking {
-            background: #06c755; /* solid green for booked dates */
+            background: rgba(6, 199, 85, 0.1);
             border: 1px solid var(--primary);
-        }
-
-        .calendar-day.has-multi-day:hover {
-            border-color: var(--primary);
         }
 
         .calendar-day.has-booking::after {
@@ -930,52 +926,6 @@
         .calendar-day.has-booking.multiple::after {
             width: 8px;
             background: var(--primary);
-        }
-
-        /* Multi-day bar: แถบเชื่อมระหว่างวันที่จองข้ามวัน */
-        .calendar-day .multi-day-bar {
-            position: absolute;
-            top: 50%;
-            transform: translateY(-50%);
-            height: 18px;
-            background: rgba(6, 199, 85, 0.18);
-            z-index: 0;
-        }
-
-        .calendar-day .multi-day-bar.bar-start {
-            left: 0;
-            right: -1px;
-            border-radius: 6px 0 0 6px;
-        }
-
-        .calendar-day .multi-day-bar.bar-middle {
-            left: -1px;
-            right: -1px;
-            border-radius: 0;
-        }
-
-        .calendar-day .multi-day-bar.bar-end {
-            left: -1px;
-            right: 0;
-            border-radius: 0 6px 6px 0;
-        }
-
-        .calendar-day .multi-day-bar.bar-single {
-            left: 0;
-            right: 0;
-            border-radius: 6px;
-        }
-
-        .calendar-day .multi-day-dot {
-            position: absolute;
-            bottom: 4px;
-            left: 50%;
-            transform: translateX(-50%);
-            width: 6px;
-            height: 6px;
-            border-radius: 3px;
-            background: var(--primary);
-            z-index: 1;
         }
 
         .date-bookings-list {
@@ -1608,7 +1558,8 @@
                 </div>
 
                 <div class="flex border-b border-[#2a2e36] mb-4 overflow-x-auto">
-                    <button class="admin-tab-btn flex-1 py-2 text-center active admin-only-pending" data-admin-tab="pending">
+                    <button class="admin-tab-btn flex-1 py-2 text-center active admin-only-pending"
+                        data-admin-tab="pending">
                         รออนุมัติ <span id="pending-badge"
                             class="ml-1 bg-[#06c755] text-white text-xs rounded-full px-1.5 py-0.5 hidden">0</span>
                     </button>
@@ -1822,33 +1773,37 @@
                         </select>
                         <input type="text" id="booking-title" placeholder="หัวข้อการประชุม" class="input-field" required
                             maxlength="100">
-                        <textarea id="booking-description"
-                            placeholder="รายละเอียด"
-                            class="input-field" rows="3" maxlength="500" required></textarea>
+                        <textarea id="booking-description" placeholder="รายละเอียด" class="input-field" rows="3"
+                            maxlength="500" required></textarea>
 
                         <select id="booking-format" class="input-field" onchange="toggleZoomLink()">
                             <option value="onsite">ประชุมออนไซต์ (Onsite)</option>
                             <option value="online">ประชุมออนไลน์ (Online)</option>
                         </select>
 
-                        <input type="url" id="booking-meeting-link" placeholder="ลิงค์ประชุม (Zoom, Teams, etc.) - ไม่บังคับกรอก"
-                            class="input-field hidden" pattern="https?://.*" title="กรอก URL เช่น https://zoom.us/j/xxx (ไม่บังคับ)">
+                        <input type="url" id="booking-meeting-link" placeholder="ลิงค์ประชุม (Zoom, Teams, etc.)"
+                            class="input-field hidden" pattern="https?://.*">
 
                         <div id="equipment-onsite-section" class="flex flex-col gap-2 mb-3 px-2">
                             <span class="text-sm text-gray-400 block">อุปกรณ์เพิ่มเติม</span>
                             <div class="flex flex-wrap gap-4">
                                 <label class="flex items-center gap-2 text-sm text-gray-300 cursor-pointer">
-                                    <input type="radio" name="booking-computer" id="booking-use-computer" value="use" class="text-primary focus:ring-primary bg-gray-800 border-gray-600" onchange="toggleProjector()">
+                                    <input type="radio" name="booking-computer" id="booking-use-computer" value="use"
+                                        class="text-primary focus:ring-primary bg-gray-800 border-gray-600"
+                                        onchange="toggleProjector()">
                                     ใช้คอมพิวเตอร์
                                 </label>
                                 <label class="flex items-center gap-2 text-sm text-gray-300 cursor-pointer">
-                                    <input type="radio" name="booking-computer" id="booking-no-computer" value="no" class="text-primary focus:ring-primary bg-gray-800 border-gray-600" checked onchange="toggleProjector()">
+                                    <input type="radio" name="booking-computer" id="booking-no-computer" value="no"
+                                        class="text-primary focus:ring-primary bg-gray-800 border-gray-600" checked
+                                        onchange="toggleProjector()">
                                     ไม่ใช้คอมพิวเตอร์
                                 </label>
                             </div>
                             <div class="flex gap-4 mt-1 hidden" id="projector-container">
                                 <label class="flex items-center gap-2 text-sm text-gray-300 cursor-pointer">
-                                    <input type="checkbox" id="booking-use-projector" class="rounded text-primary focus:ring-primary bg-gray-800 border-gray-600">
+                                    <input type="checkbox" id="booking-use-projector"
+                                        class="rounded text-primary focus:ring-primary bg-gray-800 border-gray-600">
                                     ใช้โปรเจคเตอร์
                                 </label>
                             </div>
@@ -1858,15 +1813,18 @@
                             <span class="text-sm text-gray-400 block">อุปกรณ์สำหรับออนไลน์</span>
                             <div class="flex flex-wrap gap-4">
                                 <label class="flex items-center gap-2 text-sm text-gray-300 cursor-pointer">
-                                    <input type="checkbox" id="booking-online-camera" class="rounded text-primary focus:ring-primary bg-gray-800 border-gray-600">
+                                    <input type="checkbox" id="booking-online-camera"
+                                        class="rounded text-primary focus:ring-primary bg-gray-800 border-gray-600">
                                     กล้อง
                                 </label>
                                 <label class="flex items-center gap-2 text-sm text-gray-300 cursor-pointer">
-                                    <input type="checkbox" id="booking-online-mic" class="rounded text-primary focus:ring-primary bg-gray-800 border-gray-600">
+                                    <input type="checkbox" id="booking-online-mic"
+                                        class="rounded text-primary focus:ring-primary bg-gray-800 border-gray-600">
                                     ไมค์
                                 </label>
                                 <label class="flex items-center gap-2 text-sm text-gray-300 cursor-pointer">
-                                    <input type="checkbox" id="booking-online-computer" class="rounded text-primary focus:ring-primary bg-gray-800 border-gray-600">
+                                    <input type="checkbox" id="booking-online-computer"
+                                        class="rounded text-primary focus:ring-primary bg-gray-800 border-gray-600">
                                     คอมพิวเตอร์
                                 </label>
                             </div>
@@ -2266,7 +2224,6 @@
         function formatDateThai(dateStr) {
             if (!dateStr) return '';
             const date = new Date(dateStr);
-            if (isNaN(date.getTime())) return '';
             return date.toLocaleDateString('th-TH', {
                 day: 'numeric',
                 month: 'long',
@@ -2278,7 +2235,6 @@
         function formatDateShort(dateStr) {
             if (!dateStr) return '';
             const date = new Date(dateStr);
-            if (isNaN(date.getTime())) return '';
             return date.toLocaleDateString('th-TH', {
                 day: 'numeric',
                 month: 'short',
@@ -2288,9 +2244,7 @@
 
         function formatTime(dateStr) {
             if (!dateStr) return '';
-            const date = new Date(dateStr);
-            if (isNaN(date.getTime())) return '';
-            return date.toLocaleTimeString('th-TH', {
+            return new Date(dateStr).toLocaleTimeString('th-TH', {
                 hour: '2-digit',
                 minute: '2-digit'
             });
@@ -2298,9 +2252,7 @@
 
         function formatDateTime(dateStr) {
             if (!dateStr) return '';
-            const date = new Date(dateStr);
-            if (isNaN(date.getTime())) return '';
-            return date.toLocaleString('th-TH', {
+            return new Date(dateStr).toLocaleString('th-TH', {
                 day: 'numeric',
                 month: 'short',
                 year: 'numeric',
@@ -2311,7 +2263,6 @@
 
         function formatDateForInput(date) {
             const d = new Date(date);
-            if (isNaN(d.getTime())) return '';
             const year = d.getFullYear();
             const month = String(d.getMonth() + 1).padStart(2, '0');
             const day = String(d.getDate()).padStart(2, '0');
@@ -2320,14 +2271,12 @@
 
         function formatTimeForInput(date) {
             const d = new Date(date);
-            if (isNaN(d.getTime())) return '';
             const hours = String(d.getHours()).padStart(2, '0');
             const minutes = String(d.getMinutes()).padStart(2, '0');
             return `${hours}:${minutes}`;
         }
 
         function formatMonthThai(date) {
-            if (!(date instanceof Date) || isNaN(date.getTime())) return '';
             return date.toLocaleDateString('th-TH', {
                 month: 'long',
                 year: 'numeric'
@@ -2381,9 +2330,7 @@
 
                 Object.keys(data).forEach(key => {
                     if (data[key] !== undefined && data[key] !== null) {
-                        // Array/Object ต้อง JSON.stringify ก่อนส่ง เพราะ FormData แปลงทุกอย่างเป็น string
-                        const val = data[key];
-                        formData.append(key, typeof val === 'object' ? JSON.stringify(val) : String(val));
+                        formData.append(key, data[key]);
                     }
                 });
 
@@ -2396,9 +2343,7 @@
                 clearTimeout(timeoutId);
 
                 const text = await res.text();
-                // GAS Web App จะใส่ prefix {}&& หน้า JSON เพื่อกัน XSS
-                const jsonStr = text.replace(/^\{\}\&\&/, '');
-                return JSON.parse(jsonStr);
+                return JSON.parse(text);
             } catch (error) {
                 console.error('API Error:', error);
 
@@ -3292,17 +3237,15 @@
                     result.data.bookings.forEach(booking => {
                         const startDateObj = new Date(booking.startTime);
                         const endDateObj = new Date(booking.endTime);
-
-                        // ข้าม booking ที่ startTime/endTime เป็น Invalid Date
+                        // Validation: skip bookings with invalid dates to avoid RangeError
                         if (isNaN(startDateObj.getTime()) || isNaN(endDateObj.getTime())) {
-                            console.warn('⚠️ loadMonthBookings: Invalid date in booking', booking.bookingId, booking.startTime, booking.endTime);
+                            console.warn('⚠️ loadMonthBookings: Skipping booking with invalid dates', booking.bookingId);
                             return;
                         }
 
                         let currentDate = new Date(startDateObj);
                         while (currentDate <= endDateObj) {
                             const dateStr = formatDateForInput(currentDate);
-                            if (!dateStr) break; // ป้องกัน infinite loop
 
                             if (!state.dateBookings[dateStr]) {
                                 state.dateBookings[dateStr] = [];
@@ -3330,32 +3273,6 @@
             }
         }
 
-        // คำนวณตำแหน่งแถบ multi-day สำหรับวันที่กำหนด
-        function getMultiDayBarInfo(dateStr) {
-            const bookings = state.dateBookings[dateStr] || [];
-            const multiDayBookings = bookings.filter(b => b.isPartOfMultiDay);
-            if (multiDayBookings.length === 0) return null;
-
-            // ใช้ booking ตัวแรกที่เป็น multi-day
-            const b = multiDayBookings[0];
-            const [y, m, d] = dateStr.split('-');
-            const prevDate = new Date(y, m - 1, d - 1);
-            const nextDate = new Date(y, m - 1, Number(d) + 1);
-            const prevStr = formatDateForInput(prevDate);
-            const nextStr = formatDateForInput(nextDate);
-
-            const prevBookings = state.dateBookings[prevStr] || [];
-            const nextBookings = state.dateBookings[nextStr] || [];
-
-            const hasPrev = prevBookings.some(pb => pb.bookingId === b.bookingId && pb.isPartOfMultiDay);
-            const hasNext = nextBookings.some(nb => nb.bookingId === b.bookingId && nb.isPartOfMultiDay);
-
-            if (hasPrev && hasNext) return 'middle';
-            if (!hasPrev && hasNext) return 'start';
-            if (hasPrev && !hasNext) return 'end';
-            return 'single';
-        }
-
         function renderCalendar() {
             const year = state.currentMonth.getFullYear();
             const month = state.currentMonth.getMonth();
@@ -3380,9 +3297,8 @@
                 const hasBooking = bookings.length > 0;
                 const hasMultiDayBooking = bookings.some(b => b.isPartOfMultiDay);
                 const isToday = isSameDay(date, new Date());
-                const barInfo = getMultiDayBarInfo(dateStr);
 
-                html += renderCalendarDay(day, true, hasBooking, isToday, dateStr, bookings.length, false, hasMultiDayBooking, barInfo);
+                html += renderCalendarDay(day, true, hasBooking, isToday, dateStr, bookings.length, false, hasMultiDayBooking);
             }
 
             for (let day = 1; day <= totalDays; day++) {
@@ -3393,9 +3309,8 @@
                 const hasMultiDayBooking = bookings.some(b => b.isPartOfMultiDay);
                 const isToday = isSameDay(date, new Date());
                 const isSelected = isSameDay(date, state.selectedDate);
-                const barInfo = getMultiDayBarInfo(dateStr);
 
-                html += renderCalendarDay(day, false, hasBooking, isToday, dateStr, bookings.length, isSelected, hasMultiDayBooking, barInfo);
+                html += renderCalendarDay(day, false, hasBooking, isToday, dateStr, bookings.length, isSelected, hasMultiDayBooking);
             }
 
             const totalCells = 42;
@@ -3406,15 +3321,14 @@
                 const bookings = state.dateBookings[dateStr] || [];
                 const hasBooking = bookings.length > 0;
                 const hasMultiDayBooking = bookings.some(b => b.isPartOfMultiDay);
-                const barInfo = getMultiDayBarInfo(dateStr);
 
-                html += renderCalendarDay(day, true, hasBooking, false, dateStr, bookings.length, false, hasMultiDayBooking, barInfo);
+                html += renderCalendarDay(day, true, hasBooking, false, dateStr, bookings.length, false, hasMultiDayBooking);
             }
 
             $.calendarDays.innerHTML = html;
         }
 
-        function renderCalendarDay(day, isOtherMonth, hasBooking, isToday, dateStr, bookingCount = 0, isSelected = false, hasMultiDayBooking = false, barInfo = null) {
+        function renderCalendarDay(day, isOtherMonth, hasBooking, isToday, dateStr, bookingCount = 0, isSelected = false, hasMultiDayBooking = false) {
             let classes = 'calendar-day';
             if (isOtherMonth) classes += ' other-month';
             if (isToday) classes += ' today';
@@ -3424,22 +3338,12 @@
                 if (bookingCount > 1 || hasMultiDayBooking) {
                     classes += ' multiple';
                 }
-                if (hasMultiDayBooking) {
-                    classes += ' has-multi-day';
-                }
-            }
-
-            // สร้างแถบเชื่อม multi-day
-            let barHtml = '';
-            if (barInfo) {
-                barHtml = `<span class="multi-day-bar bar-${barInfo}"></span>`;
             }
 
             return `
                 <div class="${classes}" onclick="selectDate('${dateStr}')">
-                    ${barHtml}
-                    <span style="position:relative;z-index:1;">${day}</span>
-                    ${hasMultiDayBooking && barInfo === 'start' ? '<span class="multi-day-badge" style="position:relative;z-index:1;">📅</span>' : ''}
+                    ${day}
+                    ${hasMultiDayBooking ? '<span class="multi-day-badge">📅</span>' : ''}
                 </div>
             `;
         }
@@ -3557,9 +3461,7 @@
 
                     const startDate = new Date(b.startTime);
                     const endDate = new Date(b.endTime);
-                    const startDateStr = (!isNaN(startDate.getTime())) ? formatDateForInput(startDate) : '';
-                    const endDateStr = (!isNaN(endDate.getTime())) ? formatDateForInput(endDate) : '';
-                    const isMultiDay = startDateStr !== '' && endDateStr !== '' && startDateStr !== endDateStr;
+                    const isMultiDay = formatDateForInput(startDate) !== formatDateForInput(endDate);
 
                     let statusClass = '';
                     if (b.status === 'confirmed') statusClass = 'confirmed';
@@ -4136,13 +4038,13 @@
             document.getElementById('booking-meeting-link').value = '';
             document.getElementById('booking-format').value = 'onsite';
             document.getElementById('booking-use-computer').checked = false;
-            if(document.getElementById('booking-no-computer')) document.getElementById('booking-no-computer').checked = true;
+            if (document.getElementById('booking-no-computer')) document.getElementById('booking-no-computer').checked = true;
             document.getElementById('booking-use-projector').checked = false;
-            if(document.getElementById('booking-online-camera')) document.getElementById('booking-online-camera').checked = false;
-            if(document.getElementById('booking-online-mic')) document.getElementById('booking-online-mic').checked = false;
-            if(document.getElementById('booking-online-computer')) document.getElementById('booking-online-computer').checked = false;
+            if (document.getElementById('booking-online-camera')) document.getElementById('booking-online-camera').checked = false;
+            if (document.getElementById('booking-online-mic')) document.getElementById('booking-online-mic').checked = false;
+            if (document.getElementById('booking-online-computer')) document.getElementById('booking-online-computer').checked = false;
             toggleZoomLink();
-            if(typeof toggleProjector === 'function') toggleProjector();
+            if (typeof toggleProjector === 'function') toggleProjector();
             document.getElementById('booking-attendees').value = '';
             document.getElementById('availability-status').classList.add('hidden');
             document.getElementById('save-booking-btn').disabled = true;
@@ -4200,22 +4102,16 @@
                 return;
             }
 
-            const [sY, sM, sD] = startDate.split('-');
-            const [sH, sMin] = start.split(':');
-            const startDateTime = new Date(sY, sM - 1, sD, sH, sMin, 0);
-
-            const [eY, eM, eD] = endDate.split('-');
-            const [eH, eMin] = end.split(':');
-            const endDateTime = new Date(eY, eM - 1, eD, eH, eMin, 0);
-
-            // Validation: ensure dates are valid
-            function isValid(d) { return d instanceof Date && !isNaN(d.getTime()); }
-            if (!isValid(startDateTime) || !isValid(endDateTime)) {
-                $.availabilityStatus.innerHTML = '<span class="text-red-500">⚠️ วันที่หรือเวลาไม่ถูกต้อง</span>';
+            // Validate time format HH:MM
+            const timeRegex = /^\d{2}:\d{2}$/;
+            if (!timeRegex.test(start) || !timeRegex.test(end)) {
+                $.availabilityStatus.innerHTML = '<span class="text-red-500">⚠️ รูปแบบเวลาไม่ถูกต้อง (HH:MM)</span>';
                 $.availabilityStatus.classList.remove('hidden');
                 $.saveBookingBtn.disabled = true;
                 return;
             }
+            const startDateTime = new Date(`${startDate}T${start}:00`);
+            const endDateTime = new Date(`${endDate}T${end}:00`);
 
             if (startDateTime >= endDateTime) {
                 $.availabilityStatus.innerHTML = '<span class="text-red-500">⚠️ เวลาสิ้นสุดต้องมากกว่าเวลาเริ่ม</span>';
@@ -4231,38 +4127,28 @@
                 return;
             }
 
-            // สร้างรายการวันที่ทั้งหมดระหว่าง startDate ถึง endDate
-            const multiDayDates = [];
-            const tmpDate = new Date(sY, sM - 1, sD);
-            const endDateObj = new Date(eY, eM - 1, eD);
-            while (tmpDate <= endDateObj) {
-                multiDayDates.push(formatDateForInput(tmpDate));
-                tmpDate.setDate(tmpDate.getDate() + 1);
-            }
-            const isMultiDay = multiDayDates.length > 1;
-
-            // ตรวจสอบ max 7 วัน
-            if (multiDayDates.length > 7) {
-                $.availabilityStatus.innerHTML = '<span class="text-red-500">⚠️ จองได้สูงสุด 7 วันต่อเนื่อง</span>';
-                $.availabilityStatus.classList.remove('hidden');
-                $.saveBookingBtn.disabled = true;
-                return;
-            }
-
-            // ตรวจสอบเวลาทำการ: วันแรกต้องเริ่ม 08:00-20:00, วันสุดท้ายต้องสิ้นสุด 08:00-20:00
             const startHour = startDateTime.getHours();
             const endHour = endDateTime.getHours();
             const endMinutes = endDateTime.getMinutes();
 
             if (startHour < 8 || startHour > 20 || (startHour === 20 && startDateTime.getMinutes() > 0)) {
-                $.availabilityStatus.innerHTML = '<span class="text-red-500">⚠️ เวลาเริ่มต้องอยู่ในช่วง 08:00 - 20:00 น.</span>';
+                $.availabilityStatus.innerHTML = '<span class="text-red-500">⚠️ เวลาทำการ 08:00 - 20:00 น.</span>';
                 $.availabilityStatus.classList.remove('hidden');
                 $.saveBookingBtn.disabled = true;
                 return;
             }
 
             if (endHour < 8 || endHour > 20 || (endHour === 20 && endMinutes > 0)) {
-                $.availabilityStatus.innerHTML = '<span class="text-red-500">⚠️ เวลาสิ้นสุดต้องอยู่ในช่วง 08:00 - 20:00 น.</span>';
+                $.availabilityStatus.innerHTML = '<span class="text-red-500">⚠️ เวลาทำการ 08:00 - 20:00 น.</span>';
+                $.availabilityStatus.classList.remove('hidden');
+                $.saveBookingBtn.disabled = true;
+                return;
+            }
+
+            const durationHours = (endDateTime - startDateTime) / (1000 * 60 * 60);
+            // Allow bookings up to 7 days (168 hours)
+            if (durationHours > 168) {
+                $.availabilityStatus.innerHTML = '<span class="text-red-500">⚠️ จองได้ครั้งละไม่เกิน 7 วัน (168 ชั่วโมง)</span>'; 
                 $.availabilityStatus.classList.remove('hidden');
                 $.saveBookingBtn.disabled = true;
                 return;
@@ -4284,9 +4170,7 @@
                     roomId,
                     startTime: startDateTime.toISOString(),
                     endTime: endDateTime.toISOString(),
-                    bookingId: editBookingId || undefined,
-                    isMultiDay: isMultiDay,
-                    multiDayDates: isMultiDay ? multiDayDates : []
+                    bookingId: editBookingId || undefined
                 });
 
                 if (result.success) {
@@ -4434,7 +4318,7 @@
             }
         };
 
-        window.toggleProjector = function() {
+        window.toggleProjector = function () {
             const useComp = document.getElementById('booking-use-computer')?.checked;
             const projectorContainer = document.getElementById('projector-container');
             if (projectorContainer) {
@@ -4443,20 +4327,20 @@
                 } else {
                     projectorContainer.classList.add('hidden');
                     const projCheckbox = document.getElementById('booking-use-projector');
-                    if(projCheckbox) projCheckbox.checked = false;
+                    if (projCheckbox) projCheckbox.checked = false;
                 }
             }
         };
 
-        window.toggleZoomLink = function() {
+        window.toggleZoomLink = function () {
             const format = document.getElementById('booking-format').value;
             const linkInput = document.getElementById('booking-meeting-link');
             const onsiteSection = document.getElementById('equipment-onsite-section');
             const onlineSection = document.getElementById('equipment-online-section');
-            
+
             if (format === 'online') {
                 linkInput.classList.remove('hidden');
-                linkInput.required = false;
+                linkInput.required = true;
                 if (onsiteSection) onsiteSection.classList.add('hidden');
                 if (onlineSection) onlineSection.classList.remove('hidden');
             } else {
@@ -4491,39 +4375,14 @@
                     return;
                 }
 
-                const [sY, sM, sD] = startDate.split('-');
-                const [sH, sMin] = start.split(':');
-                const startDateTime = new Date(sY, sM - 1, sD, sH, sMin, 0);
-
-                const [eY, eM, eD] = endDate.split('-');
-                const [eH, eMin] = end.split(':');
-                const endDateTime = new Date(eY, eM - 1, eD, eH, eMin, 0);
-
-                // Validation: ensure dates are valid
-                function isValid(d) { return d instanceof Date && !isNaN(d.getTime()); }
-                if (!isValid(startDateTime) || !isValid(endDateTime)) {
-                    showToast('⚠️ วันที่หรือเวลาไม่ถูกต้อง', 'error');
-                    setButtonLoading(btn, false);
-                    return;
-                }
+                const startDateTime = new Date(`${startDate}T${start}:00`);
+                const endDateTime = new Date(`${endDate}T${end}:00`);
 
                 if (startDate > endDate) {
                     showToast('วันที่สิ้นสุดต้องไม่ก่อนวันที่เริ่ม', 'error');
                     setButtonLoading(btn, false);
                     return;
                 }
-
-                // สร้างรายการวันที่ทั้งหมดสำหรับจองข้ามวัน
-                const saveMultiDayDates = [];
-                const [ssY, ssM, ssD] = startDate.split('-');
-                const [seY, seM, seD] = endDate.split('-');
-                const tmpSaveDate = new Date(ssY, ssM - 1, ssD);
-                const saveEndDateObj = new Date(seY, seM - 1, seD);
-                while (tmpSaveDate <= saveEndDateObj) {
-                    saveMultiDayDates.push(formatDateForInput(tmpSaveDate));
-                    tmpSaveDate.setDate(tmpSaveDate.getDate() + 1);
-                }
-                const saveIsMultiDay = saveMultiDayDates.length > 1;
 
                 const selectedRoom = state.rooms.find(r => r.roomId === roomId);
                 if (selectedRoom && attendees > selectedRoom.capacity) {
@@ -4538,9 +4397,7 @@
                     roomId,
                     startTime: startDateTime.toISOString(),
                     endTime: endDateTime.toISOString(),
-                    bookingId: id || undefined,
-                    isMultiDay: saveIsMultiDay,
-                    multiDayDates: saveIsMultiDay ? saveMultiDayDates : []
+                    bookingId: id || undefined
                 });
 
                 if (!checkResult.success || !checkResult.data.available) {
@@ -4553,7 +4410,7 @@
                 let desc = document.getElementById('booking-description').value;
                 const format = document.getElementById('booking-format').value;
                 let extras = [];
-                
+
                 if (format === 'onsite') {
                     const useComp = document.getElementById('booking-use-computer')?.checked;
                     const useProj = document.getElementById('booking-use-projector')?.checked;
@@ -4577,9 +4434,7 @@
                     endTime: endDateTime.toISOString(),
                     attendees: attendees,
                     userName: state.user.displayName,
-                    lineUserId: state.user.lineUserId,
-                    isMultiDay: saveIsMultiDay,
-                    multiDayDates: saveIsMultiDay ? saveMultiDayDates : []
+                    lineUserId: state.user.lineUserId
                 };
 
                 if (id) data.bookingId = id;
@@ -5888,8 +5743,20 @@
         if ($.bookingDate) $.bookingDate.min = todayForInput;
         if ($.bookingEndDate) $.bookingEndDate.min = todayForInput;
 
-        // ========== INIT ==========
-        if (document.readyState === 'loading') {
+        // Ensure end date cannot be before start date
+        if ($.bookingDate && $.bookingEndDate) {
+            $.bookingDate.addEventListener('change', () => {
+                const startVal = $.bookingDate.value;
+                if (startVal) {
+                    $.bookingEndDate.min = startVal;
+                    // If current end date is before new start, adjust it
+                    if ($.bookingEndDate.value && $.bookingEndDate.value < startVal) {
+                        $.bookingEndDate.value = startVal;
+                    }
+                }
+            });
+        }
+
             document.addEventListener('DOMContentLoaded', initLIFF);
         } else {
             initLIFF();
