@@ -3681,7 +3681,12 @@
 
                     const startDate = new Date(b.startTime);
                     const endDate = new Date(b.endTime);
-                    const isMultiDay = formatDateForInput(startDate) !== formatDateForInput(endDate);
+                    
+                    let isMultiDay = b.isMultiDay;
+                    if (isMultiDay === undefined) {
+                        isMultiDay = !isNaN(startDate.getTime()) && !isNaN(endDate.getTime()) && 
+                                     formatDateForInput(startDate) !== formatDateForInput(endDate);
+                    }
 
                     let statusClass = '';
                     if (b.status === 'confirmed') statusClass = 'confirmed';
@@ -3694,7 +3699,8 @@
                         ...b,
                         approvedByName,
                         isMultiDay,
-                        multiDayInfo: isMultiDay ? `${formatDateShort(b.startTime)} - ${formatDateShort(b.endTime)}` : null,
+                        multiDayInfo: isMultiDay && !isNaN(startDate.getTime()) && !isNaN(endDate.getTime()) ? 
+                                      `${formatDateShort(b.startTime)} - ${formatDateShort(b.endTime)}` : null,
                         statusClass
                     };
                 }));
@@ -4251,7 +4257,7 @@
         };
 
         // ========== BOOKINGS ==========
-        window.showBookingModal = function (roomId = null) {
+        window.showBookingModal = function (roomId = null, defaultDate = null) {
             document.getElementById('booking-modal-title').textContent = 'จองห้องประชุม';
             document.getElementById('edit-booking-id').value = '';
             document.getElementById('booking-title').value = '';
@@ -4282,14 +4288,17 @@
                 roomSelect.appendChild(option);
             });
 
-            setQuickDateTime('now');
-
-            $.datetimePresets.forEach(btn => {
-                btn.classList.remove('active');
-                if (btn.getAttribute('onclick')?.includes('now')) {
-                    btn.classList.add('active');
-                }
-            });
+            if (defaultDate) {
+                const d = new Date(defaultDate);
+                const dateStr = formatDateForInput(d);
+                $.bookingDate.value = dateStr;
+                $.bookingEndDate.value = dateStr;
+                
+                // Remove active class from quick presets
+                $.datetimePresets.forEach(btn => btn.classList.remove('active'));
+            } else {
+                setQuickDateTime('now');
+            }
 
             document.getElementById('booking-create-modal').classList.add('active');
         };
@@ -5023,22 +5032,22 @@
                     <div class="grid grid-cols-2 gap-3 mb-4">
                         <div>
                             <p class="text-sm text-gray-400 mb-1">วันที่เริ่ม</p>
-                            <p>${formatDateShort(b.startTime)}</p>
+                            <p>${!isNaN(new Date(b.startTime).getTime()) ? formatDateShort(b.startTime) : 'ไม่ระบุ'}</p>
                         </div>
                         <div>
                             <p class="text-sm text-gray-400 mb-1">วันที่สิ้นสุด</p>
-                            <p>${formatDateShort(b.endTime)}</p>
+                            <p>${!isNaN(new Date(b.endTime).getTime()) ? formatDateShort(b.endTime) : 'ไม่ระบุ'}</p>
                         </div>
                     </div>
                     
                     <div class="grid grid-cols-2 gap-3 mb-4">
                         <div>
                             <p class="text-sm text-gray-400 mb-1">เวลาเริ่ม</p>
-                            <p>${formatTime(b.startTime)}</p>
+                            <p>${!isNaN(new Date(b.startTime).getTime()) ? formatTime(b.startTime) : 'ไม่ระบุ'}</p>
                         </div>
                         <div>
                             <p class="text-sm text-gray-400 mb-1">เวลาสิ้นสุด</p>
-                            <p>${formatTime(b.endTime)}</p>
+                            <p>${!isNaN(new Date(b.endTime).getTime()) ? formatTime(b.endTime) : 'ไม่ระบุ'}</p>
                         </div>
                     </div>
                     
