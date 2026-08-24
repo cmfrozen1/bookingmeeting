@@ -908,9 +908,19 @@
             opacity: 0.3;
         }
 
-        .calendar-day.has-booking {
+        .calendar-day.has-booking:not(.has-multi-day) {
             background: rgba(6, 199, 85, 0.1);
             border: 1px solid var(--primary);
+        }
+
+        /* วันที่มี multi-day booking: ไม่ทาพื้นหลัง ให้แถบ bar แสดงแทน */
+        .calendar-day.has-multi-day {
+            background: transparent;
+            border: 1px solid transparent;
+        }
+
+        .calendar-day.has-multi-day:hover {
+            border-color: var(--primary);
         }
 
         .calendar-day.has-booking:not(.has-multi-day)::after {
@@ -2381,7 +2391,9 @@
                 clearTimeout(timeoutId);
 
                 const text = await res.text();
-                return JSON.parse(text);
+                // GAS Web App จะใส่ prefix {}&& หน้า JSON เพื่อกัน XSS
+                const jsonStr = text.replace(/^\{\}\&\&/, '');
+                return JSON.parse(jsonStr);
             } catch (error) {
                 console.error('API Error:', error);
 
