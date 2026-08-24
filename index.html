@@ -1781,8 +1781,8 @@
                             <option value="online">ประชุมออนไลน์ (Online)</option>
                         </select>
 
-                        <input type="url" id="booking-meeting-link" placeholder="ลิงค์ประชุม (Zoom, Teams, etc.)"
-                            class="input-field hidden" pattern="https?://.*">
+                        <input type="url" id="booking-meeting-link" placeholder="ลิงค์ประชุม (Zoom, Teams, etc.) - ไม่บังคับกรอก"
+                            class="input-field hidden" pattern="https?://.*" title="กรอก URL เช่น https://zoom.us/j/xxx (ไม่บังคับ)">
 
                         <div id="equipment-onsite-section" class="flex flex-col gap-2 mb-3 px-2">
                             <span class="text-sm text-gray-400 block">อุปกรณ์เพิ่มเติม</span>
@@ -4318,7 +4318,7 @@
             
             if (format === 'online') {
                 linkInput.classList.remove('hidden');
-                linkInput.required = true;
+                linkInput.required = false;
                 if (onsiteSection) onsiteSection.classList.add('hidden');
                 if (onlineSection) onlineSection.classList.remove('hidden');
             } else {
