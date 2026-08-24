@@ -4106,27 +4106,38 @@
                 return;
             }
 
+            // สร้างรายการวันที่ทั้งหมดระหว่าง startDate ถึง endDate
+            const multiDayDates = [];
+            const tmpDate = new Date(startDate + 'T00:00:00');
+            const endDateObj = new Date(endDate + 'T00:00:00');
+            while (tmpDate <= endDateObj) {
+                multiDayDates.push(tmpDate.toISOString().split('T')[0]);
+                tmpDate.setDate(tmpDate.getDate() + 1);
+            }
+            const isMultiDay = multiDayDates.length > 1;
+
+            // ตรวจสอบ max 7 วัน
+            if (multiDayDates.length > 7) {
+                $.availabilityStatus.innerHTML = '<span class="text-red-500">⚠️ จองได้สูงสุด 7 วันต่อเนื่อง</span>';
+                $.availabilityStatus.classList.remove('hidden');
+                $.saveBookingBtn.disabled = true;
+                return;
+            }
+
+            // ตรวจสอบเวลาทำการ: วันแรกต้องเริ่ม 08:00-20:00, วันสุดท้ายต้องสิ้นสุด 08:00-20:00
             const startHour = startDateTime.getHours();
             const endHour = endDateTime.getHours();
             const endMinutes = endDateTime.getMinutes();
 
             if (startHour < 8 || startHour > 20 || (startHour === 20 && startDateTime.getMinutes() > 0)) {
-                $.availabilityStatus.innerHTML = '<span class="text-red-500">⚠️ เวลาทำการ 08:00 - 20:00 น.</span>';
+                $.availabilityStatus.innerHTML = '<span class="text-red-500">⚠️ เวลาเริ่มต้องอยู่ในช่วง 08:00 - 20:00 น.</span>';
                 $.availabilityStatus.classList.remove('hidden');
                 $.saveBookingBtn.disabled = true;
                 return;
             }
 
             if (endHour < 8 || endHour > 20 || (endHour === 20 && endMinutes > 0)) {
-                $.availabilityStatus.innerHTML = '<span class="text-red-500">⚠️ เวลาทำการ 08:00 - 20:00 น.</span>';
-                $.availabilityStatus.classList.remove('hidden');
-                $.saveBookingBtn.disabled = true;
-                return;
-            }
-
-            const durationHours = (endDateTime - startDateTime) / (1000 * 60 * 60);
-            if (durationHours > 24) {
-                $.availabilityStatus.innerHTML = '<span class="text-red-500">⚠️ จองได้ครั้งละไม่เกิน 24 ชั่วโมง</span>';
+                $.availabilityStatus.innerHTML = '<span class="text-red-500">⚠️ เวลาสิ้นสุดต้องอยู่ในช่วง 08:00 - 20:00 น.</span>';
                 $.availabilityStatus.classList.remove('hidden');
                 $.saveBookingBtn.disabled = true;
                 return;
@@ -4148,7 +4159,9 @@
                     roomId,
                     startTime: startDateTime.toISOString(),
                     endTime: endDateTime.toISOString(),
-                    bookingId: editBookingId || undefined
+                    bookingId: editBookingId || undefined,
+                    isMultiDay: isMultiDay,
+                    multiDayDates: isMultiDay ? multiDayDates : []
                 });
 
                 if (result.success) {
@@ -4362,6 +4375,16 @@
                     return;
                 }
 
+                // สร้างรายการวันที่ทั้งหมดสำหรับจองข้ามวัน
+                const saveMultiDayDates = [];
+                const tmpSaveDate = new Date(startDate + 'T00:00:00');
+                const saveEndDateObj = new Date(endDate + 'T00:00:00');
+                while (tmpSaveDate <= saveEndDateObj) {
+                    saveMultiDayDates.push(tmpSaveDate.toISOString().split('T')[0]);
+                    tmpSaveDate.setDate(tmpSaveDate.getDate() + 1);
+                }
+                const saveIsMultiDay = saveMultiDayDates.length > 1;
+
                 const selectedRoom = state.rooms.find(r => r.roomId === roomId);
                 if (selectedRoom && attendees > selectedRoom.capacity) {
                     showToast(`จำนวนผู้เข้าร่วม (${attendees}) เกินความจุห้อง (${selectedRoom.capacity} คน)`, 'error');
@@ -4375,7 +4398,9 @@
                     roomId,
                     startTime: startDateTime.toISOString(),
                     endTime: endDateTime.toISOString(),
-                    bookingId: id || undefined
+                    bookingId: id || undefined,
+                    isMultiDay: saveIsMultiDay,
+                    multiDayDates: saveIsMultiDay ? saveMultiDayDates : []
                 });
 
                 if (!checkResult.success || !checkResult.data.available) {
@@ -4412,7 +4437,9 @@
                     endTime: endDateTime.toISOString(),
                     attendees: attendees,
                     userName: state.user.displayName,
-                    lineUserId: state.user.lineUserId
+                    lineUserId: state.user.lineUserId,
+                    isMultiDay: saveIsMultiDay,
+                    multiDayDates: saveIsMultiDay ? saveMultiDayDates : []
                 };
 
                 if (id) data.bookingId = id;
