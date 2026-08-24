@@ -2327,6 +2327,7 @@
         }
 
         function formatMonthThai(date) {
+            if (!(date instanceof Date) || isNaN(date.getTime())) return '';
             return date.toLocaleDateString('th-TH', {
                 month: 'long',
                 year: 'numeric'
@@ -4199,8 +4200,13 @@
                 return;
             }
 
-            const startDateTime = new Date(`${startDate}T${start}:00`);
-            const endDateTime = new Date(`${endDate}T${end}:00`);
+            const [sY, sM, sD] = startDate.split('-');
+            const [sH, sMin] = start.split(':');
+            const startDateTime = new Date(sY, sM - 1, sD, sH, sMin, 0);
+
+            const [eY, eM, eD] = endDate.split('-');
+            const [eH, eMin] = end.split(':');
+            const endDateTime = new Date(eY, eM - 1, eD, eH, eMin, 0);
 
             if (startDateTime >= endDateTime) {
                 $.availabilityStatus.innerHTML = '<span class="text-red-500">⚠️ เวลาสิ้นสุดต้องมากกว่าเวลาเริ่ม</span>';
@@ -4478,8 +4484,13 @@
                     return;
                 }
 
-                const startDateTime = new Date(`${startDate}T${start}:00`);
-                const endDateTime = new Date(`${endDate}T${end}:00`);
+                const [sY, sM, sD] = startDate.split('-');
+                const [sH, sMin] = start.split(':');
+                const startDateTime = new Date(sY, sM - 1, sD, sH, sMin, 0);
+
+                const [eY, eM, eD] = endDate.split('-');
+                const [eH, eMin] = end.split(':');
+                const endDateTime = new Date(eY, eM - 1, eD, eH, eMin, 0);
 
                 if (startDate > endDate) {
                     showToast('วันที่สิ้นสุดต้องไม่ก่อนวันที่เริ่ม', 'error');
