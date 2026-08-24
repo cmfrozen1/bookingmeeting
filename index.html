@@ -4134,8 +4134,9 @@
             }
 
             const durationHours = (endDateTime - startDateTime) / (1000 * 60 * 60);
-            if (durationHours > 24) {
-                $.availabilityStatus.innerHTML = '<span class="text-red-500">⚠️ จองได้ครั้งละไม่เกิน 24 ชั่วโมง</span>';
+            // Allow bookings up to 168 hours (7 days)
+            if (durationHours > 168) {
+                $.availabilityStatus.innerHTML = '<span class="text-red-500">⚠️ จองได้ครั้งละไม่เกิน 7 วัน (168 ชั่วโมง)</span>';
                 $.availabilityStatus.classList.remove('hidden');
                 $.saveBookingBtn.disabled = true;
                 return;
