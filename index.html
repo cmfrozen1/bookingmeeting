@@ -4947,7 +4947,7 @@
                     <div class="flex justify-between items-center text-xs">
                         <span class="text-gray-500"><i class="fas fa-users mr-1"></i> ${b.attendees || 0} คน</span>
                         ${b.meetingLink ? '<span class="text-blue-500"><i class="fas fa-video mr-1"></i> มีลิงค์</span>' : ''}
-                        ${b.status === 'confirmed' && !isPastBooking ? `
+                        ${(b.status === 'confirmed' || b.status === 'pending') && !isPastBooking ? `
                             <button class="text-red-500" onclick="cancelBooking('${b.bookingId}'); event.stopPropagation();">
                                 <i class="fas fa-times mr-1"></i>ยกเลิก
                             </button>
@@ -5094,9 +5094,25 @@
                 const footer = document.getElementById('booking-modal-footer');
                 const now = new Date();
                 const endTime = new Date(b.endTime);
-                const canCancel = b.status === 'confirmed' && endTime > now && b.userId === state.user.lineUserId;
+
+                // Allow cancellation if: booking is active (pending/confirmed), hasn't ended,
+                // and belongs to current user (check multiple identity fields)
+                const isOwner = b.userId === state.user.lineUserId ||
+                                b.userId === state.user.userId ||
+                                b.userName === state.user.displayName;
+                const isActive = (b.status === 'pending' || b.status === 'confirmed') && endTime > now;
+                const canCancel = isActive && isOwner;
+                const canEdit = b.status === 'pending' && endTime > now && isOwner;
 
                 let footerButtons = '';
+
+                if (canEdit) {
+                    footerButtons += `
+                        <button class="btn-outline flex-1" onclick="closeBookingDetailModal(); showBookingModal('${b.bookingId}')">
+                            <i class="fas fa-edit mr-2"></i>แก้ไข
+                        </button>
+                    `;
+                }
 
                 if (canCancel) {
                     footerButtons += `
@@ -5106,7 +5122,7 @@
                     `;
                 }
 
-                if (state.isManager && b.status === 'confirmed' && endTime > now) {
+                if (state.isManager && (b.status === 'pending' || b.status === 'confirmed') && endTime > now) {
                     footerButtons += `
                         <button class="btn-danger flex-1" onclick="adminCancelBooking('${b.bookingId}', this)">
                             <i class="fas fa-ban mr-2"></i>ยกเลิก (แจ้งเตือน)
