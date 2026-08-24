@@ -3665,9 +3665,10 @@
 
             } catch (error) {
                 console.error('LIFF init error:', error);
-                $.initLoading.classList.add('hide');
                 if (!state.user) showToast('ไม่สามารถเชื่อมต่อ LINE ได้', 'error');
                 checkUrlForBookingId();
+            } finally {
+                $.initLoading?.classList.add('hide');
             }
         }
 
@@ -4086,7 +4087,7 @@
             const attendees = parseInt($.bookingAttendees?.value) || 0;
             const editBookingId = document.getElementById('edit-booking-id')?.value;
 
-            if (!roomId || !startDate || !endDate || !start || !end) {
+            if (!roomId || !startDate || !endDate || !start) {
                 $.availabilityStatus.classList.add('hidden');
                 $.saveBookingBtn.disabled = true;
                 return;
@@ -4102,16 +4103,24 @@
                 return;
             }
 
-            // Validate time format HH:MM
+            // Validate start time format HH:MM
             const timeRegex = /^\d{2}:\d{2}$/;
-            if (!timeRegex.test(start) || !timeRegex.test(end)) {
-                $.availabilityStatus.innerHTML = '<span class="text-red-500">⚠️ รูปแบบเวลาไม่ถูกต้อง (HH:MM)</span>';
+            if (!timeRegex.test(start)) {
+                $.availabilityStatus.innerHTML = '<span class="text-red-500">⚠️ รูปแบบเวลาเริ่มต้นไม่ถูกต้อง (HH:MM)</span>';
+                $.availabilityStatus.classList.remove('hidden');
+                $.saveBookingBtn.disabled = true;
+                return;
+            }
+            // Allow empty end time for multi‑day bookings; default to end of day
+            const endTime = end || '23:59';
+            if (end && !timeRegex.test(end)) {
+                $.availabilityStatus.innerHTML = '<span class="text-red-500">⚠️ รูปแบบเวลาเสร็จสิ้นไม่ถูกต้อง (HH:MM)</span>';
                 $.availabilityStatus.classList.remove('hidden');
                 $.saveBookingBtn.disabled = true;
                 return;
             }
             const startDateTime = new Date(`${startDate}T${start}:00`);
-            const endDateTime = new Date(`${endDate}T${end}:00`);
+            const endDateTime = new Date(`${endDate}T${endTime}:00`);
 
             if (startDateTime >= endDateTime) {
                 $.availabilityStatus.innerHTML = '<span class="text-red-500">⚠️ เวลาสิ้นสุดต้องมากกว่าเวลาเริ่ม</span>';
@@ -4375,11 +4384,38 @@
                     return;
                 }
 
-                const startDateTime = new Date(`${startDate}T${start}:00`);
-                const endDateTime = new Date(`${endDate}T${end}:00`);
+                // ----- Enhanced validation for multi‑day bookings -----
+                // Ensure required fields are present
+                if (!startDate) {
+                    showToast('กรุณาเลือกวันที่เริ่มต้น', 'error');
+                    setButtonLoading(btn, false);
+                    return;
+                }
+                if (!endDate) {
+                    showToast('กรุณาเลือกวันที่สิ้นสุด', 'error');
+                    setButtonLoading(btn, false);
+                    return;
+                }
+                if (!start) {
+                    showToast('กรุณาเลือกเวลาเริ่มต้น', 'error');
+                    setButtonLoading(btn, false);
+                    return;
+                }
+                // If end time not provided (allowed for multi‑day), default to end of day
+                const endTime = end || '23:59';
 
+                const startDateTime = new Date(`${startDate}T${start}:00`);
+                const endDateTime = new Date(`${endDate}T${endTime}:00`);
+
+                // Date order validation
                 if (startDate > endDate) {
                     showToast('วันที่สิ้นสุดต้องไม่ก่อนวันที่เริ่ม', 'error');
+                    setButtonLoading(btn, false);
+                    return;
+                }
+                // Time order validation
+                if (startDateTime >= endDateTime) {
+                    showToast('เวลาสิ้นสุดต้องมากกว่าเวลาเริ่ม', 'error');
                     setButtonLoading(btn, false);
                     return;
                 }
@@ -4406,6 +4442,7 @@
                     await checkAvailability();
                     return;
                 }
+                // ---------------------------------------------------------
 
                 let desc = document.getElementById('booking-description').value;
                 const format = document.getElementById('booking-format').value;
