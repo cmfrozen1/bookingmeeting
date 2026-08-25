@@ -2186,7 +2186,8 @@
 
         <footer class="app-footer">
             <p>พัฒนาโดย: <strong>นายธีรพงศ์ พรหมวัง</strong></p>
-            <p>แผนกเทคโนโลยีสารสนเทศ · บริษัท เชียงใหม่โฟรเซ่นฟูดส์ จำกัด (มหาชน)</p>
+            <p>แผนกเทคโนโลยีสารสนเทศ</p>
+            <p>บริษัท เชียงใหม่โฟรเซ่นฟูดส์ จำกัด (มหาชน) · โรงงาน 1</p>
         </footer>
     </div>
 
@@ -3506,7 +3507,12 @@
             html += '</div>';
 
             body.innerHTML = html;
-            footer.innerHTML = '<button class="btn-outline w-full" onclick="closeBookingDetailModal()">ปิด</button>';
+            footer.innerHTML = `
+                <button class="btn-primary flex-1" onclick="closeBookingDetailModal(); openBookingForCalendarDate('${dateStr}')">
+                    <i class="fas fa-calendar-plus mr-2"></i>จองวันที่นี้
+                </button>
+                <button class="btn-outline flex-1" onclick="closeBookingDetailModal()">ปิด</button>
+            `;
             modal.classList.add('active');
         }
 
@@ -3592,7 +3598,7 @@
                 titleAttr = `title="${tooltipLines.join(' | ')}"`;
                 const safeJson = JSON.stringify(bookings).replace(/"/g, '&quot;');
                 dataAttr = `data-bookings='${safeJson}'`;
-
+                clickHandler = `showBookingDetails('${dateStr}')`;
             }
             return `
                 <div class="${classes}" onclick="${clickHandler}" ${titleAttr} ${dataAttr}>
