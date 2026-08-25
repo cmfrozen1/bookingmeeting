@@ -1796,7 +1796,7 @@
                         <p class="text-xs text-gray-500 mt-3 leading-relaxed">
                             💡 <strong>Triggers จะทำงานอัตโนมัติ:</strong><br>
                             • <span class="text-[#3b82f6]">Reminder</span> ส่งแจ้งเตือน Admin/Manager ทุก 10 นาที<br>
-                            • <span class="text-[#f59e0b]">Auto Cancel</span> ยกเลิกการจองที่เลยเวลา ทุก 30 นาที<br>
+                            • <span class="text-[#f59e0b]">Auto Cancel</span> ยกเลิกเฉพาะการจองที่<b>ยังไม่ได้รับอนุมัติ</b>เมื่อเลยเวลา ทุก 30 นาที<br>
                             • <span class="text-[#06c755]">สรุปรายเดือน</span> ส่งสรุปให้ผู้ใช้ทุกวันเวลา 20:00 น.<br>
                             • <span class="text-[#ef4444]">Cleanup</span> ลบผู้ใช้ inactive ทุกวันเวลา 03:00 น.
                         </p>
@@ -3307,6 +3307,7 @@
                 return true;
             } catch (error) {
                 console.error('Error sending flex message:', error);
+                showToast('บันทึกการจองสำเร็จ แต่ส่งข้อความไปยังแชทไม่สำเร็จ', 'error');
                 return false;
             }
         }
@@ -4680,7 +4681,8 @@
                 if (result.success) {
                     showToast(result.message || (id ? 'แก้ไขการจองสำเร็จ' : 'จองห้องสำเร็จ'));
 
-                    if (!id && result.data?.bookingData && !state.isAdmin) {
+                    // ส่งรายละเอียดการจองเข้าช่องแชทผ่าน liff.sendMessages (Flex Message)
+                    if (!id && result.data?.bookingData) {
                         const bookingData = {
                             ...result.data.bookingData,
                             action: 'created',
