@@ -3288,9 +3288,9 @@
             return flexMessage;
         }
 
-        async function sendBookingToChat(bookingData) {
+        async function sendBookingToChat(bookingData, { force = false } = {}) {
             try {
-                if (!areNotificationsEnabled()) {
+                if (!force && !areNotificationsEnabled()) {
                     console.log('Notifications disabled');
                     return false;
                 }
@@ -4692,7 +4692,9 @@
                             rejectedBy: result.data.bookingData.rejectedBy,
                             cancelledBy: result.data.bookingData.cancelledBy
                         };
-                        await sendBookingToChat(bookingData).catch(e => console.warn('Send booking to chat warning:', e));
+                        // การส่งหลังจองสำเร็จเป็นส่วนหนึ่งของขั้นตอนการจองเสมอ
+                        // (ไม่ขึ้นกับสวิตช์แจ้งเตือนทั่วไปของผู้ใช้)
+                        await sendBookingToChat(bookingData, { force: true });
                     }
 
                     closeBookingCreateModal();
