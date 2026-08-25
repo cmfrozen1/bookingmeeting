@@ -103,6 +103,22 @@
             -webkit-text-fill-color: transparent;
         }
 
+        .app-footer {
+            max-width: 1200px;
+            margin: 32px auto 88px;
+            padding: 20px 16px 0;
+            border-top: 1px solid var(--border);
+            color: var(--text-secondary);
+            font-size: 12px;
+            line-height: 1.7;
+            text-align: center;
+        }
+
+        .app-footer strong {
+            color: #d1d5db;
+            font-weight: 500;
+        }
+
         .bottom-nav {
             position: fixed;
             bottom: 0;
@@ -2167,6 +2183,11 @@
                 </div>
             </div>
         </div>
+
+        <footer class="app-footer">
+            <p>พัฒนาโดย: <strong>นายธีรพงศ์ พรหมวัง</strong></p>
+            <p>แผนกเทคโนโลยีสารสนเทศ · บริษัท เชียงใหม่โฟรเซ่นฟูดส์ จำกัด (มหาชน)</p>
+        </footer>
     </div>
 
     <!-- Bottom Navigation -->
@@ -3551,7 +3572,7 @@
             if (isSelected) classes += ' selected';
             let titleAttr = '';
             let dataAttr = '';
-            let clickHandler = `selectDate('${dateStr}')`;
+            let clickHandler = `openBookingForCalendarDate('${dateStr}')`;
             let barInfo = null;
             if (hasBooking) {
                 classes += ' has-booking';
@@ -3571,8 +3592,7 @@
                 titleAttr = `title="${tooltipLines.join(' | ')}"`;
                 const safeJson = JSON.stringify(bookings).replace(/"/g, '&quot;');
                 dataAttr = `data-bookings='${safeJson}'`;
-                // Use detail view on click
-                clickHandler = `showBookingDetails('${dateStr}')`;
+
             }
             return `
                 <div class="${classes}" onclick="${clickHandler}" ${titleAttr} ${dataAttr}>
@@ -3650,6 +3670,17 @@
 
             attemptShowDetail();
         }
+
+        window.openBookingForCalendarDate = function(dateStr) {
+            const todayStr = formatDateForInput(new Date());
+            if (dateStr < todayStr) {
+                showToast('ไม่สามารถจองย้อนหลังได้', 'warning');
+                return;
+            }
+
+            state.selectedDate = new Date(dateStr + 'T00:00:00');
+            showBookingModal(null, dateStr);
+        };
 
         // ===== BOOK ON SELECTED DATE =====
         window.bookOnSelectedDate = function () {
