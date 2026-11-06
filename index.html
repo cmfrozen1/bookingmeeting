@@ -1814,6 +1814,9 @@
                             <button onclick="runTriggerNow('sendMeetingReminders')" class="btn-outline text-xs py-1.5">
                                 <i class="fas fa-bell mr-1"></i>ทดสอบ Reminder
                             </button>
+                            <button onclick="runTriggerNow('sendPendingApprovalReminder')" class="btn-outline text-xs py-1.5">
+                                <i class="fas fa-hourglass-half mr-1"></i>ทดสอบรายการค้างอนุมัติ
+                            </button>
                             <button onclick="runTriggerNow('autoCancelOverdueBookings')"
                                 class="btn-outline text-xs py-1.5">
                                 <i class="fas fa-clock mr-1"></i>ทดสอบ Auto Cancel
@@ -1823,6 +1826,7 @@
                         <p class="text-xs text-gray-500 mt-3 leading-relaxed">
                             💡 <strong>Triggers จะทำงานอัตโนมัติ:</strong><br>
                             • <span class="text-[#3b82f6]">Reminder</span> ส่งแจ้งเตือน Admin/Manager ทุก 10 นาที<br>
+                            • <span class="text-[#f59e0b]">รายการค้างอนุมัติ</span> ส่งสรุป Flex ให้ Admin ทุกวันเวลา 09:00 น. เฉพาะเมื่อมีรายการค้าง<br>
                             • <span class="text-[#f59e0b]">Auto Cancel</span>
                             ยกเลิกเฉพาะการจองที่<b>ยังไม่ได้รับอนุมัติ</b>เมื่อเลยเวลา ทุก 30 นาที<br>
                             • <span class="text-[#06c755]">สรุปรายเดือน</span> ส่งสรุปให้ผู้ใช้ทุกวันเวลา 20:00 น.<br>
@@ -2623,6 +2627,9 @@
                 switch (triggerName) {
                     case 'sendMeetingReminders':
                         path = 'admin/run-reminder';
+                        break;
+                    case 'sendPendingApprovalReminder':
+                        path = 'admin/run-pending-approval-reminder';
                         break;
                     case 'autoCancelOverdueBookings':
                         path = 'admin/run-auto-cancel';
