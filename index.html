@@ -1790,6 +1790,35 @@
                             </select>
                             <p class="text-xs text-gray-500 mt-1 mb-4">ผู้จองต้องจองล่วงหน้าอย่างน้อยตามเวลาที่เลือก เพื่อให้ระบบส่งการแจ้งเตือนได้ทัน</p>
 
+                            <label class="block text-sm text-gray-400 mb-1">เวลาแจ้งรายการค้างอนุมัติให้ Admin</label>
+                            <select id="setting-pending-approval-reminder-hour" class="input-field">
+                                <option value="0">00:00 น.</option>
+                                <option value="1">01:00 น.</option>
+                                <option value="2">02:00 น.</option>
+                                <option value="3">03:00 น.</option>
+                                <option value="4">04:00 น.</option>
+                                <option value="5">05:00 น.</option>
+                                <option value="6">06:00 น.</option>
+                                <option value="7">07:00 น.</option>
+                                <option value="8">08:00 น.</option>
+                                <option value="9">09:00 น.</option>
+                                <option value="10">10:00 น.</option>
+                                <option value="11">11:00 น.</option>
+                                <option value="12">12:00 น.</option>
+                                <option value="13">13:00 น.</option>
+                                <option value="14">14:00 น.</option>
+                                <option value="15">15:00 น.</option>
+                                <option value="16">16:00 น.</option>
+                                <option value="17">17:00 น.</option>
+                                <option value="18">18:00 น.</option>
+                                <option value="19">19:00 น.</option>
+                                <option value="20">20:00 น.</option>
+                                <option value="21">21:00 น.</option>
+                                <option value="22">22:00 น.</option>
+                                <option value="23">23:00 น.</option>
+                            </select>
+                            <p class="text-xs text-gray-500 mt-1 mb-4">ระบบจะส่งสรุปรายการรออนุมัติวันละครั้งตามเวลาที่เลือก เฉพาะเมื่อมีรายการค้าง</p>
+
                             <button type="submit" class="btn-primary w-full"
                                 id="settings-save-btn">บันทึกการตั้งค่า</button>
                         </form>
@@ -1826,7 +1855,7 @@
                         <p class="text-xs text-gray-500 mt-3 leading-relaxed">
                             💡 <strong>Triggers จะทำงานอัตโนมัติ:</strong><br>
                             • <span class="text-[#3b82f6]">Reminder</span> ส่งแจ้งเตือน Admin/Manager ทุก 10 นาที<br>
-                            • <span class="text-[#f59e0b]">รายการค้างอนุมัติ</span> ส่งสรุป Flex ให้ Admin ทุกวันเวลา 09:00 น. เฉพาะเมื่อมีรายการค้าง<br>
+                            • <span class="text-[#f59e0b]">รายการค้างอนุมัติ</span> ส่งสรุป Flex ให้ Admin วันละครั้งตามเวลาที่ตั้งไว้ เฉพาะเมื่อมีรายการค้าง<br>
                             • <span class="text-[#f59e0b]">Auto Cancel</span>
                             ยกเลิกเฉพาะการจองที่<b>ยังไม่ได้รับอนุมัติ</b>เมื่อเลยเวลา ทุก 30 นาที<br>
                             • <span class="text-[#06c755]">สรุปรายเดือน</span> ส่งสรุปให้ผู้ใช้ทุกวันเวลา 20:00 น.<br>
@@ -2309,6 +2338,7 @@
             settingsSaveBtn: document.getElementById('settings-save-btn'),
             settingRequireApproval: document.getElementById('setting-require-approval'),
             settingReminderMinutes: document.getElementById('setting-reminder-minutes'),
+            settingPendingApprovalReminderHour: document.getElementById('setting-pending-approval-reminder-hour'),
             profileNotificationsEnabled: document.getElementById('profile-notifications-enabled'),
             calendarDays: document.getElementById('calendar-days'),
             currentMonth: document.getElementById('current-month'),
@@ -5884,6 +5914,10 @@
                 $.settingReminderMinutes.value = state.settings.reminderMinutes || 'none';
             }
 
+            if ($.settingPendingApprovalReminderHour) {
+                $.settingPendingApprovalReminderHour.value = String(state.settings.pendingApprovalReminderHour ?? '9');
+            }
+
             updateAppName(state.settings.appName);
         }
 
@@ -5898,6 +5932,7 @@
             const appName = document.getElementById('setting-app-name').value.trim() || 'Meeting Room';
             const requireApproval = $.settingRequireApproval ? $.settingRequireApproval.checked : true;
             const reminderMinutes = $.settingReminderMinutes?.value || 'none';
+            const pendingApprovalReminderHour = $.settingPendingApprovalReminderHour?.value || '9';
 
             const saveBtn = $.settingsSaveBtn;
             setButtonLoading(saveBtn, true);
@@ -5906,6 +5941,7 @@
                 appName,
                 requireApproval: requireApproval ? 'true' : 'false',
                 reminderMinutes,
+                pendingApprovalReminderHour,
                 lineUserId: state.user.lineUserId
             };
 
@@ -5920,7 +5956,7 @@
                     userName: state.user.displayName,
                     startTime: new Date().toISOString(),
                     endTime: new Date().toISOString(),
-                    description: 'ชื่อแอป: ' + appName + '\nระบบอนุมัติ: ' + (requireApproval ? 'เปิดใช้งาน' : 'ปิดใช้งาน') + '\nแจ้งเตือนล่วงหน้า: ' + (reminderMinutes === 'none' ? 'ไม่แจ้งเตือน' : reminderMinutes + ' นาที'),
+                    description: 'ชื่อแอป: ' + appName + '\nระบบอนุมัติ: ' + (requireApproval ? 'เปิดใช้งาน' : 'ปิดใช้งาน') + '\nแจ้งเตือนล่วงหน้า: ' + (reminderMinutes === 'none' ? 'ไม่แจ้งเตือน' : reminderMinutes + ' นาที') + '\nสรุปรายการค้างอนุมัติ: ' + pendingApprovalReminderHour.padStart(2, '0') + ':00 น.',
                     action: 'settings_updated'
                 });
 
